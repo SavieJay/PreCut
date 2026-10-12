@@ -169,12 +169,12 @@ Each phase ends with acceptance criteria. Stop after each phase for user verific
 **Acceptance:** `./gradlew assembleDebug` and `./gradlew testDebugUnitTest` pass; app launches to a Home screen.
 
 ### Phase 1 — Model, import, playback
-- [ ] All model classes from section 2 with serialization
-- [ ] `TimelineMath` (total duration, clip at timeline time, timeline↔source time with speed) + unit tests
-- [ ] `MediaProbe` to read duration/type of a Uri
-- [ ] Photo Picker (`PickMultipleVisualMedia`) for videos + images; take persistable URI permission
-- [ ] Create a new `Project` from picked media (in memory for now) and open Editor
-- [ ] Editor shows ExoPlayer preview of the first clip with play/pause and a seek bar
+- [x] All model classes from section 2 with serialization
+- [x] `TimelineMath` (total duration, clip at timeline time, timeline↔source time with speed) + unit tests
+- [x] `MediaProbe` to read duration/type of a Uri
+- [x] Photo Picker (`PickMultipleVisualMedia`) for videos + images; take persistable URI permission
+- [x] Create a new `Project` from picked media (in memory for now) and open Editor
+- [x] Editor shows ExoPlayer preview of the first clip with play/pause and a seek bar
 
 **Acceptance:** pick 3 videos → editor opens → first video plays, pauses, and seeks.
 
@@ -271,3 +271,8 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-12 — Java/Kotlin target 17 via `compileOptions` + `jvmTarget`** rather than `jvmToolchain(17)`, to avoid deprecated toolchain auto-provisioning (builds run on the installed JDK 21).
 - **2026-10-12 — `hiltViewModel()` comes from `androidx.hilt:hilt-lifecycle-viewmodel-compose`**; the older `hilt-navigation-compose` location is deprecated.
 - **2026-10-12 — Known build warning:** `Configuration.setVisible` deprecation is emitted by AGP itself, not by project scripts.
+- **2026-10-12 — `Clip` also stores `sourceWidth`, `sourceHeight`, `sourceRotationDegrees`** (probed at import), needed later for mixed portrait/landscape layout without re-probing.
+- **2026-10-12 — Preview UI uses `media3-ui-compose` (`ContentFrame`) instead of View-based `media3-ui` (`PlayerView`).** Compose-native, handles aspect-fit and shutter; `media3-ui` dropped as unused.
+- **2026-10-12 — Import goes through `MediaImporter`** (persistable permission + `MediaProbe`) so `HomeViewModel` is unit-testable with a fake.
+- **2026-10-12 — `di/AppModule` added** (not in the original layout) for Hilt bindings, `Clock` and the IO dispatcher.
+- **2026-10-12 — Projects start with a blank `name`;** naming/rename UI arrives in Phase 6. Until then the in-memory repository means projects don't survive process death (Editor shows "no longer available").

@@ -1,8 +1,18 @@
 <resources>
     <string name="app_name">PreCut</string>
     <string name="action_back">Back</string>
+    <string name="action_play">Play</string>
+    <string name="action_pause">Pause</string>
+
     <string name="home_new_project">New project</string>
     <string name="home_empty_state">No projects yet.\nTap New project to start editing.</string>
+    <string name="home_importing">Importing media…</string>
+    <string name="home_import_nothing">None of the selected files could be opened.</string>
+    <plurals name="home_import_skipped">
+        <item quantity="one">%1$d file couldn\'t be opened and was skipped.</item>
+        <item quantity="other">%1$d files couldn\'t be opened and were skipped.</item>
+    </plurals>
+
     <string name="editor_title">Editor</string>
-    <string name="editor_placeholder">Project %1$s</string>
+    <string name="editor_not_found">This project is no longer available.</string>
 </resources>

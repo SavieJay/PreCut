@@ -1,58 +1,59 @@
 package com.savie.precut.ui.home
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
-import com.savie.precut.ui.theme.PreCutTheme
+import com.savie.precut.ui.components.ObserveAsEvents
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onNewProject: () -> Unit) {
-    Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onNewProject,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.home_new_project)) },
-            )
-        },
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(24.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.home_empty_state),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-            )
+fun HomeScreen(
+    onOpenEditor: (projectId: String) -> Unit,
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val resources = LocalResources.current
+
+    val picker = rememberLauncherForActivityResult(PickMultipleVisualMedia()) { uris ->
+        viewModel.onMediaPicked(uris.map(Uri::toString))
+    }
+
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            is HomeEvent.OpenEditor -> onOpenEditor(event.projectId)
+            // A toast survives the navigation to the editor that follows this event.
+            is HomeEvent.SomeFilesSkipped -> Toast.makeText(
+                context,
+                resources.getQuantityString(R.plurals.home_import_skipped, event.count, event.count),
+                Toast.LENGTH_LONG,
+            ).show()
+            HomeEvent.NothingImported -> scope.launch {
+                snackbarHostState.showSnackbar(resources.getString(R.string.home_import_nothing))
+            }
         }
     }
-}
 
-@Preview
-@Composable
-private fun HomeScreenPreview() {
-    PreCutTheme { HomeScreen(onNewProject = {}) }
+    HomeContent(
+        isImporting = uiState.isImporting,
+        snackbarHostState = snackbarHostState,
+        onNewProject = {
+            picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
+        },
+    )
 }

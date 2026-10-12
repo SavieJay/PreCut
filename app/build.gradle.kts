@@ -84,7 +84,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.transformer)
     implementation(libs.androidx.media3.effect)
-    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.ui.compose)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
