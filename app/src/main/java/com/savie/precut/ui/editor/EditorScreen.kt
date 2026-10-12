@@ -13,6 +13,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,11 +27,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.ui.editor.preview.PlaybackControls
 import com.savie.precut.ui.editor.preview.PreviewSurface
+import com.savie.precut.ui.editor.tools.EditorToolbar
+import com.savie.precut.ui.editor.tools.TrimTool
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(
     onBack: () -> Unit,
+    onExport: (projectId: String) -> Unit,
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -50,6 +54,13 @@ fun EditorScreen(
                         )
                     }
                 },
+                actions = {
+                    if (uiState is EditorUiState.Ready) {
+                        TextButton(onClick = { onExport(viewModel.projectId) }) {
+                            Text(stringResource(R.string.action_export))
+                        }
+                    }
+                },
             )
         },
     ) { innerPadding ->
@@ -66,7 +77,6 @@ fun EditorScreen(
             is EditorUiState.Ready -> Column(modifier) {
                 PreviewSurface(
                     player = viewModel.player,
-                    clip = state.previewClip,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
@@ -76,6 +86,17 @@ fun EditorScreen(
                     onPlayPause = viewModel::onPlayPause,
                     onSeek = viewModel::onSeek,
                 )
+                // Phase 2 edits the first clip; Phase 3 adds clip selection on the timeline.
+                val clip = state.project.clips.firstOrNull()
+                if (state.activeTool == EditorTool.TRIM && clip != null) {
+                    TrimTool(
+                        clip = clip,
+                        onTrim = { start, end -> viewModel.onTrim(clip.id, start, end) },
+                        onDone = viewModel::onToolClosed,
+                    )
+                } else {
+                    EditorToolbar(onToolSelected = viewModel::onToolSelected)
+                }
             }
         }
     }

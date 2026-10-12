@@ -1,0 +1,89 @@
+package com.savie.precut.media
+
+import android.content.ContentValues
+import android.content.Context
+import android.media.MediaScannerConnection
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import com.savie.precut.di.IoDispatcher
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.IOException
+import javax.inject.Inject
+import kotlin.coroutines.resume
+
+interface MediaSaver {
+    /**
+     * Copies [file] into the shared Movies/PreCut collection and deletes [file]. Returns the new
+     * content Uri, or null if the video was saved but the system didn't report a Uri for it.
+     */
+    suspend fun saveVideo(file: File, displayName: String): Result<String?>
+}
+
+class MediaStoreSaver @Inject constructor(
+    @ApplicationContext private val context: Context,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+) : MediaSaver {
+
+    override suspend fun saveVideo(file: File, displayName: String): Result<String?> = try {
+        val uri = withContext(ioDispatcher) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) saveScoped(file, displayName) else null
+        } ?: saveLegacy(file, displayName)
+        Result.success(uri?.toString())
+    } catch (e: IOException) {
+        Result.failure(e)
+    } catch (e: SecurityException) {
+        Result.failure(e)
+    } finally {
+        file.delete()
+    }
+
+    private fun saveScoped(file: File, displayName: String): Uri {
+        val resolver = context.contentResolver
+        val collection = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val values = ContentValues().apply {
+            put(MediaStore.Video.Media.DISPLAY_NAME, displayName)
+            put(MediaStore.Video.Media.MIME_TYPE, MIME_TYPE)
+            put(MediaStore.Video.Media.RELATIVE_PATH, "${Environment.DIRECTORY_MOVIES}/$ALBUM")
+            put(MediaStore.Video.Media.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(collection, values) ?: throw IOException("MediaStore insert failed")
+        try {
+            resolver.openOutputStream(uri)?.use { out -> file.inputStream().use { it.copyTo(out) } }
+                ?: throw IOException("Cannot open $uri")
+            resolver.update(uri, ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }, null, null)
+        } catch (e: IOException) {
+            resolver.delete(uri, null, null)
+            throw e
+        }
+        return uri
+    }
+
+    /**
+     * Android 8–9: no RELATIVE_PATH, so write to the public Movies folder directly (needs
+     * WRITE_EXTERNAL_STORAGE) and let the media scanner index it.
+     */
+    @Suppress("DEPRECATION") // getExternalStoragePublicDirectory is the only option before API 29.
+    private suspend fun saveLegacy(file: File, displayName: String): Uri? {
+        val target = withContext(ioDispatcher) {
+            val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), ALBUM)
+            if (!dir.isDirectory && !dir.mkdirs()) throw IOException("Cannot create $dir")
+            File(dir, displayName).also { file.copyTo(it, overwrite = true) }
+        }
+        return suspendCancellableCoroutine { cont ->
+            MediaScannerConnection.scanFile(context, arrayOf(target.absolutePath), arrayOf(MIME_TYPE)) { _, uri ->
+                cont.resume(uri)
+            }
+        }
+    }
+
+    private companion object {
+        const val ALBUM = "PreCut"
+        const val MIME_TYPE = "video/mp4"
+    }
+}

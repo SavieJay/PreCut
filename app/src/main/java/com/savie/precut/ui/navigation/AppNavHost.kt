@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.savie.precut.ui.editor.EditorScreen
+import com.savie.precut.ui.export.ExportScreen
 import com.savie.precut.ui.home.HomeScreen
 
 @Composable
@@ -15,7 +16,13 @@ fun AppNavHost() {
             HomeScreen(onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) })
         }
         composable<EditorRoute> {
-            EditorScreen(onBack = { navController.popBackStack() })
+            EditorScreen(
+                onBack = { navController.popBackStack() },
+                onExport = { projectId -> navController.navigate(ExportRoute(projectId)) },
+            )
+        }
+        composable<ExportRoute> {
+            ExportScreen(onClose = { navController.popBackStack() })
         }
     }
 }

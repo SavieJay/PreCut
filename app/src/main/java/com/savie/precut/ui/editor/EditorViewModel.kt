@@ -4,25 +4,28 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
-import androidx.navigation.toRoute
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.PreviewState
-import com.savie.precut.model.Clip
-import com.savie.precut.model.ClipType
 import com.savie.precut.model.Project
-import com.savie.precut.ui.navigation.EditorRoute
+import com.savie.precut.model.edit.EditAction
+import com.savie.precut.model.edit.EditReducer
+import com.savie.precut.ui.navigation.requireProjectId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Clock
 import javax.inject.Inject
+
+enum class EditorTool { TRIM }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
     data object NotFound : EditorUiState
-    data class Ready(val project: Project, val previewClip: Clip?) : EditorUiState
+    data class Ready(val project: Project, val activeTool: EditorTool? = null) : EditorUiState
 }
 
 @HiltViewModel
@@ -30,9 +33,10 @@ class EditorViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: ProjectRepository,
     private val previewController: PreviewController,
+    private val clock: Clock,
 ) : ViewModel() {
 
-    private val projectId = savedStateHandle.toRoute<EditorRoute>().projectId
+    val projectId = savedStateHandle.requireProjectId()
 
     private val _uiState = MutableStateFlow<EditorUiState>(EditorUiState.Loading)
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
@@ -49,10 +53,8 @@ class EditorViewModel @Inject constructor(
                 _uiState.value = EditorUiState.NotFound
                 return@launch
             }
-            // Phase 1 previews only the first clip; Phase 3 previews the whole composition.
-            val firstClip = project.clips.firstOrNull()
-            if (firstClip?.type == ClipType.VIDEO) previewController.setMedia(firstClip.uri)
-            _uiState.value = EditorUiState.Ready(project, firstClip)
+            previewController.setProject(project)
+            _uiState.value = EditorUiState.Ready(project)
         }
     }
 
@@ -61,6 +63,27 @@ class EditorViewModel @Inject constructor(
     fun onSeek(positionMs: Long) = previewController.seekTo(positionMs)
 
     fun onScreenStopped() = previewController.pause()
+
+    fun onToolSelected(tool: EditorTool) = updateReady { it.copy(activeTool = if (it.activeTool == tool) null else tool) }
+
+    fun onToolClosed() = updateReady { it.copy(activeTool = null) }
+
+    fun onTrim(clipId: String, trimStartMs: Long, trimEndMs: Long) =
+        applyEdit(EditAction.TrimClip(clipId, trimStartMs, trimEndMs))
+
+    private fun applyEdit(action: EditAction) {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        val edited = EditReducer.reduce(ready.project, action)
+        if (edited === ready.project) return
+        val saved = edited.copy(updatedAt = clock.millis())
+        _uiState.value = ready.copy(project = saved)
+        previewController.pause()
+        previewController.setProject(saved)
+        viewModelScope.launch { repository.save(saved) }
+    }
+
+    private fun updateReady(transform: (EditorUiState.Ready) -> EditorUiState.Ready) =
+        _uiState.update { if (it is EditorUiState.Ready) transform(it) else it }
 
     override fun onCleared() {
         previewController.release()

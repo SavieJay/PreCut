@@ -1,10 +1,12 @@
 package com.savie.precut.media
 
 import android.content.Context
+import androidx.annotation.OptIn
 import androidx.media3.common.C
-import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.util.ExperimentalApi
+import androidx.media3.transformer.CompositionPlayer
+import com.savie.precut.model.Project
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,12 +28,16 @@ data class PreviewState(
 )
 
 /**
- * Owns the preview player. Must be created and used on the main thread; call [release] when done.
- * Phase 3 swaps the ExoPlayer for a CompositionPlayer fed by CompositionBuilder.
+ * Owns the preview player, fed by [CompositionBuilder] so preview matches export.
+ * Must be created and used on the main thread; call [release] when done.
  */
-class PreviewController @Inject constructor(@ApplicationContext context: Context) {
+@OptIn(ExperimentalApi::class) // CompositionPlayer is experimental in Media3 1.11; it's the only composition preview.
+class PreviewController @Inject constructor(
+    @ApplicationContext context: Context,
+    private val compositionBuilder: CompositionBuilder,
+) {
 
-    private val exoPlayer = ExoPlayer.Builder(context).build()
+    private val compositionPlayer = CompositionPlayer.Builder(context).build()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var ticker: Job? = null
 
@@ -39,7 +45,7 @@ class PreviewController @Inject constructor(@ApplicationContext context: Context
     val state: StateFlow<PreviewState> = _state.asStateFlow()
 
     /** Exposed only so the UI can attach a video surface. */
-    val player: Player get() = exoPlayer
+    val player: Player get() = compositionPlayer
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
@@ -49,41 +55,48 @@ class PreviewController @Inject constructor(@ApplicationContext context: Context
     }
 
     init {
-        exoPlayer.addListener(listener)
+        compositionPlayer.addListener(listener)
     }
 
-    fun setMedia(uri: String) {
-        exoPlayer.setMediaItem(MediaItem.fromUri(uri))
-        exoPlayer.prepare()
+    /** Rebuilds the preview from [project], starting at [startPositionMs]. */
+    fun setProject(project: Project, startPositionMs: Long = 0L) {
+        val composition = compositionBuilder.build(project)
+        if (composition == null) {
+            compositionPlayer.stop()
+            compositionPlayer.clearMediaItems()
+            return
+        }
+        compositionPlayer.setComposition(composition, startPositionMs.coerceAtLeast(0L))
+        compositionPlayer.prepare()
     }
 
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
-            exoPlayer.pause()
+        if (compositionPlayer.isPlaying) {
+            compositionPlayer.pause()
         } else {
-            if (exoPlayer.playbackState == Player.STATE_ENDED) exoPlayer.seekTo(0L)
-            exoPlayer.play()
+            if (compositionPlayer.playbackState == Player.STATE_ENDED) compositionPlayer.seekTo(0L)
+            compositionPlayer.play()
         }
     }
 
-    fun pause() = exoPlayer.pause()
+    fun pause() = compositionPlayer.pause()
 
     fun seekTo(positionMs: Long) {
-        exoPlayer.seekTo(positionMs)
+        compositionPlayer.seekTo(positionMs)
         publishState()
     }
 
     fun release() {
         scope.cancel()
-        exoPlayer.removeListener(listener)
-        exoPlayer.release()
+        compositionPlayer.removeListener(listener)
+        compositionPlayer.release()
     }
 
     private fun publishState() {
-        val duration = exoPlayer.duration.takeIf { it != C.TIME_UNSET } ?: 0L
+        val duration = compositionPlayer.duration.takeIf { it != C.TIME_UNSET } ?: 0L
         _state.value = PreviewState(
-            isPlaying = exoPlayer.isPlaying,
-            positionMs = exoPlayer.currentPosition.coerceIn(0L, duration),
+            isPlaying = compositionPlayer.isPlaying,
+            positionMs = compositionPlayer.currentPosition.coerceIn(0L, duration),
             durationMs = duration,
         )
     }

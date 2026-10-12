@@ -3,6 +3,13 @@
     <string name="action_back">Back</string>
     <string name="action_play">Play</string>
     <string name="action_pause">Pause</string>
+    <string name="action_done">Done</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_close">Close</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_open">Open</string>
+    <string name="action_share">Share</string>
+    <string name="action_export">Export</string>
 
     <string name="home_new_project">New project</string>
     <string name="home_empty_state">No projects yet.\nTap New project to start editing.</string>
@@ -15,4 +22,18 @@
 
     <string name="editor_title">Editor</string>
     <string name="editor_not_found">This project is no longer available.</string>
+
+    <string name="tool_trim">Trim</string>
+    <string name="trim_duration">Duration %1$s</string>
+
+    <string name="export_title">Export</string>
+    <string name="export_in_progress">Exporting video…</string>
+    <string name="export_percent">%1$d%%</string>
+    <string name="export_keep_open">Keep this screen open until the export finishes.</string>
+    <string name="export_saving">Saving to gallery…</string>
+    <string name="export_done">Saved to Movies/PreCut.</string>
+    <string name="export_share_title">Share video</string>
+    <string name="export_error_permission">Storage permission is needed to save the video.</string>
+    <string name="export_error_encode">The video couldn\'t be exported.</string>
+    <string name="export_error_save">The video was exported but couldn\'t be saved to the gallery.</string>
 </resources>

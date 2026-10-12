@@ -179,18 +179,19 @@ Each phase ends with acceptance criteria. Stop after each phase for user verific
 **Acceptance:** pick 3 videos → editor opens → first video plays, pauses, and seeks.
 
 ### Phase 2 — End-to-end export (single clip)
-- [ ] `CompositionBuilder` v1: one clip with trim → `Composition`
-- [ ] Trim tool: range slider over the clip, preview reflects trim
-- [ ] `ExportManager`: Transformer export to app cache, progress as `Flow<ExportState>` (polling `getProgress`)
-- [ ] `MediaStoreSaver`: save to `Movies/PreCut`
-- [ ] Export screen with progress, success (open/share), and error states
+- [x] `CompositionBuilder` v1: one clip with trim → `Composition`
+- [x] Preview switched to `PreviewController` (CompositionPlayer) — moved here from Phase 3, see Decisions log
+- [x] Trim tool: range slider over the clip, preview reflects trim
+- [x] `ExportManager`: Transformer export to app cache, progress as `Flow<ExportState>` (polling `getProgress`)
+- [x] `MediaStoreSaver`: save to `Movies/PreCut`
+- [x] Export screen with progress, success (open/share), and error states
 
 **Acceptance:** trim a clip, export, and the result appears in the gallery with correct length and audio.
 
 ### Phase 3 — Multi-clip timeline
 - [ ] `EditAction` + `EditReducer`: AddClips, DeleteClip, SplitClip(atTimelineMs), MoveClip(from,to), DuplicateClip, TrimClip — all unit-tested
 - [ ] `CompositionBuilder` v2: all clips in one sequence, images supported
-- [ ] Switch preview to `PreviewController` (CompositionPlayer), rebuilt when the project changes (debounced)
+- [ ] Preview rebuilt when the project changes (debounced) — CompositionPlayer switch already done in Phase 2
 - [ ] `ThumbnailLoader`: lazy frame extraction at low resolution with LRU memory cache
 - [ ] Timeline UI: horizontal scroll, thumbnail strip per clip proportional to duration, time ruler, fixed center playhead synced to playback in both directions (scroll seeks, playback scrolls)
 - [ ] Pinch to zoom timeline
@@ -276,3 +277,10 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-12 — Import goes through `MediaImporter`** (persistable permission + `MediaProbe`) so `HomeViewModel` is unit-testable with a fake.
 - **2026-10-12 — `di/AppModule` added** (not in the original layout) for Hilt bindings, `Clock` and the IO dispatcher.
 - **2026-10-12 — Projects start with a blank `name`;** naming/rename UI arrives in Phase 6. Until then the in-memory repository means projects don't survive process death (Editor shows "no longer available").
+- **2026-10-12 — CompositionPlayer switch moved from Phase 3 into Phase 2.** The trim preview would otherwise need a second, non-`CompositionBuilder` code path, which CLAUDE.md forbids.
+- **2026-10-12 — `CompositionPlayer` is `@ExperimentalApi` (stricter than `@UnstableApi`) in Media3 1.11.1.** It's the only way to preview a `Composition`; the opt-in is confined to `PreviewController`. Every `EditedMediaItem` must have `setDurationUs` (source duration, pre-clipping) for it.
+- **2026-10-12 — `CompositionBuilder` is split into a pure `compositionSpecOf(Project)` (JVM unit-tested) and a thin Media3 conversion,** because Media3 `MediaItem` needs `android.net.Uri`, which doesn't work in JVM tests.
+- **2026-10-12 — Sequences use `EditedMediaItemSequence.Builder(setOf(AUDIO, VIDEO))`;** the item-list constructors are deprecated in 1.11.
+- **2026-10-12 — ViewModels depend on `VideoExporter` / `MediaSaver` interfaces,** never on `Composition`; `ExportManager` builds the composition itself.
+- **2026-10-12 — Route args are read with `SavedStateHandle.requireProjectId()`** instead of `toRoute()`, which needs Android's Bundle and breaks JVM ViewModel tests. `RoutesTest` guards the argument name.
+- **2026-10-12 — Android 8–9 export saving uses the deprecated `getExternalStoragePublicDirectory` + `WRITE_EXTERNAL_STORAGE` (maxSdk 28),** suppressed at the narrowest scope; there is no non-deprecated alternative before API 29.
