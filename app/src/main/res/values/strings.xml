@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">PreCut</string>
+    <string name="action_back">Back</string>
+    <string name="home_new_project">New project</string>
+    <string name="home_empty_state">No projects yet.\nTap New project to start editing.</string>
+    <string name="editor_title">Editor</string>
+    <string name="editor_placeholder">Project %1$s</string>
+</resources>
