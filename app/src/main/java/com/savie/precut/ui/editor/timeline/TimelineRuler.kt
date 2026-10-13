@@ -12,28 +12,25 @@ import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.theme.RulerTick
 import com.savie.precut.ui.theme.TextSecondary
 
-/** Time ruler: a tick per interval (labelled on whole seconds) and a minor tick halfway between. */
+/** Time ruler (see [TimelineGeometry.rulerTicks]): labelled seconds, and frames ("10f") when zoomed in. */
 @Composable
 fun TimelineRuler(totalMs: Long, pxPerMs: Float, modifier: Modifier = Modifier) {
     val measurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
     Canvas(modifier) {
-        val interval = TimelineGeometry.tickIntervalMs(pxPerMs, minSpacingPx = 56.dp.toPx())
         val majorHeight = 6.dp.toPx()
         val minorHeight = 3.dp.toPx()
-        var ms = 0L
-        while (ms <= totalMs) {
-            val x = TimelineGeometry.msToPx(ms, pxPerMs)
-            drawLine(RulerTick, Offset(x, size.height - majorHeight), Offset(x, size.height), strokeWidth = 1.dp.toPx())
-            if (ms % 1000 == 0L) { // labels are whole seconds; sub-second ticks stay unlabelled
-                val label = measurer.measure(formatDurationMs(ms), labelStyle)
-                drawText(label, topLeft = Offset(x - label.size.width / 2f, 0f))
+        TimelineGeometry.rulerTicks(pxPerMs, minSpacingPx = 56.dp.toPx(), totalMs).forEach { tick ->
+            val x = TimelineGeometry.msToPx(tick.ms, pxPerMs)
+            val height = if (tick.label == null) minorHeight else majorHeight
+            drawLine(RulerTick, Offset(x, size.height - height), Offset(x, size.height), strokeWidth = 1.dp.toPx())
+            val text = when (val label = tick.label) {
+                is TimelineGeometry.TickLabel.Time -> formatDurationMs(label.ms)
+                is TimelineGeometry.TickLabel.Frame -> "${label.frame}f"
+                null -> return@forEach
             }
-            val minorX = x + TimelineGeometry.msToPx(interval / 2, pxPerMs)
-            if (ms + interval / 2 <= totalMs) {
-                drawLine(RulerTick, Offset(minorX, size.height - minorHeight), Offset(minorX, size.height), strokeWidth = 1.dp.toPx())
-            }
-            ms += interval
+            val measured = measurer.measure(text, labelStyle)
+            drawText(measured, topLeft = Offset(x - measured.size.width / 2f, 0f))
         }
     }
 }

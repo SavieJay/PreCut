@@ -17,6 +17,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.ui.components.ObserveAsEvents
+import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
 
 @Composable
@@ -34,9 +35,12 @@ fun HomeScreen(
         viewModel.onMediaPicked(uris.map(Uri::toString))
     }
 
+    val camera = rememberCameraLaunchers(viewModel::onCaptureResult)
+
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is HomeEvent.OpenEditor -> onOpenEditor(event.projectId)
+            is HomeEvent.LaunchCamera -> camera.launch(event.cameraUri, event.video)
             // A toast survives the navigation to the editor that follows this event.
             is HomeEvent.SomeFilesSkipped -> Toast.makeText(
                 context,
@@ -56,6 +60,7 @@ fun HomeScreen(
         onNewProject = {
             picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
         },
+        onCamera = viewModel::onCameraRequested,
         actions = object : ProjectActions {
             override fun onOpen(projectId: String) = onOpenEditor(projectId)
             override fun onRename(projectId: String, name: String) = viewModel.onRename(projectId, name)

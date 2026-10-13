@@ -2,12 +2,21 @@ package com.savie.precut.model
 
 import kotlinx.serialization.Serializable
 
+/** Project frame shape, in picker order. [ORIGINAL] follows the first clip (see `Project.frameRatio`). */
 @Serializable
 enum class AspectRatio(val widthRatio: Int, val heightRatio: Int) {
-    RATIO_16_9(16, 9),
+    ORIGINAL(0, 0),
     RATIO_9_16(9, 16),
+    RATIO_16_9(16, 9),
     RATIO_1_1(1, 1),
     RATIO_4_5(4, 5),
+    RATIO_4_3(4, 3),
+    RATIO_3_4(3, 4),
+    RATIO_2_1(2, 1),
+    RATIO_235_100(235, 100),
+    RATIO_185_100(185, 100),
+    /** Tall phones (9:19.5). */
+    RATIO_9_19_5(18, 39),
 }
 
 @Serializable

@@ -38,10 +38,12 @@ fun FilterTool(
     onFilterSelected: (FilterType) -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Shows "Apply to all" when set. */
+    onApplyAll: (() -> Unit)? = null,
 ) {
     val heightPx = with(LocalDensity.current) { TileSize.roundToPx() }
     val key = ThumbnailKey(clip.uri, clip.type, clip.trimStartMs, heightPx, clip.sourceRotationDegrees)
-    ToolPanel(stringResource(R.string.filter_title), onDone, modifier) {
+    ToolPanel(stringResource(R.string.filter_title), onDone, modifier, actions = { onApplyAll?.let { ApplyToAllButton(it) } }) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(FilterType.entries) { filter ->
                 val selected = filter == clip.filter

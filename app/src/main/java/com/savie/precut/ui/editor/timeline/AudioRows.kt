@@ -52,6 +52,7 @@ interface AudioRowActions {
 fun AudioRows(
     project: Project,
     selectedAudioId: String?,
+    multiIds: Set<String>,
     videoDurationMs: Long,
     pxPerMs: Float,
     rowHeight: Dp,
@@ -83,7 +84,7 @@ fun AudioRows(
             Box(Modifier.width(width).height(rowHeight)) {
                 lane.forEach { audio ->
                     key(audio.id) {
-                        AudioBar(audio, audio.id == selectedAudioId, videoDurationMs, pxPerMs, waveforms, snap, actions)
+                        AudioBar(audio, audio.id == selectedAudioId, audio.id in multiIds, videoDurationMs, pxPerMs, waveforms, snap, actions)
                     }
                 }
             }
@@ -95,6 +96,7 @@ fun AudioRows(
 private fun AudioBar(
     audio: AudioClip,
     selected: Boolean,
+    multiSelected: Boolean,
     videoDurationMs: Long,
     pxPerMs: Float,
     waveforms: WaveformLoader,
@@ -131,7 +133,8 @@ private fun AudioBar(
             AudioKind.VOICEOVER -> VoiceoverBar
             AudioKind.EXTRACTED -> ExtractedAudioBar
         },
-        selected = selected,
+        selected = selected || multiSelected,
+        showHandles = selected,
         pxPerMs = pxPerMs,
         rangeFor = ::range,
         onSelect = { actions.onSelectAudio(audio.id) },

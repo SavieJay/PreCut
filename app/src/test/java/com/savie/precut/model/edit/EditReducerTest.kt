@@ -1,5 +1,7 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.MAX_CLIP_SPEED
+import com.savie.precut.model.MIN_CLIP_SPEED
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.MAX_VOLUME
 import com.savie.precut.model.ClipType
@@ -164,8 +166,9 @@ class EditReducerTest {
     @Test
     fun setSpeed_clampsToRange_andIgnoresPhotos() {
         assertEquals(2f, EditReducer.reduce(base, EditAction.SetSpeed("a", 2f)).clips[0].speed)
-        assertEquals(MAX_SPEED, EditReducer.reduce(base, EditAction.SetSpeed("a", 10f)).clips[0].speed)
-        assertEquals(MIN_SPEED, EditReducer.reduce(base, EditAction.SetSpeed("a", 0.01f)).clips[0].speed)
+        assertEquals(50f, EditReducer.reduce(base, EditAction.SetSpeed("a", 50f)).clips[0].speed)
+        assertEquals(MAX_CLIP_SPEED, EditReducer.reduce(base, EditAction.SetSpeed("a", 500f)).clips[0].speed)
+        assertEquals(MIN_CLIP_SPEED, EditReducer.reduce(base, EditAction.SetSpeed("a", 0.01f)).clips[0].speed)
         val photo = project(clipFromMedia("p", "content://p", MediaInfo(ClipType.IMAGE, 0L, 10, 10, 0)))
         assertSame(photo, EditReducer.reduce(photo, EditAction.SetSpeed("p", 2f)))
     }

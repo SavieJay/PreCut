@@ -8,7 +8,6 @@ import com.savie.precut.model.AudioKind
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.VoiceEffect
 import com.savie.precut.model.edit.EditAction
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,18 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.os.SystemClock
-
-/** What [EditorAudio] needs from the ViewModel. */
-interface EditorHost {
-    val ready: EditorUiState.Ready?
-    val positionMs: Long
-    val scope: CoroutineScope
-    fun applyEdit(action: EditAction)
-    fun update(transform: (EditorUiState.Ready) -> EditorUiState.Ready)
-    fun send(event: EditorEvent)
-    fun newId(): String
-    fun targetClipId(): String?
-}
 
 /** An in-progress voiceover: where it will be placed and how long it has run. */
 data class RecordingState(val startMs: Long, val elapsedMs: Long)

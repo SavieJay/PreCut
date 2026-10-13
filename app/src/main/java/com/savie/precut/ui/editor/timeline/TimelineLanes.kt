@@ -12,6 +12,7 @@ import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.WaveformLoader
 import com.savie.precut.model.Project
 import com.savie.precut.model.audioLanes
+import com.savie.precut.model.textLanes
 import com.savie.precut.model.clipStartTimesMs
 import com.savie.precut.model.timelineAt
 import com.savie.precut.model.timelineEndMs
@@ -24,22 +25,26 @@ internal val ClipHeight = 56.dp
 private val TextLaneHeight = 22.dp
 private val AudioRowHeight = 24.dp
 
-/** Height the timeline needs for the project's audio rows (at least one, for "+ Add audio"). */
+/** Height the timeline needs for its text and audio rows (at least one of each). */
 fun timelineHeight(project: Project): Dp {
-    val rows = project.audioLanes().size.coerceAtLeast(1)
-    return VerticalPadding * 2 + RulerHeight + LaneGap + ClipHeight + LaneGap + TextLaneHeight + (LaneGap + AudioRowHeight) * rows
+    val textRows = project.textLanes().size.coerceAtLeast(1)
+    val audioRows = project.audioLanes().size.coerceAtLeast(1)
+    return VerticalPadding * 2 + RulerHeight + LaneGap + ClipHeight + LaneGap +
+        TextLaneHeight * textRows + LaneGap * (textRows - 1) + (LaneGap + AudioRowHeight) * audioRows
 }
 
-/** What's selected on the timeline; at most one of these is set. */
+/** What's selected on the timeline; at most one of the single selections is set. */
 data class TimelineSelection(
     val clipId: String? = null,
     val textId: String? = null,
     val audioId: String? = null,
     /** Items whose media is missing (drawn in red). */
     val missingIds: Set<String> = emptySet(),
+    /** Items picked in multi-select mode (highlighted, no handles). */
+    val multiIds: Set<String> = emptySet(),
 )
 
-/** Ruler, clip strip, text lane and audio rows, stacked; laid out in timeline px. */
+/** Ruler, clip strip, text rows and audio rows, stacked; laid out in timeline px. */
 @Composable
 fun TimelineLanes(
     project: Project,
@@ -60,6 +65,7 @@ fun TimelineLanes(
         val targets = snapTargets.filter { it.first != ownerId }.map { it.second } + playheadMs()
         TimelineGeometry.snapMove(start, end, move, targets, snapThresholdMs)
     }
+    val trimTargets = { snapTargets.map { it.second } + playheadMs() }
 
     TimelineRuler(
         totalMs = totalMs,
@@ -72,20 +78,25 @@ fun TimelineLanes(
     ClipStrip(
         project = project,
         selectedClipId = selection.clipId,
+        multiIds = selection.multiIds,
         missingIds = selection.missingIds,
         pxPerMs = pxPerMs,
         clipHeight = ClipHeight,
         visiblePx = visiblePx,
         loader = loader,
+        snapTargets = trimTargets,
+        snapThresholdMs = snapThresholdMs,
         onTrim = actions::onTrim,
     )
     Spacer(Modifier.height(LaneGap))
-    TextLane(
-        overlays = project.textOverlays,
+    TextRows(
+        lanes = project.textLanes(),
         selectedTextId = selection.textId,
+        multiIds = selection.multiIds,
         pxPerMs = pxPerMs,
         widthPx = contentWidthPx,
-        height = TextLaneHeight,
+        rowHeight = TextLaneHeight,
+        rowGap = LaneGap,
         snap = snap,
         onSelect = actions::onSelectText,
         onTiming = actions::onTextTiming,
@@ -93,6 +104,7 @@ fun TimelineLanes(
     AudioRows(
         project = project,
         selectedAudioId = selection.audioId,
+        multiIds = selection.multiIds,
         videoDurationMs = totalMs,
         pxPerMs = pxPerMs,
         rowHeight = AudioRowHeight,

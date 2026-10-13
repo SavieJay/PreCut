@@ -17,11 +17,15 @@ import androidx.media3.effect.RgbFilter
 import androidx.media3.effect.RgbMatrix
 import androidx.media3.effect.ScaleAndRotateTransformation
 import com.savie.precut.model.OutputSize
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 /** Turns pure effect specs into Media3 effects. The only place filter/rotation effects are built. */
 @OptIn(UnstableApi::class)
-class EffectsFactory @Inject constructor(private val textRenderer: TextOverlayRenderer) {
+class EffectsFactory @Inject constructor(
+    private val textRenderer: TextOverlayRenderer,
+    private val thumbnails: ThumbnailLoader,
+) {
 
     /** Colour effects, then user rotation, then fit into the output frame. */
     fun videoEffects(visual: VisualSpec, outputSize: OutputSize): List<Effect> = buildList {
@@ -51,10 +55,23 @@ class EffectsFactory @Inject constructor(private val textRenderer: TextOverlayRe
         if (sound.pitch != 1f) add(SonicAudioProcessor().apply { setPitch(sound.pitch) })
     }
 
-    /** One overlay effect for all texts, applied to the whole composition in timeline time. */
-    fun textOverlayEffect(texts: List<TextSpec>, outputSize: OutputSize): Effect? {
-        if (texts.isEmpty()) return null
-        return OverlayEffect(texts.map { TimedTextOverlay(it, textRenderer.render(it, outputSize)) })
+    /**
+     * One overlay effect for the cover and all texts, applied to the whole composition in
+     * timeline time. The cover is drawn first so texts stay on top.
+     */
+    fun overlayEffect(texts: List<TextSpec>, cover: CoverSpec?, outputSize: OutputSize): Effect? {
+        if (texts.isEmpty() && cover == null) return null
+        val coverOverlay = cover?.let { spec ->
+            val source = spec.source
+            // Runs once on the effects thread; the loader's own IO work happens on its dispatcher.
+            CoverOverlay(spec, outputSize) {
+                runBlocking {
+                    val key = ThumbnailKey(source.uri, source.type, source.sourceMs, outputSize.height, source.rotationDegrees, exact = true)
+                    thumbnails.load(key, cache = false)
+                }
+            }
+        }
+        return OverlayEffect(listOfNotNull(coverOverlay) + texts.map { TimedTextOverlay(it, textRenderer.render(it, outputSize)) })
     }
 
     private fun filterEffect(effect: FilterEffect): Effect = when (effect) {

@@ -8,16 +8,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -64,6 +68,14 @@ fun Timeline(
         val scrollState = rememberScrollState()
         ScrubSync(scrollState, positionMs, pxPerMs, actions::onScrubStart, actions::onSeek)
         val playhead by rememberUpdatedState(positionMs)
+        val coroutineScope = rememberCoroutineScope()
+        val autoScroller = remember(scrollState) {
+            with(density) { EdgeAutoScroller(scrollState, coroutineScope, edgePx = 48.dp.toPx(), maxSpeedPx = 14.dp.toPx()) }
+        }
+        autoScroller.onScrollTo = { px ->
+            actions.onScrubStart()
+            actions.onSeek(TimelineGeometry.pxToMs(px.toFloat(), pxPerMs))
+        }
 
         val reorderState = remember { mutableStateOf<ReorderState?>(null) }
         val reorder = reorderState.value
@@ -95,6 +107,10 @@ fun Timeline(
         Box(
             Modifier
                 .fillMaxSize()
+                .onGloballyPositioned {
+                    autoScroller.viewportLeftPx = it.positionInWindow().x
+                    autoScroller.viewportWidthPx = it.size.width.toFloat()
+                }
                 .pinchToZoom { factor -> zoom = TimelineGeometry.clampZoom(dpPerSecond * factor, totalMs, density.density) }
                 .tapAndLongPressDrag(gestures),
         ) {
@@ -104,7 +120,9 @@ fun Timeline(
                     .horizontalScroll(scrollState, enabled = reorder == null)
                     .padding(horizontal = halfWidth, vertical = VerticalPadding),
             ) {
-                TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, { playhead }, actions)
+                CompositionLocalProvider(LocalEdgeAutoScroller provides autoScroller) {
+                    TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, { playhead }, actions)
+                }
             }
             MuteOriginalButton(
                 muted = project.originalAudioMuted,

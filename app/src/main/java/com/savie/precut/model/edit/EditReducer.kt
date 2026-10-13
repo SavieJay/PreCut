@@ -4,7 +4,9 @@ import com.savie.precut.model.Clip
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.ClipType
+import com.savie.precut.model.MAX_CLIP_SPEED
 import com.savie.precut.model.MAX_VOLUME
+import com.savie.precut.model.MIN_CLIP_SPEED
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.clipAt
@@ -13,8 +15,6 @@ import com.savie.precut.model.totalDurationMs
 
 /** Shortest clip a trim or split may produce, in source time; also the shortest text overlay. */
 const val MIN_CLIP_DURATION_MS = 100L
-const val MIN_SPEED = 0.25f
-const val MAX_SPEED = 4f
 
 object EditReducer {
 
@@ -28,8 +28,9 @@ object EditReducer {
             is EditAction.DuplicateClip -> project.duplicate(action)
             is EditAction.TrimClip -> project.updateClip(action.clipId) { it.trimmed(action.trimStartMs, action.trimEndMs) }
             is EditAction.SetSpeed -> project.updateClip(action.clipId) {
-                if (it.type == ClipType.IMAGE) it else it.copy(speed = action.speed.coerceIn(MIN_SPEED, MAX_SPEED))
+                if (it.type == ClipType.IMAGE) it else it.copy(speed = action.speed.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED))
             }
+            is EditAction.SetKeepPitch -> project.updateClip(action.clipId) { it.copy(keepPitch = action.keepPitch) }
             is EditAction.SetFilter -> project.updateClip(action.clipId) { it.copy(filter = action.filter) }
             is EditAction.RotateClip -> project.updateClip(action.clipId) { it.copy(rotationDegrees = (it.rotationDegrees + 90) % 360) }
             is EditAction.SetAspectRatio ->
@@ -38,6 +39,15 @@ object EditReducer {
             is EditAction.UpdateText -> project.updateText(action.overlay)
             is EditAction.DeleteText -> project.textOverlays.filterNot { it.id == action.overlayId }
                 .let { if (it.size == project.textOverlays.size) project else project.copy(textOverlays = it) }
+            is EditAction.SplitText -> project.splitText(action)
+            is EditAction.DuplicateText -> project.duplicateText(action)
+            is EditAction.SetCover ->
+                if (project.cover == action.cover && project.coverInExport == action.inExport) {
+                    project
+                } else {
+                    project.copy(cover = action.cover, coverInExport = action.inExport && action.cover != null)
+                }
+            is EditAction.Batch -> action.actions.fold(project, ::reduce)
             is EditAction.SetClipVolume -> project.updateClip(action.clipId) { it.copy(volume = action.volume.coerceIn(0f, MAX_VOLUME)) }
             is EditAction.SetClipMuted -> project.updateClip(action.clipId) { it.copy(muted = action.muted) }
             is EditAction.ReplaceClip -> project.updateClip(action.clipId) { it.replacedWith(action.uri, action.info) }
@@ -84,6 +94,23 @@ object EditReducer {
         val index = textOverlays.indexOfFirst { it.id == overlay.id }
         if (index < 0 || textOverlays[index] == overlay) return this
         return copy(textOverlays = textOverlays.toMutableList().also { it[index] = overlay })
+    }
+
+    private fun Project.splitText(action: EditAction.SplitText): Project {
+        val index = textOverlays.indexOfFirst { it.id == action.overlayId }
+        if (index < 0) return this
+        val text = textOverlays[index]
+        if (action.atMs - text.startMs < MIN_CLIP_DURATION_MS || text.endMs - action.atMs < MIN_CLIP_DURATION_MS) return this
+        val parts = listOf(text.copy(endMs = action.atMs), text.copy(id = action.newId, startMs = action.atMs))
+        return copy(textOverlays = textOverlays.subList(0, index) + parts + textOverlays.subList(index + 1, textOverlays.size))
+    }
+
+    private fun Project.duplicateText(action: EditAction.DuplicateText): Project {
+        val index = textOverlays.indexOfFirst { it.id == action.overlayId }
+        if (index < 0) return this
+        val text = textOverlays[index]
+        val copy = text.copy(id = action.newId, startMs = text.endMs, endMs = text.endMs + (text.endMs - text.startMs))
+        return copy(textOverlays = textOverlays.toMutableList().also { it.add(index + 1, copy) })
     }
 
     private fun Project.addClips(action: EditAction.AddClips): Project {
@@ -141,6 +168,7 @@ object EditReducer {
             trimStartMs = 0L,
             trimEndMs = wantedLength.coerceIn(MIN_CLIP_DURATION_MS.coerceAtMost(fresh.sourceDurationMs), fresh.sourceDurationMs),
             speed = if (fresh.type == ClipType.VIDEO && type == ClipType.VIDEO) speed else 1f,
+            keepPitch = keepPitch,
             volume = volume,
             muted = muted,
             filter = filter,

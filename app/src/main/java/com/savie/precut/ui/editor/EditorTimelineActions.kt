@@ -16,9 +16,9 @@ fun rememberTimelineActions(viewModel: EditorViewModel): TimelineActions = remem
         override fun onMove(from: Int, to: Int) = viewModel.onMove(from, to)
         override fun onSelectText(textId: String) = viewModel.onTextSelected(textId)
         override fun onTextTiming(textId: String, startMs: Long, endMs: Long) =
-            viewModel.onTextTimingChanged(textId, startMs, endMs)
+            viewModel.text.onTiming(textId, startMs, endMs)
         override fun onToggleOriginalAudio() = viewModel.onToggleOriginalAudio()
-        override fun onSelectAudio(audioId: String) = viewModel.audio.onSelected(audioId)
+        override fun onSelectAudio(audioId: String) = viewModel.onAudioSelected(audioId)
         override fun onAudioTiming(audioId: String, timelineStartMs: Long, trimStartMs: Long, trimEndMs: Long) =
             viewModel.audio.onTiming(audioId, timelineStartMs, trimStartMs, trimEndMs)
         override fun onAddAudio() = viewModel.onAudioMenu(true)

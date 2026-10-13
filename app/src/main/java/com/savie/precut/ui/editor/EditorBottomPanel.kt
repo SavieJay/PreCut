@@ -9,10 +9,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
+import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.edit.MIN_CLIP_DURATION_MS
+import com.savie.precut.model.frameRatio
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.ui.editor.tools.AudioMenuBar
 import com.savie.precut.ui.editor.tools.ClipVolumeTool
+import com.savie.precut.ui.editor.tools.CoverTool
 import com.savie.precut.ui.editor.tools.FadeTool
 import com.savie.precut.ui.editor.tools.FilterTool
 import com.savie.precut.ui.editor.tools.RatioTool
@@ -36,6 +39,10 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
     val audio = state.project.audioClips.firstOrNull { it.id == state.selectedAudioId }
     val close = viewModel::onToolClosed
 
+    state.multiSelect?.let { picked ->
+        SelectionPanels(state, picked, viewModel)
+        return
+    }
     if (audio != null) {
         AudioPanels(audio, state.activeTool, positionMs, viewModel)
         return
@@ -44,17 +51,40 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         state.activeTool == EditorTool.TRIM && clip != null ->
             TrimTool(clip, onTrim = { start, end -> viewModel.onTrim(clip.id, start, end) }, onDone = close)
         state.activeTool == EditorTool.SPEED && clip != null ->
-            SpeedTool(clip.speed, onSpeedChanged = viewModel::onSpeedChanged, onDone = close)
-        state.activeTool == EditorTool.FILTER && clip != null ->
-            FilterTool(clip, viewModel.thumbnails, onFilterSelected = viewModel::onFilterSelected, onDone = close)
-        state.activeTool == EditorTool.VOLUME && clip != null ->
-            ClipVolumeTool(clip, viewModel::onClipVolumeChanged, viewModel::onClipMutedChanged, onDone = close)
+            SpeedTool(
+                clip.speed, onSpeedChanged = viewModel::onSpeedChanged, onDone = close,
+                sourceLengthMs = clip.trimEndMs - clip.trimStartMs,
+                keepPitch = clip.keepPitch, onKeepPitchChanged = viewModel::onKeepPitchChanged,
+            )
+        state.activeTool == EditorTool.FILTER && clip != null -> FilterTool(
+            clip, viewModel.thumbnails, onFilterSelected = viewModel::onFilterSelected, onDone = close,
+            onApplyAll = viewModel::onFilterApplyAll,
+        )
+        state.activeTool == EditorTool.VOLUME && clip != null -> ClipVolumeTool(
+            clip, viewModel::onClipVolumeChanged, viewModel::onClipMutedChanged, onDone = close,
+            onApplyAll = viewModel::onVolumeApplyAll,
+        )
         state.activeTool == EditorTool.FADE && clip != null ->
             FadeTool(clip.fadeInMs, clip.fadeOutMs, clip.timelineDurationMs(), viewModel::onClipFadesChanged, onDone = close)
         state.activeTool == EditorTool.TEXT && text != null ->
-            TextTool(text, onChange = viewModel::onTextChanged, onDelete = viewModel::onDeleteText, onDone = close)
-        state.activeTool == EditorTool.RATIO ->
-            RatioTool(state.project.aspectRatio, onSelected = viewModel::onAspectRatioSelected, onDone = close)
+            TextTool(
+                overlay = text,
+                canSplit = canSplitAt(positionMs, text.startMs, text.endMs),
+                recentColors = state.project.textOverlays.map { it.colorArgb }.distinct(),
+                actions = rememberTextToolActions(viewModel),
+                onDone = close,
+            )
+        state.activeTool == EditorTool.RATIO -> RatioTool(
+            state.project.aspectRatio, state.project.copy(aspectRatio = AspectRatio.ORIGINAL).frameRatio(),
+            onSelected = viewModel::onAspectRatioSelected, onDone = close,
+        )
+        state.activeTool == EditorTool.COVER -> CoverTool(
+            cover = state.project.cover,
+            inExport = state.project.coverInExport,
+            playheadMs = positionMs,
+            actions = rememberCoverActions(viewModel),
+            onDone = close,
+        )
         state.activeTool == EditorTool.VOICEOVER -> VoiceoverTool(
             recording = recording,
             playheadMs = positionMs,

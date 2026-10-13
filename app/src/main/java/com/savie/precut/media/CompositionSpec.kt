@@ -6,7 +6,9 @@ import com.savie.precut.model.FilterType
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
-import com.savie.precut.model.outputSizeFor
+import com.savie.precut.model.CoverSource
+import com.savie.precut.model.coverSource
+import com.savie.precut.model.outputSize
 import com.savie.precut.model.audioLanes
 import com.savie.precut.model.edit.clampFades
 import com.savie.precut.model.placementWithin
@@ -24,7 +26,15 @@ data class CompositionSpec(
     val texts: List<TextSpec> = emptyList(),
     /** Audio rows, each mixed in as its own audio-only sequence. */
     val audioLanes: List<List<AudioItemSpec>> = emptyList(),
+    /** Shown full-frame over the first frame of the video (CapCut "add cover to video"). */
+    val cover: CoverSpec? = null,
 )
+
+/** The cover picture, shown until [endUs]. */
+data class CoverSpec(val source: CoverSource, val endUs: Long)
+
+/** How long the cover shows: one frame at 30 fps. */
+const val COVER_DURATION_US = 1_000_000L / 30
 
 /** One audio clip after placement: silence for [gapBeforeMs], then its (already cut) range. */
 data class AudioItemSpec(
@@ -62,6 +72,7 @@ sealed interface ItemSpec {
         val clipStartMs: Long,
         val clipEndMs: Long,
         val speed: Float = 1f,
+        val keepPitch: Boolean = true,
         /** The clip's own sound; volume 0 when muted or when all original audio is muted. */
         val sound: SoundSpec = SoundSpec(),
         override val visual: VisualSpec = VisualSpec(),
@@ -87,6 +98,9 @@ data class TextSpec(
     val textSizePx: Float,
     val colorArgb: Int,
     val backgroundArgb: Int?,
+    /** Clockwise. */
+    val rotationDegrees: Float = 0f,
+    val opacity: Float = 1f,
 )
 
 /**
@@ -101,12 +115,14 @@ fun textSizePx(textSizeSp: Float, frameShortSidePx: Int): Float = textSizeSp * f
 fun toNdc(xNorm: Float, yNorm: Float): Pair<Float, Float> = (xNorm * 2f - 1f) to (1f - yNorm * 2f)
 
 fun compositionSpecOf(project: Project): CompositionSpec {
-    val outputSize = outputSizeFor(project.aspectRatio)
+    val outputSize = project.outputSize()
     return CompositionSpec(
         items = project.clips.map { itemSpecOf(it, project.originalAudioMuted) },
         outputSize = outputSize,
         texts = project.textOverlays.filter { it.text.isNotBlank() }.map { textSpecOf(it, outputSize) },
         audioLanes = audioLanesOf(project),
+        cover = project.coverSource()?.takeIf { project.coverInExport && project.cover != null }
+            ?.let { CoverSpec(it, COVER_DURATION_US) },
     )
 }
 
@@ -139,6 +155,7 @@ private fun itemSpecOf(clip: Clip, originalAudioMuted: Boolean): ItemSpec {
             clipStartMs = clip.trimStartMs,
             clipEndMs = clip.trimEndMs,
             speed = clip.speed,
+            keepPitch = clip.keepPitch,
             sound = clip.timelineDurationMs().let { length ->
                 val (fadeIn, fadeOut) = clampFades(clip.fadeInMs, clip.fadeOutMs, length)
                 SoundSpec(if (clip.muted || originalAudioMuted) 0f else clip.volume, fadeIn, fadeOut, length)
@@ -161,6 +178,8 @@ private fun textSpecOf(overlay: TextOverlay, outputSize: OutputSize): TextSpec {
         textSizePx = textSizePx(overlay.textSizeSp, minOf(outputSize.width, outputSize.height)),
         colorArgb = overlay.colorArgb,
         backgroundArgb = overlay.backgroundArgb,
+        rotationDegrees = overlay.rotationDegrees,
+        opacity = overlay.opacity.coerceIn(0f, 1f),
     )
 }
 

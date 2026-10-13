@@ -21,6 +21,8 @@ data class Clip(
     /** Exclusive. */
     val trimEndMs: Long,
     val speed: Float = 1f,
+    /** Keeps the audio's pitch when [speed] isn't 1 (CapCut's pitch toggle). */
+    val keepPitch: Boolean = true,
     /** Gain for the clip's own audio, 0..[MAX_VOLUME]. */
     val volume: Float = 1f,
     /** Silences the clip without losing [volume]. */

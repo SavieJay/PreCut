@@ -261,28 +261,28 @@ Out of scope (AI or online content): noise reduction, AI voice changers/vocal is
 
 ### Phase 7 — Core editing parity (gaps found by auditing Phases 1–4 against CapCut)
 Import and preview (Phase 1 gaps)
-- [ ] New media is inserted at the playhead (after the clip under it), not always at the end
-- [ ] Camera: record a video or take a photo from Home and from the editor's add button (system camera via `CaptureVideo` / `TakePicture` into app storage)
-- [ ] "Share to PreCut": accept `ACTION_SEND` / `ACTION_SEND_MULTIPLE` videos and photos from other apps and open them as a new project
-- [ ] Full-screen preview with its own scrub bar and play/pause (moved here from Phase 12)
+- [x] New media is inserted at the playhead (after the clip under it), not always at the end
+- [x] Camera: record a video or take a photo from Home and from the editor's add button (system camera via `CaptureVideo` / `TakePicture` into app storage)
+- [x] "Share to PreCut": accept `ACTION_SEND` / `ACTION_SEND_MULTIPLE` videos and photos from other apps and open them as a new project
+- [x] Full-screen preview with its own scrub bar and play/pause (moved here from Phase 12)
 
 Timeline (Phase 2–3 gaps)
-- [ ] Trim handles and bar moves snap to the playhead and to neighbouring edges (haptic tick); auto-scroll when a drag nears the screen edge (moved here from Phase 12)
-- [ ] Frame-level zoom: ruler shows frame ticks at max zoom; the selected clip shows its duration; clip badges for speed, filter and muted
-- [ ] Multi-select mode: select several clips, texts or audio clips → delete, duplicate, or set speed/filter/volume at once (one undo step)
-- [ ] "Apply to all" for filter and volume (and for every later per-clip look tool)
-- [ ] Project cover: pick a frame of the video or a gallery photo (CapCut "Cover"); shown on the drafts grid, optionally exported as the first frame
+- [x] Trim handles and bar moves snap to the playhead and to neighbouring edges (haptic tick); auto-scroll when a drag nears the screen edge (moved here from Phase 12)
+- [x] Frame-level zoom: ruler shows frame ticks at max zoom; the selected clip shows its duration; clip badges for speed, filter and muted
+- [x] Multi-select mode: select several clips, texts or audio clips → delete, duplicate, or set speed/filter/volume at once (one undo step)
+- [x] "Apply to all" for filter and volume (and for every later per-clip look tool)
+- [x] Project cover: pick a frame of the video or a gallery photo (CapCut "Cover"); shown on the drafts grid, optionally exported as the first frame
 
 Speed and ratio (Phase 4 gaps)
-- [ ] Normal speed range 0.1x–100x like CapCut, with a "Keep pitch" toggle and the new length shown; verify Media3 behaviour at the extremes
-- [ ] More ratios: Original (first clip), 4:3, 3:4, 2:1, 2.35:1, 1.85:1, 9:19.5
+- [x] Normal speed range 0.1x–100x like CapCut, with a "Keep pitch" toggle and the new length shown; verify Media3 behaviour at the extremes
+- [x] More ratios: Original (first clip), 4:3, 3:4, 2:1, 2.35:1, 1.85:1, 9:19.5
 
 Text (Phase 4 gaps)
-- [ ] Overlapping texts auto-stack into rows like audio
-- [ ] Pinch to scale and two-finger rotate text on the preview, snapping to the centre lines and to 0°/90°; `TextOverlay.rotationDegrees`
-- [ ] Full colour picker (hue, saturation, hex, recent colours) and text opacity
-- [ ] Split text at the playhead, duplicate text
-- [ ] Unit tests: insert-at-playhead index, batch actions, text lanes, transform clamping, speed range, ratio sizes
+- [x] Overlapping texts auto-stack into rows like audio
+- [x] Pinch to scale and two-finger rotate text on the preview, snapping to the centre lines and to 0°/90°; `TextOverlay.rotationDegrees`
+- [x] Full colour picker (hue, saturation, hex, recent colours) and text opacity
+- [x] Split text at the playhead, duplicate text
+- [x] Unit tests: insert-at-playhead index, batch actions, text lanes, transform clamping, speed range, ratio sizes
 
 **Acceptance:** media shared from the gallery opens as a project; a camera clip inserts at the playhead; three overlapping texts sit on three rows and can be scaled/rotated on the preview; a multi-selected batch delete undoes in one step.
 
@@ -520,3 +520,11 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-13 — Real (overlapping) transitions are feasible** with A/B video sequences: `VideoCompositorSettings.getOverlaySettings(inputId, presentationTimeUs)` is time-dependent, so alpha/position can animate across the overlap. Edge transitions (Phase 8) need only one sequence.
 - **2026-10-13 — Blend modes other than Normal are out of scope:** in Media3 1.11.1 `MultipleInputVideoGraph.Factory` has no compositor parameter and `DefaultVideoCompositor` only alpha-blends. Revisit if Media3 makes the compositor pluggable.
 - **2026-10-13 — Export frame rate can only be lowered** (`FrameDropEffect`); the settings sheet caps choices at the source frame rate. HDR export uses `Composition.HDR_MODE_KEEP_HDR` behind a device capability check.
+- **2026-10-13 — Phase 7: camera captures and shared media live in app storage** (`files/captures`, `files/imports`). Shares only carry temporary read grants, so they're copied in before import; captures use a FileProvider Uri for the camera app and a `file://` Uri in the project. `AppMediaJanitor` (was `VoiceoverJanitor`) sweeps all three app media folders.
+- **2026-10-13 — "Cover as first frame" is a full-frame overlay for the first 1/30 s** in the composition-level `OverlayEffect`, not an extra item, so audio/text timing stays identical between preview and export. Cover frames are extracted exactly (`OPTION_CLOSEST`) and kept out of the thumbnail cache.
+- **2026-10-13 — Multi-select and "Apply to all" use `EditAction.Batch`,** folded by the reducer, so a batch is one undo step. `BatchEdits` builds batches and skips items an edit doesn't apply to (speed on photos, filters on audio).
+- **2026-10-13 — Text transform on the preview:** the gesture layer covers the whole preview (two-finger pinch/rotate anywhere, one-finger move only when started on the text). Rotation is `StaticOverlaySettings.setRotationDegrees(-deg)`. **Verify on device** that rotated text lines up between preview and export on non-square frames.
+- **2026-10-13 — Clip speed range is 0.1x–100x** (audio clips stay 0.25x–4x) on a logarithmic slider, with a per-clip keep-pitch flag (`SpeedParameters.shouldMaintainPitch`). **Verify on device:** preview at very high speeds is decoder-bound and may stutter; export should be correct.
+- **2026-10-13 — Trim handles snap (playhead, edges, beats) and the start handle follows the finger** while the clip keeps its slot; neighbours only move when the trim is committed. Edge auto-scroll moves the playhead with the scroll, like a scrub.
+- **2026-10-13 — Full-screen preview reuses the editor's player;** the editor's own surface is removed while full screen is open, because one player renders to one surface.
+- **2026-10-13 — Share-to-PreCut navigation uses a non-replayed `ShareInbox.arrivals` signal,** separate from the pending Uris, so the Projects screen consuming the share can't race the navigation back to it.

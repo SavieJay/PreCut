@@ -23,11 +23,12 @@ import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.theme.PreCutTheme
 import com.savie.precut.ui.theme.TextSecondary
 
-/** Time readout and play/pause between the preview and the timeline; the timeline is the scrubber. */
+/** Time readout, play/pause and full screen between the preview and the timeline; the timeline is the scrubber. */
 @Composable
 fun PlaybackControls(
     state: PreviewState,
     onPlayPause: () -> Unit,
+    onFullScreen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -53,6 +54,9 @@ fun PlaybackControls(
                 Icon(painterResource(R.drawable.ic_play), stringResource(R.string.action_play))
             }
         }
+        IconButton(onClick = onFullScreen, modifier = Modifier.align(Alignment.CenterEnd)) {
+            Icon(painterResource(R.drawable.ic_fullscreen), stringResource(R.string.preview_full_screen))
+        }
     }
 }
 
@@ -60,6 +64,6 @@ fun PlaybackControls(
 @Composable
 private fun PlaybackControlsPreview() {
     PreCutTheme {
-        PlaybackControls(PreviewState(isPlaying = false, positionMs = 12_000L, durationMs = 65_000L), onPlayPause = {})
+        PlaybackControls(PreviewState(isPlaying = false, positionMs = 12_000L, durationMs = 65_000L), onPlayPause = {}, onFullScreen = {})
     }
 }

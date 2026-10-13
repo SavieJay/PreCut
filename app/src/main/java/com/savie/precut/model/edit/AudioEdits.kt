@@ -4,7 +4,9 @@ import com.savie.precut.model.AudioClip
 import com.savie.precut.model.AudioKind
 import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
+import com.savie.precut.model.MAX_AUDIO_SPEED
 import com.savie.precut.model.MAX_VOLUME
+import com.savie.precut.model.MIN_AUDIO_SPEED
 import com.savie.precut.model.Project
 import com.savie.precut.model.clipStartTimesMs
 import com.savie.precut.model.sourceAt
@@ -50,7 +52,7 @@ internal fun Project.applyAudioEdit(action: EditAction.AudioEdit): Project = whe
     }
     is EditAction.SetAudioVolume -> updateAudio(action.audioId) { it.copy(volume = action.volume.coerceIn(0f, MAX_VOLUME)) }
     is EditAction.SetAudioFades -> updateAudio(action.audioId) { it.copy(fadeInMs = action.fadeInMs, fadeOutMs = action.fadeOutMs) }
-    is EditAction.SetAudioSpeed -> updateAudio(action.audioId) { it.copy(speed = action.speed.coerceIn(MIN_SPEED, MAX_SPEED)) }
+    is EditAction.SetAudioSpeed -> updateAudio(action.audioId) { it.copy(speed = action.speed.coerceIn(MIN_AUDIO_SPEED, MAX_AUDIO_SPEED)) }
     is EditAction.SetVoiceEffect -> updateAudio(action.audioId) { it.copy(voiceEffect = action.effect) }
     is EditAction.ToggleBeat -> updateAudio(action.audioId) { it.toggledBeat(action.atTimelineMs) }
     is EditAction.ClearBeats -> updateAudio(action.audioId) { it.copy(beatsMs = emptyList()) }
@@ -136,7 +138,7 @@ internal fun AudioClip.normalized(videoDurationMs: Long): AudioClip {
         timelineStartMs = timelineStartMs.coerceIn(0L, latestStart),
         trimStartMs = trimStart,
         trimEndMs = trimEnd,
-        speed = speed.coerceIn(MIN_SPEED, MAX_SPEED),
+        speed = speed.coerceIn(MIN_AUDIO_SPEED, MAX_AUDIO_SPEED),
         beatsMs = beatsMs.filter { it in trimStart..trimEnd },
     )
     val (fadeIn, fadeOut) = clampFades(fadeInMs, fadeOutMs, trimmed.timelineDurationMs())

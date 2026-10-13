@@ -16,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -29,11 +30,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.data.ProjectSummary
+import com.savie.precut.ui.components.CaptureMenu
 
 /** What the drafts grid can do with a project. */
 interface ProjectActions {
@@ -51,13 +54,27 @@ fun HomeContent(
     projects: List<ProjectSummary>?,
     snackbarHostState: SnackbarHostState,
     onNewProject: () -> Unit,
+    onCamera: (video: Boolean) -> Unit,
     actions: ProjectActions,
 ) {
     var renaming by remember { mutableStateOf<ProjectSummary?>(null) }
+    var cameraMenu by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<ProjectSummary?>(null) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                actions = {
+                    Box {
+                        IconButton(onClick = { cameraMenu = true }, enabled = !isImporting) {
+                            Icon(painterResource(R.drawable.ic_camera), contentDescription = stringResource(R.string.home_camera))
+                        }
+                        CaptureMenu(expanded = cameraMenu, onDismiss = { cameraMenu = false }, onCamera = onCamera)
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (!isImporting) {

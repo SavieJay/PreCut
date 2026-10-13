@@ -1,5 +1,6 @@
 package com.savie.precut.data
 
+import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.project
 import com.savie.precut.model.videoClip
 import org.junit.Assert.assertEquals
@@ -20,6 +21,26 @@ class ProjectSerializerTest {
         val project = ProjectSerializer.decode(json)
         assertEquals("Old", project?.name)
         assertEquals(emptyList<Any>(), project?.clips)
+    }
+
+    @Test
+    fun phase6Draft_loadsWithPhase7Defaults() {
+        val json = """{"id":"p","name":"Old","aspectRatio":"RATIO_16_9","createdAt":1,"updatedAt":2,""" +
+            """"clips":[{"id":"a","uri":"content://a","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000}],""" +
+            """"textOverlays":[{"id":"t","text":"Hi","startMs":0,"endMs":1000}]}"""
+        val project = ProjectSerializer.decode(json)
+        assertEquals(true, project?.clips?.single()?.keepPitch)
+        assertEquals(0f, project?.textOverlays?.single()?.rotationDegrees)
+        assertEquals(1f, project?.textOverlays?.single()?.opacity)
+        assertNull(project?.cover)
+    }
+
+    @Test
+    fun cover_roundTrips() {
+        val frame = project(videoClip("a")).copy(cover = ProjectCover.Frame(1_200L), coverInExport = true)
+        assertEquals(frame, ProjectSerializer.decode(ProjectSerializer.encode(frame)))
+        val photo = frame.copy(cover = ProjectCover.Image("content://p", 90))
+        assertEquals(photo, ProjectSerializer.decode(ProjectSerializer.encode(photo)))
     }
 
     @Test

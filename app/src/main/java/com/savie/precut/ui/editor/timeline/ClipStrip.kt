@@ -13,11 +13,14 @@ import com.savie.precut.model.clipStartTimesMs
 fun ClipStrip(
     project: Project,
     selectedClipId: String?,
+    multiIds: Set<String>,
     missingIds: Set<String>,
     pxPerMs: Float,
     clipHeight: Dp,
     visiblePx: ClosedFloatingPointRange<Float>,
     loader: ThumbnailLoader,
+    snapTargets: () -> List<Long>,
+    snapThresholdMs: Long,
     onTrim: (clipId: String, trimStartMs: Long, trimEndMs: Long) -> Unit,
 ) {
     Row {
@@ -28,13 +31,19 @@ fun ClipStrip(
             key(clip.id) {
                 ClipView(
                     clip = clip,
+                    clipStartMs = starts[index],
                     pxPerMs = pxPerMs,
                     height = clipHeight,
-                    selected = clip.id == selectedClipId,
-                    soundOff = clip.muted || clip.volume == 0f || project.originalAudioMuted,
-                    missing = clip.id in missingIds,
+                    look = ClipLook(
+                        selected = clip.id == selectedClipId,
+                        multiSelected = clip.id in multiIds,
+                        soundOff = clip.muted || clip.volume == 0f || project.originalAudioMuted,
+                        missing = clip.id in missingIds,
+                    ),
                     visiblePx = (visiblePx.start - clipStartPx)..(visiblePx.endInclusive - clipStartPx),
                     loader = loader,
+                    snapTargets = snapTargets,
+                    snapThresholdMs = snapThresholdMs,
                     onTrim = { start, end -> onTrim(clip.id, start, end) },
                 )
             }

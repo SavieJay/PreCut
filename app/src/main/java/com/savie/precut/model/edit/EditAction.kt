@@ -5,6 +5,7 @@ import com.savie.precut.model.AudioClip
 import com.savie.precut.model.Clip
 import com.savie.precut.model.FilterType
 import com.savie.precut.model.MediaInfo
+import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.VoiceEffect
 
@@ -30,8 +31,11 @@ sealed interface EditAction {
     /** Sets a clip's trim range in source time; values are clamped to a valid range. */
     data class TrimClip(val clipId: String, val trimStartMs: Long, val trimEndMs: Long) : EditAction
 
-    /** Playback speed, clamped to [MIN_SPEED]..[MAX_SPEED]. Ignored for photos. */
+    /** Playback speed, clamped to [MIN_CLIP_SPEED]..[MAX_CLIP_SPEED]. Ignored for photos. */
     data class SetSpeed(val clipId: String, val speed: Float) : EditAction
+
+    /** Whether a sped-up/slowed clip keeps its audio pitch. */
+    data class SetKeepPitch(val clipId: String, val keepPitch: Boolean) : EditAction
 
     data class SetFilter(val clipId: String, val filter: FilterType) : EditAction
 
@@ -47,6 +51,18 @@ sealed interface EditAction {
     data class UpdateText(val overlay: TextOverlay) : EditAction
 
     data class DeleteText(val overlayId: String) : EditAction
+
+    /** Splits the text at timeline time [atMs]; the second part gets [newId]. */
+    data class SplitText(val overlayId: String, val atMs: Long, val newId: String) : EditAction
+
+    /** A copy starting where the original ends (same length; clamped to the timeline). */
+    data class DuplicateText(val overlayId: String, val newId: String) : EditAction
+
+    /** Sets (or with null clears) the project cover, and whether it's the export's first frame. */
+    data class SetCover(val cover: ProjectCover?, val inExport: Boolean) : EditAction
+
+    /** Several edits applied in order as one undo step (multi-select, "Apply to all"). */
+    data class Batch(val actions: List<EditAction>) : EditAction
 
     /** Clip audio gain, clamped to 0..MAX_VOLUME. */
     data class SetClipVolume(val clipId: String, val volume: Float) : EditAction

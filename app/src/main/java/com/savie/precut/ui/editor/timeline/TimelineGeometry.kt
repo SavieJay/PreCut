@@ -14,7 +14,7 @@ object TimelineGeometry {
     /** Zoom bounds and default, as screen dp per second of timeline. */
     const val MIN_DP_PER_SECOND = 6f
     const val DEFAULT_DP_PER_SECOND = 56f
-    const val MAX_DP_PER_SECOND = 480f
+    const val MAX_DP_PER_SECOND = 1_500f
 
     /** Ruler tick spacings to choose from, in ms. */
     private val TICK_INTERVALS_MS = longArrayOf(
@@ -133,6 +133,105 @@ object TimelineGeometry {
             }
         }
         return best
+    }
+
+    /** The nearest of [targetsMs] within [thresholdMs] of [edgeMs], or null. */
+    fun snapEdge(edgeMs: Long, targetsMs: List<Long>, thresholdMs: Long): Long? =
+        targetsMs.filter { abs(it - edgeMs) <= thresholdMs }.minByOrNull { abs(it - edgeMs) }
+
+    /** A clip's trim while its handles are dragged, and whether an edge is snapped. */
+    data class TrimPreview(val trimStartMs: Long, val trimEndMs: Long, val snapped: Boolean)
+
+    /**
+     * Trim of [clip] (starting at timeline [clipStartMs]) after dragging its start handle by
+     * [startDeltaMs] and end handle by [endDeltaMs] (timeline ms). The dragged edge snaps to the
+     * nearest of [targetsMs] within [thresholdMs]; the result keeps at least
+     * [MIN_CLIP_DURATION_MS] of source and stays inside the source.
+     */
+    fun trimDrag(
+        clip: Clip,
+        clipStartMs: Long,
+        startDeltaMs: Long,
+        endDeltaMs: Long,
+        targetsMs: List<Long>,
+        thresholdMs: Long,
+    ): TrimPreview {
+        val minLength = MIN_CLIP_DURATION_MS.coerceAtMost(clip.sourceDurationMs)
+        var snapped = false
+        fun snap(edgeMs: Long): Long = snapEdge(edgeMs, targetsMs, thresholdMs)?.also { snapped = true } ?: edgeMs
+        var trimStart = clip.trimStartMs
+        if (startDeltaMs != 0L) {
+            val left = snap(clipStartMs + startDeltaMs)
+            trimStart = (clip.trimStartMs + ((left - clipStartMs) * clip.speed).roundToLong())
+                .coerceIn(0L, (clip.trimEndMs - minLength).coerceAtLeast(0L))
+        }
+        var trimEnd = clip.trimEndMs
+        if (endDeltaMs != 0L) {
+            val originalRight = clipStartMs + clip.timelineDurationMs()
+            val right = snap(originalRight + endDeltaMs)
+            trimEnd = (clip.trimEndMs + ((right - originalRight) * clip.speed).roundToLong())
+                .coerceIn(trimStart + minLength, clip.sourceDurationMs.coerceAtLeast(trimStart + minLength))
+        }
+        return TrimPreview(trimStart, trimEnd, snapped)
+    }
+
+    /**
+     * Scroll speed (px per frame, negative = left) while a drag is at [x] in a viewport
+     * [widthPx] wide: zero in the middle, up to [maxSpeedPx] within [edgePx] of either edge.
+     */
+    fun autoScrollSpeed(x: Float, widthPx: Float, edgePx: Float, maxSpeedPx: Float): Float = when {
+        edgePx <= 0f -> 0f
+        x < edgePx -> -maxSpeedPx * ((edgePx - x) / edgePx).coerceAtMost(1f)
+        x > widthPx - edgePx -> maxSpeedPx * ((x - (widthPx - edgePx)) / edgePx).coerceAtMost(1f)
+        else -> 0f
+    }
+
+    /** A ruler mark: [label] is null for minor ticks. */
+    data class Tick(val ms: Long, val label: TickLabel?)
+
+    sealed interface TickLabel {
+        /** A whole second, shown as a time. */
+        data class Time(val ms: Long) : TickLabel
+
+        /** Frame [frame] (1..29) within its second, shown as "Nf". */
+        data class Frame(val frame: Int) : TickLabel
+    }
+
+    /** CapCut's ruler counts frames at 30 fps when zoomed in. */
+    const val RULER_FPS = 30
+
+    private val FRAME_STEPS = intArrayOf(1, 2, 3, 5, 10, 15)
+
+    /**
+     * Ruler marks up to [totalMs], at least [minSpacingPx] apart. Zoomed out: a labelled tick per
+     * interval on whole seconds plus a minor tick halfway. Zoomed in far enough that half a second
+     * fits, ticks fall on frames and every tick is labelled (seconds as times, others as "Nf").
+     */
+    fun rulerTicks(pxPerMs: Float, minSpacingPx: Float, totalMs: Long): List<Tick> {
+        val frameMs = 1000f / RULER_FPS
+        val frameStep = FRAME_STEPS.firstOrNull { it * frameMs * pxPerMs >= minSpacingPx }
+        if (frameStep != null) {
+            return buildList {
+                var second = 0L
+                while (second * 1000 <= totalMs) {
+                    for (frame in 0 until RULER_FPS step frameStep) {
+                        val ms = second * 1000 + (frame * frameMs).roundToLong()
+                        if (ms > totalMs) break
+                        add(Tick(ms, if (frame == 0) TickLabel.Time(ms) else TickLabel.Frame(frame)))
+                    }
+                    second++
+                }
+            }
+        }
+        val interval = tickIntervalMs(pxPerMs, minSpacingPx).coerceAtLeast(1_000L)
+        return buildList {
+            var ms = 0L
+            while (ms <= totalMs) {
+                add(Tick(ms, TickLabel.Time(ms)))
+                if (ms + interval / 2 <= totalMs) add(Tick(ms + interval / 2, null))
+                ms += interval
+            }
+        }
     }
 
     /** Target slot when a reorder tile is dropped with its centre at [centerX] in a row of [count] tiles. */

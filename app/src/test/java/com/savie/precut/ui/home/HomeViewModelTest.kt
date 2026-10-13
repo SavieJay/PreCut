@@ -2,11 +2,15 @@ package com.savie.precut.ui.home
 
 import app.cash.turbine.test
 import com.savie.precut.data.InMemoryProjectRepository
+import com.savie.precut.data.ShareInbox
 import com.savie.precut.data.UnusedMediaCleaner
+import com.savie.precut.media.Capture
+import com.savie.precut.media.CaptureStore
 import com.savie.precut.media.ImportResult
 import com.savie.precut.media.ImportedAudio
 import com.savie.precut.media.ImportedMedia
 import com.savie.precut.media.MediaImporter
+import com.savie.precut.media.SharedMediaStore
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
 import com.savie.precut.model.MediaInfo
@@ -39,7 +43,14 @@ class HomeViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(result: ImportResult) = HomeViewModel(FakeImporter(result), repository, clock, NoOpCleaner)
+    private val shareInbox = ShareInbox()
+    private val captures = FakeCaptures()
+    private var importer = FakeImporter(ImportResult(emptyList(), 0))
+
+    private fun viewModel(result: ImportResult): HomeViewModel {
+        importer = FakeImporter(result)
+        return HomeViewModel(importer, repository, clock, NoOpCleaner, captures, shareInbox, FakeSharedMedia)
+    }
 
     @Test
     fun picking_media_createsProjectInPickOrder_andOpensEditor() = runTest(dispatcher) {
@@ -126,8 +137,67 @@ class HomeViewModelTest {
         assertEquals(1, vm.uiState.value.projects?.size)
     }
 
+    @Test
+    fun sharedMedia_isCopiedIntoAppStorage_thenOpensAsNewProject() = runTest(dispatcher) {
+        val video = ImportedMedia("file:///imports/a", MediaInfo(ClipType.VIDEO, 5_000L, 1920, 1080, 0))
+        shareInbox.offer(listOf("content://share/a", "content://share/bad"))
+        val vm = viewModel(ImportResult(listOf(video), 0))
+        vm.events.test {
+            dispatcher.scheduler.advanceUntilIdle()
+            // The unreadable share counts as skipped.
+            assertEquals(HomeEvent.SomeFilesSkipped(1), awaitItem())
+            val open = awaitItem() as HomeEvent.OpenEditor
+            assertEquals(listOf("file:///imports/a"), repository.load(open.projectId)?.clips?.map { it.uri })
+        }
+        assertEquals(listOf("file:///imports/a"), importer.received)
+        assertTrue(shareInbox.pending.value.isEmpty())
+    }
+
+    @Test
+    fun camera_success_createsProject_cancelDiscardsTheFile() = runTest(dispatcher) {
+        val photo = ImportedMedia("file:///captures/1.jpg", MediaInfo(ClipType.IMAGE, 0L, 10, 10, 0))
+        val vm = viewModel(ImportResult(listOf(photo), 0))
+        vm.events.test {
+            vm.onCameraRequested(video = false)
+            dispatcher.scheduler.advanceUntilIdle()
+            assertEquals(HomeEvent.LaunchCamera("content://captures/1.jpg", video = false), awaitItem())
+            vm.onCaptureResult(success = true)
+            dispatcher.scheduler.advanceUntilIdle()
+            assertTrue(awaitItem() is HomeEvent.OpenEditor)
+
+            vm.onCameraRequested(video = true)
+            dispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            vm.onCaptureResult(success = false)
+            expectNoEvents()
+        }
+        assertEquals(listOf("file:///captures/2.mp4"), captures.discarded)
+    }
+
     private class FakeImporter(private val result: ImportResult) : MediaImporter {
-        override suspend fun import(uris: List<String>) = result
+        var received: List<String> = emptyList()
+        override suspend fun import(uris: List<String>): ImportResult {
+            received = uris
+            return result
+        }
         override suspend fun importAudio(uri: String): ImportedAudio? = null
+    }
+
+    private class FakeCaptures : CaptureStore {
+        private var count = 0
+        val discarded = mutableListOf<String>()
+        override fun newCapture(video: Boolean): Capture {
+            val name = "${++count}.${if (video) "mp4" else "jpg"}"
+            return Capture("file:///captures/$name", "content://captures/$name")
+        }
+        override fun discard(capture: Capture) {
+            discarded += capture.fileUri
+        }
+    }
+
+    /** "Copies" readable shares to file Uris; anything named "bad" fails. */
+    private object FakeSharedMedia : SharedMediaStore {
+        override suspend fun copyIn(uris: List<String>) =
+            uris.filterNot { it.endsWith("bad") }.map { "file:///imports/" + it.substringAfterLast('/') }
     }
 }

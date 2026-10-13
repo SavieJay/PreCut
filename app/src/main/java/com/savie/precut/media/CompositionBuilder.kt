@@ -24,7 +24,7 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
             .addItems(spec.items.map { toEditedMediaItem(it, spec.outputSize) })
             .build()
         val builder = Composition.Builder(listOf(sequence) + spec.audioLanes.map(::audioSequence))
-        effectsFactory.textOverlayEffect(spec.texts, spec.outputSize)?.let { overlay ->
+        effectsFactory.overlayEffect(spec.texts, spec.cover, spec.outputSize)?.let { overlay ->
             builder.setEffects(Effects(/* audioProcessors= */ emptyList(), /* videoEffects= */ listOf(overlay)))
         }
         return builder.build()
@@ -73,7 +73,7 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
                     // CompositionPlayer requires the pre-clipping, pre-speed source duration.
                     .setDurationUs(item.sourceDurationMs * 1_000)
                     .setEffects(effects)
-                    .apply { if (item.speed != 1f) applySpeed(item.speed) }
+                    .apply { if (item.speed != 1f) applySpeed(item.speed, keepPitch = item.keepPitch) }
                     .build()
             }
             is ItemSpec.Image -> {
@@ -91,12 +91,12 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
     }
 
     /**
-     * Constant speed for preview and export alike, keeping the audio's pitch. Sped-up clips get a
+     * Constant speed for preview and export alike, optionally keeping the audio's pitch. Sped-up clips get a
      * frame-rate cap so 4x footage doesn't produce a 120+ fps output.
      */
     @OptIn(ExperimentalApi::class) // SpeedParameters (pitch control) is experimental in Media3 1.11.
-    private fun EditedMediaItem.Builder.applySpeed(speed: Float, capFrameRate: Boolean = true) {
-        setSpeed(SpeedParameters(ConstantSpeedProvider(speed), /* shouldMaintainPitch= */ true))
+    private fun EditedMediaItem.Builder.applySpeed(speed: Float, capFrameRate: Boolean = true, keepPitch: Boolean = true) {
+        setSpeed(SpeedParameters(ConstantSpeedProvider(speed), /* shouldMaintainPitch= */ keepPitch))
         if (capFrameRate && speed > 1f) setFrameRate(MAX_FRAME_RATE)
     }
 

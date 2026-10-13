@@ -73,7 +73,7 @@ class AudioEditsTest {
     @Test
     fun volumeSpeedAndVoice_areClamped() {
         assertEquals(MAX_VOLUME, song(reduce(EditAction.SetAudioVolume("m", 9f))).volume)
-        assertEquals(MAX_SPEED, song(reduce(EditAction.SetAudioSpeed("m", 99f))).speed)
+        assertEquals(com.savie.precut.model.MAX_AUDIO_SPEED, song(reduce(EditAction.SetAudioSpeed("m", 99f))).speed)
         assertEquals(VoiceEffect.DEEP, song(reduce(EditAction.SetVoiceEffect("m", VoiceEffect.DEEP))).voiceEffect)
     }
 

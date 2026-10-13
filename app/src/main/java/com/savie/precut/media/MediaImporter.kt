@@ -56,6 +56,8 @@ class AndroidMediaImporter @Inject constructor(
     }
 
     private fun takePersistableReadPermission(uri: String) {
+        // App-owned files (camera captures, copies of shared media) need no grant.
+        if (Uri.parse(uri).scheme != "content") return
         try {
             context.contentResolver.takePersistableUriPermission(
                 Uri.parse(uri),

@@ -8,6 +8,8 @@ import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
 import com.savie.precut.model.OutputSize
+import com.savie.precut.model.CoverSource
+import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.project
@@ -153,5 +155,36 @@ class CompositionSpecTest {
     fun audioPastTheVideoEnd_isOmitted_andEmptyLanesDropped() {
         val late = AudioClip("m", "content://m", 30_000L, timelineStartMs = 12_000L, trimEndMs = 30_000L)
         assertTrue(compositionSpecOf(project(videoClip("a")).copy(audioClips = listOf(late))).audioLanes.isEmpty())
+    }
+
+    // Phase 7
+
+    @Test
+    fun keepPitch_isPassedThrough() {
+        val clip = videoClip("a", speed = 2f).copy(keepPitch = false)
+        assertEquals(false, (compositionSpecOf(project(clip)).items.single() as ItemSpec.Video).keepPitch)
+    }
+
+    @Test
+    fun textRotationAndOpacity_areMapped() {
+        val text = TextOverlay("t", "Hi", 0L, 1_000L, rotationDegrees = 45f, opacity = 0.5f)
+        val spec = compositionSpecOf(project(videoClip("a")).copy(textOverlays = listOf(text))).texts.single()
+        assertEquals(45f, spec.rotationDegrees)
+        assertEquals(0.5f, spec.opacity)
+    }
+
+    @Test
+    fun cover_isInSpecOnlyWhenChosenAndAddedToExport() {
+        val base = project(videoClip("a"), videoClip("b"))
+        assertEquals(null, compositionSpecOf(base).cover)
+        assertEquals(null, compositionSpecOf(base.copy(cover = ProjectCover.Frame(12_000L))).cover)
+        val spec = compositionSpecOf(base.copy(cover = ProjectCover.Frame(12_000L), coverInExport = true)).cover
+        assertEquals(CoverSpec(CoverSource("content://media/b", ClipType.VIDEO, 2_000L, 0), COVER_DURATION_US), spec)
+    }
+
+    @Test
+    fun originalRatio_followsFirstClip() {
+        val clip = videoClip("a").copy(sourceWidth = 1920, sourceHeight = 1080)
+        assertEquals(OutputSize(1920, 1080), compositionSpecOf(project(clip).copy(aspectRatio = AspectRatio.ORIGINAL)).outputSize)
     }
 }

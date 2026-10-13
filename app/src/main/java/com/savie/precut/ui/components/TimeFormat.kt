@@ -21,3 +21,10 @@ fun formatPreciseMs(timeMs: Long): String {
     val tenths = (ms % 1000) / 100
     return formatDurationMs(ms) + "." + tenths
 }
+
+/** A speed factor without trailing zeros: 2 → "2", 0.25 → "0.25", 1.5 → "1.5". */
+fun formatSpeed(speed: Float): String =
+    if (speed % 1f == 0f) speed.toInt().toString() else String.format(Locale.ROOT, "%.2f", speed).trimEnd('0')
+
+/** Seconds with one decimal: 3200 → "3.2s". */
+fun formatSeconds(durationMs: Long): String = String.format(Locale.ROOT, "%.1fs", durationMs.coerceAtLeast(0L) / 1000f)

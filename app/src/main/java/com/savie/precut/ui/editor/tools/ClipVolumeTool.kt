@@ -22,8 +22,10 @@ fun ClipVolumeTool(
     onMutedChanged: (Boolean) -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Shows "Apply to all" when set. */
+    onApplyAll: (() -> Unit)? = null,
 ) {
-    ToolPanel(stringResource(R.string.volume_title), onDone, modifier) {
+    ToolPanel(stringResource(R.string.volume_title), onDone, modifier, actions = { onApplyAll?.let { ApplyToAllButton(it) } }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             VolumeSlider(clip.volume, enabled = !clip.muted, onVolumeChanged = onVolumeChanged, modifier = Modifier.weight(1f))
             Spacer(Modifier.width(12.dp))

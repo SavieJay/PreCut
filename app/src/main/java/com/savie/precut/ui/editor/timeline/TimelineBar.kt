@@ -26,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +56,8 @@ fun TimelineBar(
     color: Color,
     selected: Boolean,
     pxPerMs: Float,
+    /** Start/end handles; off for multi-select highlights. */
+    showHandles: Boolean = selected,
     /** Timeline start/end to draw for the given pending drag. */
     rangeFor: (BarDrag) -> Pair<Long, Long>,
     onSelect: () -> Unit,
@@ -75,6 +79,8 @@ fun TimelineBar(
     var endDragPx by remember { mutableFloatStateOf(0f) }
     var moving by remember { mutableStateOf(false) }
     var snapped by remember { mutableStateOf(false) }
+    val autoScroller = LocalEdgeAutoScroller.current
+    val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
 
     fun rawMoveMs() = (moveDragPx / currentPxPerMs).roundToLong()
 
@@ -85,6 +91,7 @@ fun TimelineBar(
     )
 
     fun commit() {
+        autoScroller?.stop()
         val drag = dragNow()
         moveDragPx = 0f
         startDragPx = 0f
@@ -103,6 +110,7 @@ fun TimelineBar(
             .clip(BarShape)
             .background(color)
             .then(if (selected || moving) Modifier.border(1.5.dp, ClipSelection, BarShape) else Modifier)
+            .onGloballyPositioned { coordinates[0] = it }
             .pointerInput(id) { detectTapGestures(onTap = { currentOnSelect() }) }
             .pointerInput(id) {
                 detectHorizontalDragGestures(
@@ -116,6 +124,9 @@ fun TimelineBar(
                 ) { change, amount ->
                     change.consume() // the timeline must not scroll while a bar moves
                     moveDragPx += amount
+                    coordinates[0]?.takeIf { it.isAttached }?.let { coords ->
+                        autoScroller?.onDrag(coords.localToWindow(change.position).x) { scrolled -> moveDragPx += scrolled }
+                    }
                     val raw = rawMoveMs()
                     val nowSnapped = currentSnapMove(raw) != raw
                     if (nowSnapped && !snapped) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -131,9 +142,9 @@ fun TimelineBar(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(horizontal = if (selected) 16.dp else 6.dp),
+                .padding(horizontal = if (showHandles) 16.dp else 6.dp),
         )
-        if (selected) {
+        if (showHandles) {
             TrimHandle(onDrag = { startDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterStart))
             TrimHandle(onDrag = { endDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterEnd))
         }

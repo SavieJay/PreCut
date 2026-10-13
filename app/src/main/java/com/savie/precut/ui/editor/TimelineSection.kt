@@ -13,6 +13,10 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.WaveformLoader
+import com.savie.precut.ui.components.CaptureMenu
 import com.savie.precut.ui.editor.timeline.Timeline
 import com.savie.precut.ui.editor.timeline.TimelineActions
 import com.savie.precut.ui.editor.timeline.timelineHeight
@@ -27,7 +32,7 @@ import com.savie.precut.ui.editor.timeline.TimelineSelection
 import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.TextPrimary
 
-/** The timeline plus the fixed "add media" button at its right edge. */
+/** The timeline plus the fixed "add media" button (gallery or camera) at its right edge. */
 @Composable
 fun TimelineSection(
     state: EditorUiState.Ready,
@@ -36,32 +41,41 @@ fun TimelineSection(
     waveforms: WaveformLoader,
     actions: TimelineActions,
     onAddMedia: () -> Unit,
+    onCamera: (video: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var addMenu by remember { mutableStateOf(false) }
     Box(modifier.fillMaxWidth().height(timelineHeight(state.project))) {
         Timeline(
             project = state.project,
-            selection = TimelineSelection(state.selectedClipId, state.selectedTextId, state.selectedAudioId, state.missingIds),
+            selection = TimelineSelection(
+                state.selectedClipId, state.selectedTextId, state.selectedAudioId, state.missingIds, state.multiSelect.orEmpty(),
+            ),
             positionMs = positionMs,
             loader = loader,
             waveforms = waveforms,
             actions = actions,
         )
-        FilledIconButton(
-            onClick = onAddMedia,
-            enabled = !state.isImporting,
-            shape = RoundedCornerShape(8.dp),
-            colors = IconButtonDefaults.filledIconButtonColors(containerColor = TextPrimary, contentColor = Ink0),
-            modifier = Modifier
+        Box(
+            Modifier
                 .align(Alignment.TopEnd)
-                .padding(end = 12.dp, top = 40.dp)
-                .size(40.dp),
+                .padding(end = 12.dp, top = 40.dp),
         ) {
-            if (state.isImporting) {
-                CircularProgressIndicator(Modifier.size(18.dp), color = Ink0, strokeWidth = 2.dp)
-            } else {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.timeline_add_media))
+            FilledIconButton(
+                onClick = { addMenu = true },
+                enabled = !state.isImporting,
+                shape = RoundedCornerShape(8.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = TextPrimary, contentColor = Ink0),
+                modifier = Modifier.size(40.dp),
+            ) {
+                if (state.isImporting) {
+                    CircularProgressIndicator(Modifier.size(18.dp), color = Ink0, strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.timeline_add_media))
+                }
             }
+            // CapCut's "+": gallery or camera; new media goes in at the playhead.
+            CaptureMenu(expanded = addMenu, onDismiss = { addMenu = false }, onCamera = onCamera, onGallery = onAddMedia)
         }
     }
 }

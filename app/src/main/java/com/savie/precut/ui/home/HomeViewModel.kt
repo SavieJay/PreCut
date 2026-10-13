@@ -4,7 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.data.ProjectSummary
+import com.savie.precut.data.ShareInbox
 import com.savie.precut.data.UnusedMediaCleaner
+import com.savie.precut.media.Capture
+import com.savie.precut.media.CaptureStore
+import com.savie.precut.media.SharedMediaStore
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.model.Project
 import com.savie.precut.model.clipFromMedia
@@ -14,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,6 +34,8 @@ data class HomeUiState(
 
 sealed interface HomeEvent {
     data class OpenEditor(val projectId: String) : HomeEvent
+    /** The screen should launch the camera app writing to [cameraUri]. */
+    data class LaunchCamera(val cameraUri: String, val video: Boolean) : HomeEvent
     data class SomeFilesSkipped(val count: Int) : HomeEvent
     data object NothingImported : HomeEvent
 }
@@ -39,10 +46,20 @@ class HomeViewModel @Inject constructor(
     private val repository: ProjectRepository,
     private val clock: Clock,
     cleaner: UnusedMediaCleaner,
+    private val captures: CaptureStore,
+    private val shareInbox: ShareInbox,
+    private val sharedMedia: SharedMediaStore,
 ) : ViewModel() {
+
+    /** The camera capture in progress, until the camera app returns. */
+    private var pendingCapture: Capture? = null
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    // Declared before init: a share waiting at construction may emit right away.
+    private val _events = Channel<HomeEvent>(Channel.BUFFERED)
+    val events: Flow<HomeEvent> = _events.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -50,6 +67,9 @@ class HomeViewModel @Inject constructor(
         }
         // No editor is open on this screen, so unused recordings can't be needed for undo.
         viewModelScope.launch { cleaner.sweep() }
+        viewModelScope.launch {
+            shareInbox.pending.filter { it.isNotEmpty() }.collect { onShared(shareInbox.take()) }
+        }
     }
 
     fun onRename(projectId: String, name: String) {
@@ -64,15 +84,30 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { repository.delete(projectId) }
     }
 
-    private val _events = Channel<HomeEvent>(Channel.BUFFERED)
-    val events: Flow<HomeEvent> = _events.receiveAsFlow()
+    fun onMediaPicked(uris: List<String>) = createProject(uris)
 
-    fun onMediaPicked(uris: List<String>) {
+    fun onCameraRequested(video: Boolean) {
+        val capture = captures.newCapture(video)
+        pendingCapture = capture
+        viewModelScope.launch { _events.send(HomeEvent.LaunchCamera(capture.cameraUri, video)) }
+    }
+
+    fun onCaptureResult(success: Boolean) {
+        val capture = pendingCapture ?: return
+        pendingCapture = null
+        if (success) createProject(listOf(capture.fileUri)) else captures.discard(capture)
+    }
+
+    /** Shared Uris only have temporary grants, so they're copied into app storage first. */
+    private fun onShared(uris: List<String>) = createProject(uris, copyFirst = true)
+
+    private fun createProject(uris: List<String>, copyFirst: Boolean = false) {
         if (uris.isEmpty() || _uiState.value.isImporting) return
         _uiState.update { it.copy(isImporting = true) }
         viewModelScope.launch {
             try {
-                val result = importer.import(uris)
+                val local = if (copyFirst) sharedMedia.copyIn(uris) else uris
+                val result = importer.import(local).let { it.copy(failedCount = it.failedCount + uris.size - local.size) }
                 if (result.imported.isEmpty()) {
                     _events.send(HomeEvent.NothingImported)
                     return@launch

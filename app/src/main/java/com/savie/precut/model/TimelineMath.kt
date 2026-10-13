@@ -41,3 +41,14 @@ fun Clip.timelineOffsetToSourceMs(offsetMs: Long): Long =
 /** Maps a time in the source file to a timeline offset within this clip. */
 fun Clip.sourceToTimelineOffsetMs(sourceMs: Long): Long =
     ((sourceMs - trimStartMs) / speed.toDouble()).roundToLong().coerceIn(0L, timelineDurationMs())
+
+/**
+ * Where new clips go for a playhead at [timelineMs]: the clip boundary nearest to it (before the
+ * clip under the playhead in its first half, after it in its second half). The end when the
+ * playhead is past the last clip or the project is empty.
+ */
+fun Project.insertIndexAt(timelineMs: Long): Int {
+    val position = clipAt(timelineMs) ?: return if (timelineMs <= 0L) 0 else clips.size
+    val length = clips[position.index].timelineDurationMs()
+    return if (position.offsetMs * 2 < length) position.index else position.index + 1
+}

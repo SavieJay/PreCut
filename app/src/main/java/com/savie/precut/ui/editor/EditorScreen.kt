@@ -8,12 +8,8 @@ import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
@@ -26,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -35,11 +30,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.ui.components.ObserveAsEvents
-import com.savie.precut.ui.editor.preview.PlaybackControls
-import com.savie.precut.ui.editor.preview.PreviewSurface
-import com.savie.precut.ui.editor.timeline.TimelineActions
-import com.savie.precut.ui.editor.preview.TextPositionOverlay
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.editor.preview.FullScreenPreview
+import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
 
 @Composable
@@ -67,6 +59,10 @@ fun EditorScreen(
     val replacementPicker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
         viewModel.onReplacementPicked(uri?.toString())
     }
+    val coverPicker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        viewModel.cover.onImagePicked(uri?.toString())
+    }
+    val camera = rememberCameraLaunchers(viewModel::onCaptureResult)
     val micPermission = rememberLauncherForActivityResult(RequestPermission()) { granted ->
         if (granted) viewModel.audio.onRecordStart(hasPermission = true)
     }
@@ -83,6 +79,14 @@ fun EditorScreen(
                 replacementPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
                 return@ObserveAsEvents
             }
+            EditorEvent.PickCoverImage -> {
+                coverPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                return@ObserveAsEvents
+            }
+            is EditorEvent.LaunchCamera -> {
+                camera.launch(event.cameraUri, event.video)
+                return@ObserveAsEvents
+            }
             EditorEvent.RequestMicPermission -> {
                 micPermission.launch(Manifest.permission.RECORD_AUDIO)
                 return@ObserveAsEvents
@@ -96,60 +100,53 @@ fun EditorScreen(
     }
     val timelineActions = rememberTimelineActions(viewModel)
 
-    Scaffold(
-        topBar = {
-            val ready = uiState as? EditorUiState.Ready
-            EditorTopBar(
-                canExport = ready != null && ready.project.clips.isNotEmpty() && ready.missingIds.isEmpty(),
-                canUndo = ready?.canUndo == true,
-                canRedo = ready?.canRedo == true,
-                onBack = onBack,
-                onUndo = viewModel::onUndo,
-                onRedo = viewModel::onRedo,
-                onExport = { onExport(viewModel.projectId) },
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-    ) { innerPadding ->
-        val modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-        when (val state = uiState) {
-            EditorUiState.Loading -> Box(modifier, contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            EditorUiState.NotFound -> Box(modifier, contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.editor_not_found))
-            }
-            // imePadding: the text tool's keyboard pushes the panel up and shrinks the preview.
-            is EditorUiState.Ready -> Column(modifier.imePadding()) {
-                if (state.missingIds.isNotEmpty()) {
-                    MissingMediaBanner(state.missingIds.size, onRemoveAll = viewModel::onRemoveMissing)
-                }
-                if (state.project.clips.isEmpty()) {
-                    // The player keeps its last frame after the final clip is deleted; cover it.
-                    Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black), contentAlignment = Alignment.Center) {
-                        Text(stringResource(R.string.editor_empty), color = TextSecondary)
-                    }
-                } else {
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        PreviewSurface(player = viewModel.player, modifier = Modifier.fillMaxSize())
-                        state.project.textOverlays.firstOrNull { it.id == state.selectedTextId }?.let { text ->
-                            TextPositionOverlay(text, state.project.aspectRatio, onMoved = { x, y -> viewModel.onTextMoved(text.id, x, y) })
-                        }
-                    }
-                }
-                PlaybackControls(state = previewState, onPlayPause = viewModel::onPlayPause)
-                TimelineSection(
-                    state = state,
-                    positionMs = previewState.positionMs,
-                    loader = viewModel.thumbnails,
-                    waveforms = viewModel.waveforms,
-                    actions = timelineActions,
-                    onAddMedia = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                val ready = uiState as? EditorUiState.Ready
+                EditorTopBar(
+                    canExport = ready != null && ready.project.clips.isNotEmpty() && ready.missingIds.isEmpty(),
+                    canUndo = ready?.canUndo == true,
+                    canRedo = ready?.canRedo == true,
+                    onBack = onBack,
+                    onUndo = viewModel::onUndo,
+                    onRedo = viewModel::onRedo,
+                    onExport = { onExport(viewModel.projectId) },
                 )
-                EditorBottomPanel(state, canSplit, previewState.positionMs, viewModel)
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+        ) { innerPadding ->
+            val modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+            when (val state = uiState) {
+                EditorUiState.Loading -> Box(modifier, contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                EditorUiState.NotFound -> Box(modifier, contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.editor_not_found))
+                }
+                is EditorUiState.Ready -> EditorContent(
+                    state = state,
+                    previewState = previewState,
+                    canSplit = canSplit,
+                    viewModel = viewModel,
+                    timelineActions = timelineActions,
+                    onAddMedia = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
+                    modifier = modifier,
+                )
             }
+        }
+        // Drawn over the whole screen, top bar included.
+        (uiState as? EditorUiState.Ready)?.takeIf { it.fullScreen && it.project.clips.isNotEmpty() }?.let {
+            FullScreenPreview(
+                player = viewModel.player,
+                state = previewState,
+                onPlayPause = viewModel::onPlayPause,
+                onScrubStart = viewModel::onScrubStart,
+                onSeek = viewModel::onSeek,
+                onClose = { viewModel.onFullScreen(false) },
+            )
         }
     }
 }

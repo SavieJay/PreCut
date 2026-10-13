@@ -27,6 +27,8 @@ data class ThumbnailKey(
     val heightPx: Int,
     /** Rotation to apply for images (EXIF); video frames come out already rotated. */
     val rotationDegrees: Int = 0,
+    /** The exact frame at [sourceMs] (slower) instead of the nearest keyframe; for covers. */
+    val exact: Boolean = false,
 )
 
 /**
@@ -55,13 +57,17 @@ class ThumbnailLoader @Inject constructor(
 
     fun cached(key: ThumbnailKey): Bitmap? = cache.get(key.quantized())
 
-    /** Returns the thumbnail, or null if the source can't be read. */
-    suspend fun load(key: ThumbnailKey): Bitmap? {
+    /**
+     * Returns the thumbnail, or null if the source can't be read. Large one-off frames (covers)
+     * pass [cache] = false so they don't evict the timeline's tiles.
+     */
+    suspend fun load(key: ThumbnailKey, cache: Boolean = true): Bitmap? {
         val quantized = key.quantized()
-        cache.get(quantized)?.let { return it }
+        this.cache.get(quantized)?.let { return it }
         return withContext(ioDispatcher) {
             lock.withLock {
-                cache.get(quantized) ?: extract(quantized)?.also { cache.put(quantized, it) }
+                this@ThumbnailLoader.cache.get(quantized)
+                    ?: extract(quantized)?.also { if (cache) this@ThumbnailLoader.cache.put(quantized, it) }
             }
         }
     }
@@ -87,7 +93,7 @@ class ThumbnailLoader @Inject constructor(
         val height = meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
         val rotation = meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
         val timeUs = key.sourceMs * 1_000
-        val option = MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+        val option = if (key.exact) MediaMetadataRetriever.OPTION_CLOSEST else MediaMetadataRetriever.OPTION_CLOSEST_SYNC
         val frame = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && width > 0 && height > 0) {
             // The frame keeps its aspect ratio within the box; a square box works whether the
             // bounds apply before or after rotation. It's scaled to the exact height below.
@@ -141,7 +147,7 @@ class ThumbnailLoader @Inject constructor(
     }
 
     private fun ThumbnailKey.quantized(): ThumbnailKey = when (type) {
-        ClipType.VIDEO -> copy(sourceMs = sourceMs / TIME_QUANTUM_MS * TIME_QUANTUM_MS)
+        ClipType.VIDEO -> if (exact) this else copy(sourceMs = sourceMs / TIME_QUANTUM_MS * TIME_QUANTUM_MS)
         ClipType.IMAGE -> copy(sourceMs = 0L)
     }
 

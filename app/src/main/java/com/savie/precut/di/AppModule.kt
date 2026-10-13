@@ -5,16 +5,20 @@ import androidx.room.Room
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.data.RoomProjectRepository
 import com.savie.precut.data.UnusedMediaCleaner
-import com.savie.precut.data.VoiceoverJanitor
+import com.savie.precut.data.AppMediaJanitor
 import com.savie.precut.data.db.AppDatabase
 import com.savie.precut.data.db.ProjectDao
 import com.savie.precut.media.AndroidMediaImporter
 import com.savie.precut.media.AndroidMediaProbe
+import com.savie.precut.media.CaptureFiles
+import com.savie.precut.media.CaptureStore
 import com.savie.precut.media.ExportManager
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.MediaProbe
 import com.savie.precut.media.MediaSaver
 import com.savie.precut.media.MediaStoreSaver
+import com.savie.precut.media.SharedMediaCopier
+import com.savie.precut.media.SharedMediaStore
 import com.savie.precut.media.VideoExporter
 import dagger.Binds
 import dagger.Module
@@ -36,7 +40,7 @@ abstract class AppModule {
     abstract fun bindProjectRepository(impl: RoomProjectRepository): ProjectRepository
 
     @Binds
-    abstract fun bindUnusedMediaCleaner(impl: VoiceoverJanitor): UnusedMediaCleaner
+    abstract fun bindUnusedMediaCleaner(impl: AppMediaJanitor): UnusedMediaCleaner
 
     @Binds
     abstract fun bindMediaProbe(impl: AndroidMediaProbe): MediaProbe
@@ -49,6 +53,12 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindMediaSaver(impl: MediaStoreSaver): MediaSaver
+
+    @Binds
+    abstract fun bindCaptureStore(impl: CaptureFiles): CaptureStore
+
+    @Binds
+    abstract fun bindSharedMediaStore(impl: SharedMediaCopier): SharedMediaStore
 
     companion object {
         @Provides

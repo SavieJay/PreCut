@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.di.ApplicationScope
+import com.savie.precut.media.Capture
+import com.savie.precut.media.CaptureStore
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.MediaProbe
 import com.savie.precut.media.PreviewController
@@ -17,9 +19,10 @@ import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.FilterType
 import com.savie.precut.model.Project
-import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.clipAt
 import com.savie.precut.model.clipFromMedia
+import com.savie.precut.model.insertIndexAt
+import com.savie.precut.model.edit.BatchEdits
 import com.savie.precut.model.edit.EditAction
 import com.savie.precut.model.edit.EditReducer
 import com.savie.precut.model.totalDurationMs
@@ -48,7 +51,7 @@ import javax.inject.Inject
  * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
  * clip when there is one, otherwise on a video clip.
  */
-enum class EditorTool { TRIM, SPEED, FILTER, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER }
+enum class EditorTool { TRIM, SPEED, FILTER, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -66,6 +69,9 @@ sealed interface EditorUiState {
         val missingIds: Set<String> = emptySet(),
         val canUndo: Boolean = false,
         val canRedo: Boolean = false,
+        /** Ids picked in multi-select mode; null when the mode is off. */
+        val multiSelect: Set<String>? = null,
+        val fullScreen: Boolean = false,
     ) : EditorUiState
 }
 
@@ -82,6 +88,10 @@ sealed interface EditorEvent {
     data object NothingToExtract : EditorEvent
     /** The screen should open the single-item media picker to replace the selected clip. */
     data object PickReplacement : EditorEvent
+    /** The screen should open the photo picker for the project cover. */
+    data object PickCoverImage : EditorEvent
+    /** The screen should launch the camera app writing to [cameraUri]. */
+    data class LaunchCamera(val cameraUri: String, val video: Boolean) : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -99,6 +109,7 @@ class EditorViewModel @Inject constructor(
     voiceRecorder: VoiceRecorder,
     private val probe: MediaProbe,
     @ApplicationScope private val appScope: CoroutineScope,
+    private val captures: CaptureStore,
 ) : ViewModel() {
 
     val projectId = savedStateHandle.requireProjectId()
@@ -130,10 +141,23 @@ class EditorViewModel @Inject constructor(
         }
         override fun newId(): String = this@EditorViewModel.newId()
         override fun targetClipId(): String? = this@EditorViewModel.targetClipId()
+        override fun seekTo(positionMs: Long) = previewController.seekTo(positionMs)
     }
 
     /** Audio lanes, extract, voiceover and audio-clip tools. */
     val audio = EditorAudio(host, importer, previewController, voiceRecorder)
+
+    /** Multi-select mode and its batch edits. */
+    val selection = EditorSelection(host)
+
+    /** The Cover tool. */
+    val cover = EditorCover(host, importer)
+
+    /** Text overlays: add, edit, transform, split, duplicate, delete. */
+    val text = EditorText(host)
+
+    /** The camera capture in progress, until the camera app returns. */
+    private var pendingCapture: Capture? = null
 
     /** Edits, undo history and auto-save; set once the project has loaded. */
     private var session: ProjectSession? = null
@@ -171,6 +195,8 @@ class EditorViewModel @Inject constructor(
 
     fun onSeek(positionMs: Long) = previewController.seekTo(positionMs)
 
+    fun onFullScreen(open: Boolean) = updateReady { it.copy(fullScreen = open) }
+
     /** Leaving the screen pauses playback and finishes (keeps) any voiceover in progress. */
     fun onScreenStopped() {
         audio.onRecordStop()
@@ -195,6 +221,7 @@ class EditorViewModel @Inject constructor(
                 selectedClipId = ready.selectedClipId?.takeIf { id -> project.clips.any { it.id == id } },
                 selectedTextId = ready.selectedTextId?.takeIf { id -> project.textOverlays.any { it.id == id } },
                 selectedAudioId = ready.selectedAudioId?.takeIf { id -> project.audioClips.any { it.id == id } },
+                multiSelect = ready.multiSelect?.filter { id -> project.containsItem(id) }?.toSet(),
                 activeTool = null,
             )
         }
@@ -250,7 +277,11 @@ class EditorViewModel @Inject constructor(
     // Selection and tools
 
     fun onClipSelected(clipId: String?) {
-        dropBlankSelectedText()
+        if (selection.isActive) {
+            clipId?.let(selection::toggle)
+            return
+        }
+        text.dropBlankSelected()
         updateReady {
             val clip = it.project.clips.firstOrNull { c -> c.id == clipId }
             // Keep a clip tool open when switching clips, unless it doesn't apply (speed on a photo).
@@ -267,7 +298,11 @@ class EditorViewModel @Inject constructor(
     }
 
     fun onTextSelected(textId: String?) {
-        dropBlankSelectedText()
+        if (selection.isActive) {
+            textId?.let(selection::toggle)
+            return
+        }
+        text.dropBlankSelected()
         updateReady {
             it.copy(
                 selectedTextId = textId,
@@ -279,16 +314,24 @@ class EditorViewModel @Inject constructor(
         }
     }
 
+    fun onAudioSelected(audioId: String) = if (selection.isActive) selection.toggle(audioId) else audio.onSelected(audioId)
+
     fun onToolSelected(tool: EditorTool) {
         val ready = _uiState.value as? EditorUiState.Ready ?: return
         if (ready.activeTool == tool) return onToolClosed()
+        // In select mode, Speed/Filter/Volume panels act on the whole selection.
+        if (ready.multiSelect != null) {
+            updateReady { it.copy(activeTool = tool) }
+            return
+        }
         if (ready.selectedAudioId != null && tool in AUDIO_TOOLS) {
             updateReady { it.copy(activeTool = tool) }
             return
         }
         when (tool) {
             EditorTool.RATIO, EditorTool.VOICEOVER -> updateReady { it.copy(activeTool = tool) }
-            EditorTool.TEXT -> addText(ready)
+            EditorTool.COVER -> cover.onOpen()
+            EditorTool.TEXT -> text.onAdd()
             EditorTool.VOICE, EditorTool.BEATS -> Unit // audio-only tools
             EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.VOLUME, EditorTool.FADE -> {
                 val clipId = targetClipId() ?: return
@@ -303,7 +346,7 @@ class EditorViewModel @Inject constructor(
     }
 
     fun onToolClosed() {
-        dropBlankSelectedText()
+        text.dropBlankSelected()
         // Audio selection stays so its toolbar comes back, like CapCut.
         updateReady { it.copy(activeTool = null, selectedTextId = null) }
     }
@@ -342,24 +385,31 @@ class EditorViewModel @Inject constructor(
         applyEdit(EditAction.SetSpeed(clipId, speed))
     }
 
+    fun onKeepPitchChanged(keepPitch: Boolean) {
+        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
+        applyEdit(EditAction.SetKeepPitch(clipId, keepPitch))
+    }
+
     fun onFilterSelected(filter: FilterType) {
         val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
         applyEdit(EditAction.SetFilter(clipId, filter))
     }
 
+    /** "Apply to all": the selected clip's filter on every clip. */
+    fun onFilterApplyAll() {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        val filter = ready.project.clips.firstOrNull { it.id == ready.selectedClipId }?.filter ?: return
+        applyEdit(BatchEdits.filter(ready.project, BatchEdits.allClipIds(ready.project), filter))
+    }
+
+    /** "Apply to all": the selected clip's volume on every clip. */
+    fun onVolumeApplyAll() {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        val volume = ready.project.clips.firstOrNull { it.id == ready.selectedClipId }?.volume ?: return
+        applyEdit(BatchEdits.volume(ready.project, BatchEdits.allClipIds(ready.project), volume))
+    }
+
     fun onAspectRatioSelected(aspectRatio: AspectRatio) = applyEdit(EditAction.SetAspectRatio(aspectRatio))
-
-    fun onTextChanged(overlay: TextOverlay) = applyEdit(EditAction.UpdateText(overlay))
-
-    fun onTextMoved(textId: String, xNorm: Float, yNorm: Float) {
-        val overlay = findText(textId) ?: return
-        applyEdit(EditAction.UpdateText(overlay.copy(xNorm = xNorm, yNorm = yNorm)))
-    }
-
-    fun onTextTimingChanged(textId: String, startMs: Long, endMs: Long) {
-        val overlay = findText(textId) ?: return
-        applyEdit(EditAction.UpdateText(overlay.copy(startMs = startMs, endMs = endMs)))
-    }
 
     fun onClipVolumeChanged(volume: Float) {
         val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
@@ -382,31 +432,19 @@ class EditorViewModel @Inject constructor(
         applyEdit(EditAction.SetOriginalAudioMuted(!ready.project.originalAudioMuted))
     }
 
-    fun onDeleteText() {
-        val textId = (_uiState.value as? EditorUiState.Ready)?.selectedTextId ?: return
-        applyEdit(EditAction.DeleteText(textId))
-        updateReady { it.copy(selectedTextId = null, activeTool = null) }
+    fun onCameraRequested(video: Boolean) {
+        val capture = captures.newCapture(video)
+        pendingCapture = capture
+        viewModelScope.launch { _events.send(EditorEvent.LaunchCamera(capture.cameraUri, video)) }
     }
 
-    /** New text at the playhead, lasting [DEFAULT_TEXT_DURATION_MS], selected for editing. */
-    private fun addText(ready: EditorUiState.Ready) {
-        if (ready.project.clips.isEmpty()) return
-        val start = previewState.value.positionMs
-        val overlay = TextOverlay(id = newId(), text = "", startMs = start, endMs = start + DEFAULT_TEXT_DURATION_MS)
-        applyEdit(EditAction.AddText(overlay))
-        updateReady { it.copy(selectedTextId = overlay.id, selectedClipId = null, activeTool = EditorTool.TEXT) }
+    fun onCaptureResult(success: Boolean) {
+        val capture = pendingCapture ?: return
+        pendingCapture = null
+        if (success) onMediaPicked(listOf(capture.fileUri)) else captures.discard(capture)
     }
 
-    /** A text left empty when its panel closes is removed rather than kept invisible. */
-    private fun dropBlankSelectedText() {
-        val ready = _uiState.value as? EditorUiState.Ready ?: return
-        val text = ready.selectedTextId?.let(::findText) ?: return
-        if (text.text.isBlank()) applyEdit(EditAction.DeleteText(text.id))
-    }
-
-    private fun findText(textId: String): TextOverlay? =
-        (_uiState.value as? EditorUiState.Ready)?.project?.textOverlays?.firstOrNull { it.id == textId }
-
+    /** New media goes in at the clip boundary nearest the playhead (CapCut). */
     fun onMediaPicked(uris: List<String>) {
         val ready = _uiState.value as? EditorUiState.Ready ?: return
         if (uris.isEmpty() || ready.isImporting) return
@@ -419,7 +457,9 @@ class EditorViewModel @Inject constructor(
                     return@launch
                 }
                 if (result.failedCount > 0) _events.send(EditorEvent.SomeFilesSkipped(result.failedCount))
-                applyEdit(EditAction.AddClips(result.imported.map { clipFromMedia(newId(), it.uri, it.info) }))
+                val project = (_uiState.value as? EditorUiState.Ready)?.project ?: return@launch
+                val atIndex = project.insertIndexAt(previewState.value.positionMs)
+                applyEdit(EditAction.AddClips(result.imported.map { clipFromMedia(newId(), it.uri, it.info) }, atIndex))
             } finally {
                 updateReady { it.copy(isImporting = false) }
             }
@@ -443,6 +483,9 @@ class EditorViewModel @Inject constructor(
         pendingPreview.value = edited
     }
 
+    private fun Project.containsItem(id: String) =
+        clips.any { it.id == id } || textOverlays.any { it.id == id } || audioClips.any { it.id == id }
+
     private fun updateReady(transform: (EditorUiState.Ready) -> EditorUiState.Ready) =
         _uiState.update { if (it is EditorUiState.Ready) transform(it) else it }
 
@@ -456,7 +499,6 @@ class EditorViewModel @Inject constructor(
 
     private companion object {
         const val PREVIEW_REBUILD_DEBOUNCE_MS = 150L
-        const val DEFAULT_TEXT_DURATION_MS = 3_000L
         val CLIP_TOOLS = setOf(EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.VOLUME, EditorTool.FADE)
         val AUDIO_TOOLS = setOf(EditorTool.VOLUME, EditorTool.FADE, EditorTool.SPEED, EditorTool.VOICE, EditorTool.BEATS)
     }

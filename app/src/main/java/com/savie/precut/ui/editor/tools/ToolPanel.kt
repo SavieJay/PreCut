@@ -3,6 +3,7 @@ package com.savie.precut.ui.editor.tools
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -22,12 +23,15 @@ fun ToolPanel(
     title: String,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Extra header buttons, before Done (e.g. "Apply to all"). */
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                actions()
                 TextButton(onClick = onDone) { Text(stringResource(R.string.action_done)) }
             }
             content()

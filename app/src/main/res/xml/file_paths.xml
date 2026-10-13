@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only camera captures are shared (with the camera app, to write into). -->
+<paths>
+    <files-path name="captures" path="captures/" />
+</paths>

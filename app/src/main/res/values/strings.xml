@@ -132,4 +132,34 @@
         <item quantity="other">%1$d media files can\'t be found. Select a red clip to replace it.</item>
     </plurals>
     <string name="missing_remove_all">Remove</string>
+
+    <!-- Phase 7: import, preview, timeline, cover, speed, ratio, text -->
+    <string name="add_from_gallery">Photos &amp; videos</string>
+    <string name="add_record_video">Record video</string>
+    <string name="add_take_photo">Take photo</string>
+    <string name="home_camera">Camera</string>
+    <string name="preview_full_screen">Full screen</string>
+    <string name="preview_exit_full_screen">Exit full screen</string>
+    <string name="tool_select">Select</string>
+    <string name="tool_cover">Cover</string>
+    <string name="action_apply_to_all">Apply to all</string>
+    <plurals name="selection_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="cover_title">Cover</string>
+    <string name="cover_current_default">Cover: first frame</string>
+    <string name="cover_current_frame">Cover: frame at %1$s</string>
+    <string name="cover_current_photo">Cover: photo</string>
+    <string name="cover_use_frame">Use frame %1$s</string>
+    <string name="cover_from_gallery">From gallery</string>
+    <string name="cover_reset">Reset</string>
+    <string name="cover_in_export">Add cover as the video\'s first frame</string>
+    <string name="speed_length">%1$s → %2$s</string>
+    <string name="speed_keep_pitch">Keep pitch</string>
+    <string name="ratio_original">Original</string>
+    <string name="text_opacity">Opacity</string>
+    <string name="color_hex">Hex</string>
+    <string name="color_recent">Used in this project</string>
+    <string name="color_custom">Custom colour</string>
 </resources>

@@ -25,6 +25,8 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onRatio() = viewModel.onToolSelected(EditorTool.RATIO)
             override fun onDuplicate() = viewModel.onDuplicate()
             override fun onDelete() = viewModel.onDelete()
+            override fun onSelect() = viewModel.selection.onStart()
+            override fun onCover() = viewModel.onToolSelected(EditorTool.COVER)
         },
     )
 }

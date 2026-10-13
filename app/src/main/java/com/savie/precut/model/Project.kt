@@ -12,6 +12,10 @@ data class Project(
     val audioClips: List<AudioClip> = emptyList(),
     /** CapCut's "Mute clip audio": silences every video clip's own sound. */
     val originalAudioMuted: Boolean = false,
+    /** Chosen cover; null means the first frame. */
+    val cover: ProjectCover? = null,
+    /** Shows the cover as the first frame of the video, so apps pick it as the thumbnail. */
+    val coverInExport: Boolean = false,
     val createdAt: Long,
     val updatedAt: Long,
 )

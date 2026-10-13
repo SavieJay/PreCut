@@ -20,6 +20,8 @@ interface ToolbarActions {
     fun onRatio()
     fun onDuplicate()
     fun onDelete()
+    fun onSelect()
+    fun onCover()
 }
 
 /** Main bottom tool row. */
@@ -38,6 +40,8 @@ fun EditorToolbar(canSplit: Boolean, hasClips: Boolean, actions: ToolbarActions,
         ToolButton(R.drawable.ic_replace, R.string.audio_replace, hasClips, actions::onReplace)
         ToolButton(R.drawable.ic_text, R.string.tool_text, hasClips, actions::onText)
         ToolButton(R.drawable.ic_ratio, R.string.tool_ratio, onClick = actions::onRatio)
+        ToolButton(R.drawable.ic_cover, R.string.tool_cover, hasClips, actions::onCover)
+        ToolButton(R.drawable.ic_select, R.string.tool_select, hasClips, actions::onSelect)
         ToolButton(R.drawable.ic_duplicate, R.string.tool_duplicate, hasClips, actions::onDuplicate)
         ToolButton(R.drawable.ic_delete, R.string.tool_delete, hasClips, actions::onDelete)
     }
