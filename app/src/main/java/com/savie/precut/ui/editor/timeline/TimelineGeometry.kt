@@ -55,6 +55,16 @@ object TimelineGeometry {
         }
     }
 
+    /**
+     * Shifts a time range by [deltaMs] keeping its length, clamped so it stays within
+     * `0..totalMs`. A range longer than the timeline is pinned to 0.
+     */
+    fun moveRange(startMs: Long, endMs: Long, deltaMs: Long, totalMs: Long): Pair<Long, Long> {
+        val length = endMs - startMs
+        val start = (startMs + deltaMs).coerceIn(0L, (totalMs - length).coerceAtLeast(0L))
+        return start to start + length
+    }
+
     /** Target slot when a reorder tile is dropped with its centre at [centerX] in a row of [count] tiles. */
     fun reorderTargetIndex(centerX: Float, tileWidthPx: Float, count: Int): Int {
         if (count <= 0 || tileWidthPx <= 0f) return 0

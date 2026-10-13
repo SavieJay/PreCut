@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
@@ -34,8 +35,7 @@ import com.savie.precut.ui.components.ObserveAsEvents
 import com.savie.precut.ui.editor.preview.PlaybackControls
 import com.savie.precut.ui.editor.preview.PreviewSurface
 import com.savie.precut.ui.editor.timeline.TimelineActions
-import com.savie.precut.ui.editor.tools.EditorToolbar
-import com.savie.precut.ui.editor.tools.TrimTool
+import com.savie.precut.ui.editor.preview.TextPositionOverlay
 import com.savie.precut.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
@@ -62,6 +62,7 @@ fun EditorScreen(
             is EditorEvent.SomeFilesSkipped ->
                 resources.getQuantityString(R.plurals.home_import_skipped, event.count, event.count)
             EditorEvent.NothingImported -> resources.getString(R.string.home_import_nothing)
+            EditorEvent.SpeedNotForPhotos -> resources.getString(R.string.speed_not_for_photos)
         }
         scope.launch { snackbarHostState.showSnackbar(message) }
     }
@@ -73,6 +74,9 @@ fun EditorScreen(
             override fun onTrim(clipId: String, trimStartMs: Long, trimEndMs: Long) =
                 viewModel.onTrim(clipId, trimStartMs, trimEndMs)
             override fun onMove(from: Int, to: Int) = viewModel.onMove(from, to)
+            override fun onSelectText(textId: String) = viewModel.onTextSelected(textId)
+            override fun onTextTiming(textId: String, startMs: Long, endMs: Long) =
+                viewModel.onTextTimingChanged(textId, startMs, endMs)
         }
     }
 
@@ -97,14 +101,20 @@ fun EditorScreen(
             EditorUiState.NotFound -> Box(modifier, contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.editor_not_found))
             }
-            is EditorUiState.Ready -> Column(modifier) {
+            // imePadding: the text tool's keyboard pushes the panel up and shrinks the preview.
+            is EditorUiState.Ready -> Column(modifier.imePadding()) {
                 if (state.project.clips.isEmpty()) {
                     // The player keeps its last frame after the final clip is deleted; cover it.
                     Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black), contentAlignment = Alignment.Center) {
                         Text(stringResource(R.string.editor_empty), color = TextSecondary)
                     }
                 } else {
-                    PreviewSurface(player = viewModel.player, modifier = Modifier.weight(1f).fillMaxWidth())
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        PreviewSurface(player = viewModel.player, modifier = Modifier.fillMaxSize())
+                        state.project.textOverlays.firstOrNull { it.id == state.selectedTextId }?.let { text ->
+                            TextPositionOverlay(text, state.project.aspectRatio, onMoved = { x, y -> viewModel.onTextMoved(text.id, x, y) })
+                        }
+                    }
                 }
                 PlaybackControls(state = previewState, onPlayPause = viewModel::onPlayPause)
                 TimelineSection(
@@ -114,23 +124,7 @@ fun EditorScreen(
                     actions = timelineActions,
                     onAddMedia = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
                 )
-                val toolClip = state.project.clips.firstOrNull { it.id == state.selectedClipId }
-                if (state.activeTool == EditorTool.TRIM && toolClip != null) {
-                    TrimTool(
-                        clip = toolClip,
-                        onTrim = { start, end -> viewModel.onTrim(toolClip.id, start, end) },
-                        onDone = viewModel::onToolClosed,
-                    )
-                } else {
-                    EditorToolbar(
-                        canSplit = canSplit,
-                        hasClips = state.project.clips.isNotEmpty(),
-                        onSplit = viewModel::onSplit,
-                        onTrim = { viewModel.onToolSelected(EditorTool.TRIM) },
-                        onDuplicate = viewModel::onDuplicate,
-                        onDelete = viewModel::onDelete,
-                    )
-                }
+                EditorBottomPanel(state, canSplit, viewModel)
             }
         }
     }

@@ -205,13 +205,13 @@ Each phase ends with acceptance criteria. Stop after each phase for user verific
 UI for Phases 3–7 follows `docs/design/DESIGN.md`.
 
 ### Phase 4 — Editing tools
-- [ ] Speed tool (0.25x–4x presets + slider); timeline width updates
-- [ ] Filter tool: horizontal list of filter previews; `EffectsFactory` mapping
-- [ ] Rotate tool (90° steps)
-- [ ] Aspect ratio picker (project level), preview letterboxes accordingly
-- [ ] Text tool: add/edit/delete text, color, size, background; drag to position on preview; set start/end on a text track lane in the timeline
-- [ ] All effects routed through `CompositionBuilder` so preview == export
-- [ ] Unit tests for overlay time mapping across clip boundaries and speed changes
+- [x] Speed tool (0.25x–4x presets + slider); timeline width updates
+- [x] Filter tool: horizontal list of filter previews; `EffectsFactory` mapping
+- [x] Rotate tool (90° steps)
+- [x] Aspect ratio picker (project level), preview letterboxes accordingly
+- [x] Text tool: add/edit/delete text, color, size, background; drag to position on preview; set start/end on a text track lane in the timeline
+- [x] All effects routed through `CompositionBuilder` so preview == export
+- [x] Unit tests for overlay timing (composition-level, timeline time — see Decisions log), clamping across clip/speed changes, NDC mapping
 
 **Acceptance:** a project using speed, filter, rotation, 9:16 ratio, and a text overlay spanning two clips exports identically to the preview.
 
@@ -292,3 +292,10 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-12 — Clip tools act on the selected clip, else the clip under the playhead.** Split always acts at the playhead.
 - **2026-10-12 — Timeline is a custom `horizontalScroll` with manual thumbnail culling,** not a LazyRow: clip widths are time-proportional and the content must stay aligned with the ruler and playhead. Zoom is capped so content stays under ~120k px (Compose's layout limit is ~262k).
 - **2026-10-12 — Tap and long-press-to-reorder are detected on the timeline container,** not per clip, so the gesture survives the switch to reorder tiles mid-gesture. Long-presses within 24dp of the selected clip's edges are left to the trim handles.
+- **2026-10-13 — Text overlays are one composition-level `OverlayEffect` in timeline time,** not per-item effects mapped into each clip's local time. Both CompositionPlayer and Transformer apply `Composition.effects` (single sequence → SingleInputVideoGraph). Media3 doesn't document composition-level timestamps; **verify on device** that text timing matches in preview and export. Fallback: the per-item mapping from the original plan.
+- **2026-10-13 — Text sizing convention:** `textSizeSp` = sp on a 360dp-wide screen, scaled to the output's short side (`textSizePx`). The preview drag ghost and `TextOverlayRenderer` share the padding/corner ratios.
+- **2026-10-13 — Speed uses `EditedMediaItem.setSpeed(SpeedParameters(constant, shouldMaintainPitch = true))`** — supported by both CompositionPlayer and Transformer; `SpeedParameters` is `@ExperimentalApi` (opt-in in `CompositionBuilder`). Sped-up clips are capped at 60 fps.
+- **2026-10-13 — Rotation is clockwise in the model;** `EffectsFactory` negates it because Media3 rotates counter-clockwise.
+- **2026-10-13 — Filters are pure `FilterEffect` specs mapped to Media3 in `EffectsFactory`;** picker thumbnails use Compose colour-matrix approximations (`FilterPreviewMatrix`). Vintage = 80% sepia matrix + slight contrast reduction.
+- **2026-10-13 — The reducer clamps text overlays after every edit** (timeline shrink, speed change, delete); with no clips, texts are dropped. A text left blank when its panel closes is deleted.
+- **2026-10-13 — Text bars move in time by dragging:** a selected bar's body drags horizontally; an unselected bar needs a long-press first so normal drags still scrub. Moves keep the length and stay inside the timeline (`TimelineGeometry.moveRange`).

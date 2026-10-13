@@ -19,3 +19,4 @@ val Playhead = Color(0xFFFFFFFF)
 val ClipSelection = Color(0xFFFFFFFF)
 val ClipBackground = Color(0xFF34343A)
 val RulerTick = Color(0xFF6B6B74)
+val TextLaneBar = Color(0xFFB8860B) // amber, distinct from clips and the accent

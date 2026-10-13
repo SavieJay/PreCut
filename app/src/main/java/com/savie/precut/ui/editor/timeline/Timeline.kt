@@ -4,7 +4,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -26,7 +25,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.model.Project
-import com.savie.precut.model.clipStartTimesMs
 import com.savie.precut.model.totalDurationMs
 
 /** Everything the timeline reports back; implemented by the editor screen with ViewModel calls. */
@@ -36,19 +34,28 @@ interface TimelineActions {
     fun onSelectClip(clipId: String?)
     fun onTrim(clipId: String, trimStartMs: Long, trimEndMs: Long)
     fun onMove(from: Int, to: Int)
+    fun onSelectText(textId: String)
+    fun onTextTiming(textId: String, startMs: Long, endMs: Long)
 }
 
-private val ClipHeight = 56.dp
+private val VerticalPadding = 8.dp
 private val RulerHeight = 18.dp
+private val LaneGap = 6.dp
+private val ClipHeight = 56.dp
+private val TextLaneHeight = 22.dp
+
+/** Total height the timeline needs. */
+val TimelineHeight = VerticalPadding * 2 + RulerHeight + LaneGap + ClipHeight + LaneGap + TextLaneHeight
 
 /**
- * Horizontal timeline under a fixed centre playhead: ruler + clip strip. Scroll to scrub, pinch to
- * zoom, tap to select, long-press to reorder.
+ * Horizontal timeline under a fixed centre playhead: ruler, clip strip and text lane. Scroll to
+ * scrub, pinch to zoom, tap to select, long-press a clip to reorder.
  */
 @Composable
 fun Timeline(
     project: Project,
     selectedClipId: String?,
+    selectedTextId: String?,
     positionMs: Long,
     loader: ThumbnailLoader,
     actions: TimelineActions,
@@ -74,7 +81,12 @@ fun Timeline(
         val gestures = TimelineGestureHandler(
             clips = project.clips,
             hitTest = {
-                TimelineHitTest(project, selectedClipId, pxPerMs, scrollState.value, widthPx, with(density) { 24.dp.toPx() })
+                val stripTop = with(density) { (VerticalPadding + RulerHeight + LaneGap).toPx() }
+                TimelineHitTest(
+                    project, selectedClipId, pxPerMs, scrollState.value, widthPx,
+                    handleSlopPx = with(density) { 24.dp.toPx() },
+                    stripYPx = stripTop..(stripTop + with(density) { ClipHeight.toPx() }),
+                )
             },
             reorderLayout = reorderLayout,
             reorder = reorderState,
@@ -98,31 +110,36 @@ fun Timeline(
                 Modifier
                     .fillMaxSize()
                     .horizontalScroll(scrollState, enabled = reorder == null)
-                    .padding(horizontal = halfWidth, vertical = 8.dp),
+                    .padding(horizontal = halfWidth, vertical = VerticalPadding),
             ) {
+                val contentWidthPx = TimelineGeometry.msToPx(totalMs, pxPerMs)
                 TimelineRuler(
                     totalMs = totalMs,
                     pxPerMs = pxPerMs,
                     modifier = Modifier
-                        .width(with(density) { TimelineGeometry.msToPx(totalMs, pxPerMs).toDp() })
+                        .width(with(density) { contentWidthPx.toDp() })
                         .height(RulerHeight),
                 )
-                Spacer(Modifier.height(6.dp))
-                Row {
-                    val starts = project.clipStartTimesMs()
-                    project.clips.forEachIndexed { index, clip ->
-                        val clipStartPx = TimelineGeometry.msToPx(starts[index], pxPerMs)
-                        ClipView(
-                            clip = clip,
-                            pxPerMs = pxPerMs,
-                            height = ClipHeight,
-                            selected = clip.id == selectedClipId,
-                            visiblePx = (visibleStart - clipStartPx)..(visibleEnd - clipStartPx),
-                            loader = loader,
-                            onTrim = { start, end -> actions.onTrim(clip.id, start, end) },
-                        )
-                    }
-                }
+                Spacer(Modifier.height(LaneGap))
+                ClipStrip(
+                    project = project,
+                    selectedClipId = selectedClipId,
+                    pxPerMs = pxPerMs,
+                    clipHeight = ClipHeight,
+                    visiblePx = visibleStart..visibleEnd,
+                    loader = loader,
+                    onTrim = actions::onTrim,
+                )
+                Spacer(Modifier.height(LaneGap))
+                TextLane(
+                    overlays = project.textOverlays,
+                    selectedTextId = selectedTextId,
+                    pxPerMs = pxPerMs,
+                    widthPx = contentWidthPx,
+                    height = TextLaneHeight,
+                    onSelect = actions::onSelectText,
+                    onTiming = actions::onTextTiming,
+                )
             }
             Playhead(Modifier.align(Alignment.TopCenter))
             reorder?.let { state ->

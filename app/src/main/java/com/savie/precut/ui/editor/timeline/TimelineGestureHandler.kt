@@ -20,13 +20,14 @@ class TimelineGestureHandler(
 ) : TapAndDragCallbacks {
 
     override fun onTap(position: Offset) =
-        actions.onSelectClip(hitTest().clipIndexAt(position.x)?.let { clips[it].id })
+        // Taps on text bars are consumed by the bars; anything else outside a clip deselects.
+        actions.onSelectClip(hitTest().clipIndexAt(position.x, position.y)?.let { clips[it].id })
 
     override fun onLongPressStart(position: Offset): Boolean {
         if (clips.size < 2) return false
         val hit = hitTest()
+        val index = hit.clipIndexAt(position.x, position.y) ?: return false
         if (hit.isOnTrimHandle(position.x)) return false
-        val index = hit.clipIndexAt(position.x) ?: return false
         reorder.value = ReorderState(index, position.x)
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         return true

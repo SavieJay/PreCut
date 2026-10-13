@@ -1,6 +1,12 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.ClipType
+import com.savie.precut.model.FilterType
+import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.Project
+import com.savie.precut.model.TextOverlay
+import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.project
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.model.totalDurationMs
@@ -150,5 +156,80 @@ class EditReducerTest {
         assertEquals(listOf("a", "a2", "b"), result.ids())
         assertEquals(trimmed.clips[0].copy(id = "a2"), result.clips[1])
         assertSame(trimmed, EditReducer.reduce(trimmed, EditAction.DuplicateClip("missing", "x")))
+    }
+
+    // Phase 4: speed, filter, rotation, aspect ratio
+
+    @Test
+    fun setSpeed_clampsToRange_andIgnoresPhotos() {
+        assertEquals(2f, EditReducer.reduce(base, EditAction.SetSpeed("a", 2f)).clips[0].speed)
+        assertEquals(MAX_SPEED, EditReducer.reduce(base, EditAction.SetSpeed("a", 10f)).clips[0].speed)
+        assertEquals(MIN_SPEED, EditReducer.reduce(base, EditAction.SetSpeed("a", 0.01f)).clips[0].speed)
+        val photo = project(clipFromMedia("p", "content://p", MediaInfo(ClipType.IMAGE, 0L, 10, 10, 0)))
+        assertSame(photo, EditReducer.reduce(photo, EditAction.SetSpeed("p", 2f)))
+    }
+
+    @Test
+    fun setFilter_andRotate_updateOnlyTheTargetClip() {
+        val filtered = EditReducer.reduce(base, EditAction.SetFilter("b", FilterType.VINTAGE))
+        assertEquals(FilterType.VINTAGE, filtered.clips[1].filter)
+        assertEquals(FilterType.NONE, filtered.clips[0].filter)
+
+        var rotated = base
+        repeat(3) { rotated = EditReducer.reduce(rotated, EditAction.RotateClip("a")) }
+        assertEquals(270, rotated.clips[0].rotationDegrees)
+        assertEquals(0, EditReducer.reduce(rotated, EditAction.RotateClip("a")).clips[0].rotationDegrees)
+    }
+
+    @Test
+    fun setAspectRatio_changesProject_sameRatioIsNoOp() {
+        assertEquals(AspectRatio.RATIO_1_1, EditReducer.reduce(base, EditAction.SetAspectRatio(AspectRatio.RATIO_1_1)).aspectRatio)
+        assertSame(base, EditReducer.reduce(base, EditAction.SetAspectRatio(base.aspectRatio)))
+    }
+
+    // Phase 4: text overlays (timeline is 15 s: clip a 10 s + clip b 5 s)
+
+    private fun text(id: String = "t", start: Long = 1_000L, end: Long = 4_000L) =
+        TextOverlay(id = id, text = "Hi", startMs = start, endMs = end)
+
+    @Test
+    fun addText_isClampedToTheTimeline() {
+        val added = EditReducer.reduce(base, EditAction.AddText(text(start = 14_000L, end = 17_000L))).textOverlays.single()
+        assertEquals(14_000L to 15_000L, added.startMs to added.endMs)
+        val atEnd = EditReducer.reduce(base, EditAction.AddText(text(start = 15_000L, end = 18_000L))).textOverlays.single()
+        assertEquals(15_000L - MIN_CLIP_DURATION_MS to 15_000L, atEnd.startMs to atEnd.endMs)
+    }
+
+    @Test
+    fun updateText_replacesById_andClampsPosition() {
+        val withText = EditReducer.reduce(base, EditAction.AddText(text()))
+        val updated = EditReducer.reduce(withText, EditAction.UpdateText(text().copy(text = "Bye", xNorm = 1.5f, yNorm = -1f)))
+        assertEquals("Bye", updated.textOverlays.single().text)
+        assertEquals(1f to 0f, updated.textOverlays.single().xNorm to updated.textOverlays.single().yNorm)
+        assertSame(withText, EditReducer.reduce(withText, EditAction.UpdateText(text("missing"))))
+    }
+
+    @Test
+    fun deleteText_removesIt() {
+        val withText = EditReducer.reduce(base, EditAction.AddText(text()))
+        assertTrue(EditReducer.reduce(withText, EditAction.DeleteText("t")).textOverlays.isEmpty())
+        assertSame(withText, EditReducer.reduce(withText, EditAction.DeleteText("missing")))
+    }
+
+    @Test
+    fun shorteningTheTimeline_clampsTexts() {
+        val withText = EditReducer.reduce(base, EditAction.AddText(text(start = 9_000L, end = 14_000L)))
+        val shorter = EditReducer.reduce(withText, EditAction.DeleteClip("b")) // timeline now 10 s
+        assertEquals(9_000L to 10_000L, shorter.textOverlays.single().startMs to shorter.textOverlays.single().endMs)
+
+        val faster = EditReducer.reduce(withText, EditAction.SetSpeed("a", 4f)) // 2.5 s + 5 s = 7.5 s
+        val clamped = faster.textOverlays.single()
+        assertEquals(7_500L - MIN_CLIP_DURATION_MS to 7_500L, clamped.startMs to clamped.endMs)
+    }
+
+    @Test
+    fun deletingAllClips_dropsTexts() {
+        val withText = EditReducer.reduce(project(videoClip("a")), EditAction.AddText(text()))
+        assertTrue(EditReducer.reduce(withText, EditAction.DeleteClip("a")).textOverlays.isEmpty())
     }
 }

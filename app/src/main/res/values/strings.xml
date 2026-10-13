@@ -29,6 +29,33 @@
     <string name="tool_duplicate">Duplicate</string>
     <string name="tool_delete">Delete</string>
     <string name="timeline_add_media">Add media</string>
+    <string name="tool_speed">Speed</string>
+    <string name="tool_filters">Filters</string>
+    <string name="tool_rotate">Rotate</string>
+    <string name="tool_text">Text</string>
+    <string name="tool_ratio">Ratio</string>
+
+    <string name="speed_title">Speed %1$sx</string>
+    <string name="speed_value">%1$sx</string>
+    <string name="speed_not_for_photos">Speed only applies to videos.</string>
+
+    <string name="filter_title">Filters</string>
+    <string name="filter_none">None</string>
+    <string name="filter_bright">Bright</string>
+    <string name="filter_contrast">Punch</string>
+    <string name="filter_vivid">Vivid</string>
+    <string name="filter_mono">Mono</string>
+    <string name="filter_warm">Warm</string>
+    <string name="filter_cool">Cool</string>
+    <string name="filter_vintage">Vintage</string>
+
+    <string name="ratio_title">Aspect ratio</string>
+
+    <string name="text_title">Text</string>
+    <string name="text_placeholder">Enter text</string>
+    <string name="text_size">Size</string>
+    <string name="text_background">Background</string>
+    <string name="text_delete">Delete text</string>
     <string name="trim_duration">Duration %1$s</string>
 
     <string name="export_title">Export</string>

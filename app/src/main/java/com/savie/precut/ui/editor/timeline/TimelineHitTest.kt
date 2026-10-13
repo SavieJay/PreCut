@@ -17,12 +17,17 @@ class TimelineHitTest(
     private val scrollPx: Int,
     private val viewportWidthPx: Float,
     private val handleSlopPx: Float,
+    /** Vertical band (px from the viewport top) occupied by the clip strip. */
+    private val stripYPx: ClosedFloatingPointRange<Float>,
 ) {
+    fun isInClipStrip(y: Float): Boolean = y in stripYPx
+
     private fun toTimelinePx(x: Float) = x + scrollPx - viewportWidthPx / 2
     private fun toViewportX(timelinePx: Float) = timelinePx - scrollPx + viewportWidthPx / 2
 
-    /** Index of the clip under [x], or null over empty space. */
-    fun clipIndexAt(x: Float): Int? {
+    /** Index of the clip under ([x], [y]), or null over empty space or outside the clip strip. */
+    fun clipIndexAt(x: Float, y: Float): Int? {
+        if (!isInClipStrip(y)) return null
         val ms = TimelineGeometry.pxToMs(toTimelinePx(x), pxPerMs)
         val total = project.clips.sumOf { it.timelineDurationMs() }
         return if (ms in 0 until total) project.clipAt(ms)?.index else null

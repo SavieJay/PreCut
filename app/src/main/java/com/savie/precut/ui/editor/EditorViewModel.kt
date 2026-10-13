@@ -9,7 +9,11 @@ import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.PreviewState
 import com.savie.precut.media.ThumbnailLoader
+import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.ClipType
+import com.savie.precut.model.FilterType
 import com.savie.precut.model.Project
+import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.clipAt
 import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.edit.EditAction
@@ -35,7 +39,8 @@ import java.time.Clock
 import java.util.UUID
 import javax.inject.Inject
 
-enum class EditorTool { TRIM }
+/** Panels that replace the toolbar while open. */
+enum class EditorTool { TRIM, SPEED, FILTER, TEXT, RATIO }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -43,6 +48,7 @@ sealed interface EditorUiState {
     data class Ready(
         val project: Project,
         val selectedClipId: String? = null,
+        val selectedTextId: String? = null,
         val activeTool: EditorTool? = null,
         val isImporting: Boolean = false,
     ) : EditorUiState
@@ -51,6 +57,7 @@ sealed interface EditorUiState {
 sealed interface EditorEvent {
     data class SomeFilesSkipped(val count: Int) : EditorEvent
     data object NothingImported : EditorEvent
+    data object SpeedNotForPhotos : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -116,16 +123,46 @@ class EditorViewModel @Inject constructor(
 
     // Selection and tools
 
-    fun onClipSelected(clipId: String?) = updateReady {
-        it.copy(selectedClipId = clipId, activeTool = if (clipId == null) null else it.activeTool)
+    fun onClipSelected(clipId: String?) {
+        dropBlankSelectedText()
+        updateReady {
+            val clip = it.project.clips.firstOrNull { c -> c.id == clipId }
+            // Keep a clip tool open when switching clips, unless it doesn't apply (speed on a photo).
+            val keepTool = clip != null && it.activeTool in CLIP_TOOLS &&
+                !(it.activeTool == EditorTool.SPEED && clip.type == ClipType.IMAGE)
+            it.copy(selectedClipId = clipId, selectedTextId = null, activeTool = if (keepTool) it.activeTool else null)
+        }
+    }
+
+    fun onTextSelected(textId: String?) {
+        dropBlankSelectedText()
+        updateReady {
+            it.copy(selectedTextId = textId, selectedClipId = null, activeTool = if (textId != null) EditorTool.TEXT else null)
+        }
     }
 
     fun onToolSelected(tool: EditorTool) {
-        val clipId = targetClipId() ?: return
-        updateReady { it.copy(selectedClipId = clipId, activeTool = if (it.activeTool == tool) null else tool) }
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        if (ready.activeTool == tool) return onToolClosed()
+        when (tool) {
+            EditorTool.RATIO -> updateReady { it.copy(activeTool = tool) }
+            EditorTool.TEXT -> addText(ready)
+            EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER -> {
+                val clipId = targetClipId() ?: return
+                val clip = ready.project.clips.first { it.id == clipId }
+                if (tool == EditorTool.SPEED && clip.type == ClipType.IMAGE) {
+                    viewModelScope.launch { _events.send(EditorEvent.SpeedNotForPhotos) }
+                    return
+                }
+                updateReady { it.copy(selectedClipId = clipId, selectedTextId = null, activeTool = tool) }
+            }
+        }
     }
 
-    fun onToolClosed() = updateReady { it.copy(activeTool = null) }
+    fun onToolClosed() {
+        dropBlankSelectedText()
+        updateReady { it.copy(activeTool = null, selectedTextId = null) }
+    }
 
     // Edits
 
@@ -146,6 +183,60 @@ class EditorViewModel @Inject constructor(
         applyEdit(EditAction.TrimClip(clipId, trimStartMs, trimEndMs))
 
     fun onMove(from: Int, to: Int) = applyEdit(EditAction.MoveClip(from, to))
+
+    fun onRotate() {
+        val clipId = targetClipId() ?: return
+        applyEdit(EditAction.RotateClip(clipId))
+    }
+
+    fun onSpeedChanged(speed: Float) {
+        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
+        applyEdit(EditAction.SetSpeed(clipId, speed))
+    }
+
+    fun onFilterSelected(filter: FilterType) {
+        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
+        applyEdit(EditAction.SetFilter(clipId, filter))
+    }
+
+    fun onAspectRatioSelected(aspectRatio: AspectRatio) = applyEdit(EditAction.SetAspectRatio(aspectRatio))
+
+    fun onTextChanged(overlay: TextOverlay) = applyEdit(EditAction.UpdateText(overlay))
+
+    fun onTextMoved(textId: String, xNorm: Float, yNorm: Float) {
+        val overlay = findText(textId) ?: return
+        applyEdit(EditAction.UpdateText(overlay.copy(xNorm = xNorm, yNorm = yNorm)))
+    }
+
+    fun onTextTimingChanged(textId: String, startMs: Long, endMs: Long) {
+        val overlay = findText(textId) ?: return
+        applyEdit(EditAction.UpdateText(overlay.copy(startMs = startMs, endMs = endMs)))
+    }
+
+    fun onDeleteText() {
+        val textId = (_uiState.value as? EditorUiState.Ready)?.selectedTextId ?: return
+        applyEdit(EditAction.DeleteText(textId))
+        updateReady { it.copy(selectedTextId = null, activeTool = null) }
+    }
+
+    /** New text at the playhead, lasting [DEFAULT_TEXT_DURATION_MS], selected for editing. */
+    private fun addText(ready: EditorUiState.Ready) {
+        if (ready.project.clips.isEmpty()) return
+        val start = previewState.value.positionMs
+        val overlay = TextOverlay(id = newId(), text = "", startMs = start, endMs = start + DEFAULT_TEXT_DURATION_MS)
+        applyEdit(EditAction.AddText(overlay))
+        updateReady { it.copy(selectedTextId = overlay.id, selectedClipId = null, activeTool = EditorTool.TEXT) }
+    }
+
+    /** A text left empty when its panel closes is removed rather than kept invisible. */
+    private fun dropBlankSelectedText() {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        val text = ready.selectedTextId?.let(::findText) ?: return
+        if (text.text.isBlank()) applyEdit(EditAction.DeleteText(text.id))
+    }
+
+    private fun findText(textId: String): TextOverlay? =
+        (_uiState.value as? EditorUiState.Ready)?.project?.textOverlays?.firstOrNull { it.id == textId }
 
     fun onMediaPicked(uris: List<String>) {
         val ready = _uiState.value as? EditorUiState.Ready ?: return
@@ -196,5 +287,7 @@ class EditorViewModel @Inject constructor(
 
     private companion object {
         const val PREVIEW_REBUILD_DEBOUNCE_MS = 150L
+        const val DEFAULT_TEXT_DURATION_MS = 3_000L
+        val CLIP_TOOLS = setOf(EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER)
     }
 }

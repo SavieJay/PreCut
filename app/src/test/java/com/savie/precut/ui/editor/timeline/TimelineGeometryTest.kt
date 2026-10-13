@@ -77,4 +77,13 @@ class TimelineGeometryTest {
         assertEquals(48f, crowded.tilePx)
         assertEquals(1, crowded.targetIndex(fingerX = 20f + 48f + 10f, count = 20))
     }
+
+    @Test
+    fun moveRange_keepsLength_andStaysInsideTimeline() {
+        assertEquals(3_000L to 5_000L, TimelineGeometry.moveRange(1_000L, 3_000L, 2_000L, totalMs = 10_000L))
+        assertEquals(0L to 2_000L, TimelineGeometry.moveRange(1_000L, 3_000L, -5_000L, totalMs = 10_000L))
+        assertEquals(8_000L to 10_000L, TimelineGeometry.moveRange(1_000L, 3_000L, 50_000L, totalMs = 10_000L))
+        // Longer than the timeline: pinned at 0 (the reducer then clamps the end).
+        assertEquals(0L to 12_000L, TimelineGeometry.moveRange(0L, 12_000L, 500L, totalMs = 10_000L))
+    }
 }

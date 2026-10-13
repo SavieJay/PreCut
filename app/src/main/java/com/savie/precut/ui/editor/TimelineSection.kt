@@ -21,6 +21,7 @@ import com.savie.precut.R
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.ui.editor.timeline.Timeline
 import com.savie.precut.ui.editor.timeline.TimelineActions
+import com.savie.precut.ui.editor.timeline.TimelineHeight
 import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.TextPrimary
 
@@ -34,10 +35,11 @@ fun TimelineSection(
     onAddMedia: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier.fillMaxWidth().height(TIMELINE_HEIGHT)) {
+    Box(modifier.fillMaxWidth().height(TimelineHeight)) {
         Timeline(
             project = state.project,
             selectedClipId = state.selectedClipId,
+            selectedTextId = state.selectedTextId,
             positionMs = positionMs,
             loader = loader,
             actions = actions,
@@ -48,8 +50,8 @@ fun TimelineSection(
             shape = RoundedCornerShape(8.dp),
             colors = IconButtonDefaults.filledIconButtonColors(containerColor = TextPrimary, contentColor = Ink0),
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 12.dp, bottom = 16.dp)
+                .align(Alignment.TopEnd)
+                .padding(end = 12.dp, top = 40.dp)
                 .size(40.dp),
         ) {
             if (state.isImporting) {
@@ -60,5 +62,3 @@ fun TimelineSection(
         }
     }
 }
-
-private val TIMELINE_HEIGHT = 104.dp
