@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -51,6 +53,8 @@ fun ClipView(
     selected: Boolean,
     /** Shows the muted badge (clip muted, at 0%, or all original audio muted). */
     soundOff: Boolean,
+    /** The media can't be opened: tinted red with a warning mark. */
+    missing: Boolean,
     visiblePx: ClosedFloatingPointRange<Float>,
     loader: ThumbnailLoader,
     onTrim: (trimStartMs: Long, trimEndMs: Long) -> Unit,
@@ -93,6 +97,16 @@ fun ClipView(
                         .width(with(density) { tileWidthPx.toDp() })
                         .fillMaxHeight(),
                 )
+            }
+        }
+        if (missing) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.55f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("!", style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
         }
         if (soundOff) {

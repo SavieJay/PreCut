@@ -20,6 +20,7 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onAudio() = viewModel.onAudioMenu(true)
             override fun onExtractAudio() = viewModel.audio.onExtract()
             override fun onRotate() = viewModel.onRotate()
+            override fun onReplace() = viewModel.onReplaceClip()
             override fun onText() = viewModel.onToolSelected(EditorTool.TEXT)
             override fun onRatio() = viewModel.onToolSelected(EditorTool.RATIO)
             override fun onDuplicate() = viewModel.onDuplicate()

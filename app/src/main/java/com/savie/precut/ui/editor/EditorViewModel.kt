@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import com.savie.precut.data.ProjectRepository
+import com.savie.precut.di.ApplicationScope
 import com.savie.precut.media.MediaImporter
+import com.savie.precut.media.MediaProbe
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.PreviewState
 import com.savie.precut.media.ThumbnailLoader
@@ -23,6 +25,7 @@ import com.savie.precut.model.edit.EditReducer
 import com.savie.precut.model.totalDurationMs
 import com.savie.precut.ui.navigation.requireProjectId
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -59,6 +62,10 @@ sealed interface EditorUiState {
         /** The Audio sub-toolbar (Music, Extract, Record) is showing. */
         val audioMenuOpen: Boolean = false,
         val isImporting: Boolean = false,
+        /** Clips and audio clips whose media can't be opened any more. */
+        val missingIds: Set<String> = emptySet(),
+        val canUndo: Boolean = false,
+        val canRedo: Boolean = false,
     ) : EditorUiState
 }
 
@@ -73,6 +80,8 @@ sealed interface EditorEvent {
     data object RequestMicPermission : EditorEvent
     data object RecordingFailed : EditorEvent
     data object NothingToExtract : EditorEvent
+    /** The screen should open the single-item media picker to replace the selected clip. */
+    data object PickReplacement : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -88,6 +97,8 @@ class EditorViewModel @Inject constructor(
     val waveforms: WaveformLoader,
     private val clock: Clock,
     voiceRecorder: VoiceRecorder,
+    private val probe: MediaProbe,
+    @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     val projectId = savedStateHandle.requireProjectId()
@@ -124,6 +135,9 @@ class EditorViewModel @Inject constructor(
     /** Audio lanes, extract, voiceover and audio-clip tools. */
     val audio = EditorAudio(host, importer, previewController, voiceRecorder)
 
+    /** Edits, undo history and auto-save; set once the project has loaded. */
+    private var session: ProjectSession? = null
+
     /** Latest edited project; the preview rebuilds once edits pause, so rapid edits rebuild once. */
     private val pendingPreview = MutableStateFlow<Project?>(null)
 
@@ -134,13 +148,17 @@ class EditorViewModel @Inject constructor(
                 _uiState.value = EditorUiState.NotFound
                 return@launch
             }
-            previewController.setProject(project)
-            _uiState.value = EditorUiState.Ready(project)
+            session = ProjectSession(project, repository, clock, appScope, viewModelScope)
+            val missing = findMissing(project)
+            previewController.setProject(playable(project, missing))
+            _uiState.value = EditorUiState.Ready(project, missingIds = missing)
         }
         viewModelScope.launch {
             pendingPreview.filterNotNull().debounce(PREVIEW_REBUILD_DEBOUNCE_MS).collect { project ->
-                val resumeAt = previewState.value.positionMs.coerceAtMost(project.totalDurationMs())
-                previewController.setProject(project, resumeAt)
+                val missing = (_uiState.value as? EditorUiState.Ready)?.missingIds.orEmpty()
+                val playable = playable(project, missing)
+                val resumeAt = previewState.value.positionMs.coerceAtMost(playable.totalDurationMs())
+                previewController.setProject(playable, resumeAt)
             }
         }
     }
@@ -157,7 +175,77 @@ class EditorViewModel @Inject constructor(
     fun onScreenStopped() {
         audio.onRecordStop()
         previewController.pause()
+        session?.flush()
     }
+
+    // Undo / redo
+
+    fun onUndo() = session?.undo()?.let(::showRestored)
+
+    fun onRedo() = session?.redo()?.let(::showRestored)
+
+    /** Shows an undone/redone project, dropping selections that no longer exist. */
+    private fun showRestored(project: Project) {
+        val history = session?.history ?: return
+        updateReady { ready ->
+            ready.copy(
+                project = project,
+                canUndo = history.canUndo,
+                canRedo = history.canRedo,
+                selectedClipId = ready.selectedClipId?.takeIf { id -> project.clips.any { it.id == id } },
+                selectedTextId = ready.selectedTextId?.takeIf { id -> project.textOverlays.any { it.id == id } },
+                selectedAudioId = ready.selectedAudioId?.takeIf { id -> project.audioClips.any { it.id == id } },
+                activeTool = null,
+            )
+        }
+        previewController.pause()
+        pendingPreview.value = project
+    }
+
+    // Missing media
+
+    fun onRemoveMissing() {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        val clipIds = ready.project.clips.map { it.id }.filter { it in ready.missingIds }.toSet()
+        val audioIds = ready.project.audioClips.map { it.id }.filter { it in ready.missingIds }.toSet()
+        applyEdit(EditAction.RemoveItems(clipIds, audioIds))
+        updateReady { it.copy(missingIds = emptySet(), selectedClipId = null, selectedAudioId = null, activeTool = null) }
+    }
+
+    /** Replace the selected (or playhead) clip's media, e.g. a missing one. */
+    fun onReplaceClip() {
+        val clipId = targetClipId() ?: return
+        updateReady { it.copy(selectedClipId = clipId) }
+        viewModelScope.launch { _events.send(EditorEvent.PickReplacement) }
+    }
+
+    fun onReplacementPicked(uri: String?) {
+        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
+        if (uri == null) return
+        viewModelScope.launch {
+            val imported = importer.import(listOf(uri)).imported.firstOrNull()
+            if (imported == null) {
+                _events.send(EditorEvent.NothingImported)
+                return@launch
+            }
+            updateReady { it.copy(missingIds = it.missingIds - clipId) }
+            applyEdit(EditAction.ReplaceClip(clipId, imported.uri, imported.info))
+        }
+    }
+
+    private suspend fun findMissing(project: Project): Set<String> =
+        (project.clips.map { it.id to it.uri } + project.audioClips.map { it.id to it.uri })
+            .filterNot { (_, uri) -> probe.isReadable(uri) }
+            .map { it.first }
+            .toSet()
+
+    /** The project without media that can't be opened, so the rest still previews. */
+    private fun playable(project: Project, missing: Set<String>): Project =
+        if (missing.isEmpty()) {
+            project
+        } else {
+            project.copy(clips = project.clips.filterNot { it.id in missing }, audioClips = project.audioClips.filterNot { it.id in missing })
+        }
 
     // Selection and tools
 
@@ -348,13 +436,11 @@ class EditorViewModel @Inject constructor(
 
     private fun applyEdit(action: EditAction) {
         val ready = _uiState.value as? EditorUiState.Ready ?: return
-        val edited = EditReducer.reduce(ready.project, action)
-        if (edited === ready.project) return
-        val saved = edited.copy(updatedAt = clock.millis())
-        _uiState.value = ready.copy(project = saved)
+        val currentSession = session ?: return
+        val edited = currentSession.apply(action) ?: return
+        _uiState.value = ready.copy(project = edited, canUndo = currentSession.history.canUndo, canRedo = false)
         previewController.pause()
-        pendingPreview.value = saved
-        viewModelScope.launch { repository.save(saved) }
+        pendingPreview.value = edited
     }
 
     private fun updateReady(transform: (EditorUiState.Ready) -> EditorUiState.Ready) =
@@ -363,6 +449,7 @@ class EditorViewModel @Inject constructor(
     private fun newId() = UUID.randomUUID().toString()
 
     override fun onCleared() {
+        session?.flush()
         audio.release()
         previewController.release()
     }

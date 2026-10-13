@@ -4,6 +4,7 @@ import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.Clip
 import com.savie.precut.model.FilterType
+import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.VoiceEffect
 
@@ -51,6 +52,15 @@ sealed interface EditAction {
     data class SetClipVolume(val clipId: String, val volume: Float) : EditAction
 
     data class SetClipMuted(val clipId: String, val muted: Boolean) : EditAction
+
+    /**
+     * Swaps a clip's media, keeping its position, length (as far as the new media allows) and
+     * settings (speed for videos, filter, rotation, volume, fades).
+     */
+    data class ReplaceClip(val clipId: String, val uri: String, val info: MediaInfo) : EditAction
+
+    /** Removes several clips and audio clips in one step (e.g. all missing media). */
+    data class RemoveItems(val clipIds: Set<String>, val audioIds: Set<String>) : EditAction
 
     /** Audio edits, applied by `applyAudioEdit` (AudioEdits.kt). */
     sealed interface AudioEdit : EditAction

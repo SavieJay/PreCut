@@ -41,7 +41,7 @@ fun TimelineSection(
     Box(modifier.fillMaxWidth().height(timelineHeight(state.project))) {
         Timeline(
             project = state.project,
-            selection = TimelineSelection(state.selectedClipId, state.selectedTextId, state.selectedAudioId),
+            selection = TimelineSelection(state.selectedClipId, state.selectedTextId, state.selectedAudioId, state.missingIds),
             positionMs = positionMs,
             loader = loader,
             waveforms = waveforms,

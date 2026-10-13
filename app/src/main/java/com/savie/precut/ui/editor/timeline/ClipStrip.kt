@@ -13,6 +13,7 @@ import com.savie.precut.model.clipStartTimesMs
 fun ClipStrip(
     project: Project,
     selectedClipId: String?,
+    missingIds: Set<String>,
     pxPerMs: Float,
     clipHeight: Dp,
     visiblePx: ClosedFloatingPointRange<Float>,
@@ -31,6 +32,7 @@ fun ClipStrip(
                     height = clipHeight,
                     selected = clip.id == selectedClipId,
                     soundOff = clip.muted || clip.volume == 0f || project.originalAudioMuted,
+                    missing = clip.id in missingIds,
                     visiblePx = (visiblePx.start - clipStartPx)..(visiblePx.endInclusive - clipStartPx),
                     loader = loader,
                     onTrim = { start, end -> onTrim(clip.id, start, end) },

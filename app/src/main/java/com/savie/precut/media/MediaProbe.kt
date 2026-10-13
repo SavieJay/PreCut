@@ -25,6 +25,9 @@ interface MediaProbe {
 
     /** Duration of an audio file in ms, or null if it can't be read. */
     suspend fun probeAudioDurationMs(uri: String): Long?
+
+    /** Whether the media can still be opened (it may have been deleted or its access revoked). */
+    suspend fun isReadable(uri: String): Boolean
 }
 
 class AndroidMediaProbe @Inject constructor(
@@ -59,6 +62,16 @@ class AndroidMediaProbe @Inject constructor(
             null // unreadable or revoked
         } finally {
             retriever.release()
+        }
+    }
+
+    override suspend fun isReadable(uri: String): Boolean = withContext(ioDispatcher) {
+        try {
+            context.contentResolver.openFileDescriptor(Uri.parse(uri), "r")?.use { true } ?: false
+        } catch (_: IOException) {
+            false
+        } catch (_: RuntimeException) {
+            false // SecurityException (revoked), IllegalArgumentException (bad Uri)
         }
     }
 

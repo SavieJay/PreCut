@@ -2,6 +2,7 @@ package com.savie.precut.ui.home
 
 import app.cash.turbine.test
 import com.savie.precut.data.InMemoryProjectRepository
+import com.savie.precut.data.UnusedMediaCleaner
 import com.savie.precut.media.ImportResult
 import com.savie.precut.media.ImportedAudio
 import com.savie.precut.media.ImportedMedia
@@ -38,7 +39,7 @@ class HomeViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(result: ImportResult) = HomeViewModel(FakeImporter(result), repository, clock)
+    private fun viewModel(result: ImportResult) = HomeViewModel(FakeImporter(result), repository, clock, NoOpCleaner)
 
     @Test
     fun picking_media_createsProjectInPickOrder_andOpensEditor() = runTest(dispatcher) {
@@ -101,6 +102,28 @@ class HomeViewModelTest {
             expectNoEvents()
         }
         assertFalse(vm.uiState.value.isImporting)
+    }
+
+    private object NoOpCleaner : UnusedMediaCleaner {
+        override suspend fun sweep() = Unit
+    }
+
+    @Test
+    fun drafts_areListed_andCanBeRenamedDuplicatedAndDeleted() = runTest(dispatcher) {
+        repository.save(com.savie.precut.model.project().copy(id = "p1", name = "One", updatedAt = 5L))
+        val vm = viewModel(ImportResult(emptyList(), 0))
+        dispatcher.scheduler.runCurrent()
+        assertEquals(listOf("One"), vm.uiState.value.projects?.map { it.name })
+
+        vm.onRename("p1", "  Trip ")
+        vm.onDuplicate("p1")
+        dispatcher.scheduler.runCurrent()
+        assertEquals(setOf("Trip"), vm.uiState.value.projects?.map { it.name }?.toSet())
+        assertEquals(2, vm.uiState.value.projects?.size)
+
+        vm.onDelete("p1")
+        dispatcher.scheduler.runCurrent()
+        assertEquals(1, vm.uiState.value.projects?.size)
     }
 
     private class FakeImporter(private val result: ImportResult) : MediaImporter {

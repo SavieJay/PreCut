@@ -10,10 +10,20 @@
     <string name="action_open">Open</string>
     <string name="action_share">Share</string>
     <string name="action_export">Export</string>
+    <string name="action_undo">Undo</string>
+    <string name="action_redo">Redo</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_duplicate">Duplicate</string>
+    <string name="action_delete">Delete</string>
 
     <string name="home_new_project">New project</string>
     <string name="home_empty_state">No projects yet.\nTap New project to start editing.</string>
     <string name="home_importing">Importing media…</string>
+    <string name="home_drafts_title">Projects</string>
+    <string name="home_untitled">Project %1$s</string>
+    <string name="home_project_options">Project options</string>
+    <string name="home_delete_title">Delete project?</string>
+    <string name="home_delete_message">“%1$s” will be deleted. Your original videos and photos aren\'t affected.</string>
     <string name="home_import_nothing">None of the selected files could be opened.</string>
     <plurals name="home_import_skipped">
         <item quantity="one">%1$d file couldn\'t be opened and was skipped.</item>
@@ -116,4 +126,10 @@
     <string name="export_error_permission">Storage permission is needed to save the video.</string>
     <string name="export_error_encode">The video couldn\'t be exported.</string>
     <string name="export_error_save">The video was exported but couldn\'t be saved to the gallery.</string>
+
+    <plurals name="missing_media">
+        <item quantity="one">%1$d media file can\'t be found. Select the red clip to replace it.</item>
+        <item quantity="other">%1$d media files can\'t be found. Select a red clip to replace it.</item>
+    </plurals>
+    <string name="missing_remove_all">Remove</string>
 </resources>

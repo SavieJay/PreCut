@@ -1,6 +1,8 @@
 package com.savie.precut.model.edit
 
 import com.savie.precut.model.Clip
+import com.savie.precut.model.MediaInfo
+import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.MAX_VOLUME
 import com.savie.precut.model.Project
@@ -38,6 +40,16 @@ object EditReducer {
                 .let { if (it.size == project.textOverlays.size) project else project.copy(textOverlays = it) }
             is EditAction.SetClipVolume -> project.updateClip(action.clipId) { it.copy(volume = action.volume.coerceIn(0f, MAX_VOLUME)) }
             is EditAction.SetClipMuted -> project.updateClip(action.clipId) { it.copy(muted = action.muted) }
+            is EditAction.ReplaceClip -> project.updateClip(action.clipId) { it.replacedWith(action.uri, action.info) }
+            is EditAction.RemoveItems -> {
+                val clips = project.clips.filterNot { it.id in action.clipIds }
+                val audio = project.audioClips.filterNot { it.id in action.audioIds }
+                if (clips.size == project.clips.size && audio.size == project.audioClips.size) {
+                    project
+                } else {
+                    project.copy(clips = clips, audioClips = audio)
+                }
+            }
             is EditAction.AudioEdit -> project.applyAudioEdit(action)
         }
         return if (edited === project) project else edited.withClampedTexts()
@@ -120,6 +132,22 @@ object EditReducer {
         val updated = transform(clips[index])
         if (updated == clips[index]) return this
         return copy(clips = clips.toMutableList().also { it[index] = updated })
+    }
+
+    private fun Clip.replacedWith(uri: String, info: MediaInfo): Clip {
+        val fresh = clipFromMedia(id, uri, info)
+        val wantedLength = trimEndMs - trimStartMs
+        return fresh.copy(
+            trimStartMs = 0L,
+            trimEndMs = wantedLength.coerceIn(MIN_CLIP_DURATION_MS.coerceAtMost(fresh.sourceDurationMs), fresh.sourceDurationMs),
+            speed = if (fresh.type == ClipType.VIDEO && type == ClipType.VIDEO) speed else 1f,
+            volume = volume,
+            muted = muted,
+            filter = filter,
+            rotationDegrees = rotationDegrees,
+            fadeInMs = fadeInMs,
+            fadeOutMs = fadeOutMs,
+        )
     }
 
     private fun Clip.trimmed(requestedStartMs: Long, requestedEndMs: Long): Clip {

@@ -64,6 +64,9 @@ fun EditorScreen(
     val musicPicker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         viewModel.audio.onMusicPicked(uri?.toString())
     }
+    val replacementPicker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        viewModel.onReplacementPicked(uri?.toString())
+    }
     val micPermission = rememberLauncherForActivityResult(RequestPermission()) { granted ->
         if (granted) viewModel.audio.onRecordStart(hasPermission = true)
     }
@@ -76,6 +79,10 @@ fun EditorScreen(
             EditorEvent.MusicImportFailed -> resources.getString(R.string.audio_import_failed)
             EditorEvent.RecordingFailed -> resources.getString(R.string.voiceover_failed)
             EditorEvent.NothingToExtract -> resources.getString(R.string.audio_nothing_to_extract)
+            EditorEvent.PickReplacement -> {
+                replacementPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
+                return@ObserveAsEvents
+            }
             EditorEvent.RequestMicPermission -> {
                 micPermission.launch(Manifest.permission.RECORD_AUDIO)
                 return@ObserveAsEvents
@@ -93,8 +100,12 @@ fun EditorScreen(
         topBar = {
             val ready = uiState as? EditorUiState.Ready
             EditorTopBar(
-                canExport = ready != null && ready.project.clips.isNotEmpty(),
+                canExport = ready != null && ready.project.clips.isNotEmpty() && ready.missingIds.isEmpty(),
+                canUndo = ready?.canUndo == true,
+                canRedo = ready?.canRedo == true,
                 onBack = onBack,
+                onUndo = viewModel::onUndo,
+                onRedo = viewModel::onRedo,
                 onExport = { onExport(viewModel.projectId) },
             )
         },
@@ -112,6 +123,9 @@ fun EditorScreen(
             }
             // imePadding: the text tool's keyboard pushes the panel up and shrinks the preview.
             is EditorUiState.Ready -> Column(modifier.imePadding()) {
+                if (state.missingIds.isNotEmpty()) {
+                    MissingMediaBanner(state.missingIds.size, onRemoveAll = viewModel::onRemoveMissing)
+                }
                 if (state.project.clips.isEmpty()) {
                     // The player keeps its last frame after the final clip is deleted; cover it.
                     Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black), contentAlignment = Alignment.Center) {

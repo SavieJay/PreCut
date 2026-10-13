@@ -3,6 +3,8 @@ package com.savie.precut.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.ProjectRepository
+import com.savie.precut.data.ProjectSummary
+import com.savie.precut.data.UnusedMediaCleaner
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.model.Project
 import com.savie.precut.model.clipFromMedia
@@ -19,7 +21,11 @@ import java.time.Clock
 import java.util.UUID
 import javax.inject.Inject
 
-data class HomeUiState(val isImporting: Boolean = false)
+data class HomeUiState(
+    val isImporting: Boolean = false,
+    /** Drafts, most recent first; null while loading. */
+    val projects: List<ProjectSummary>? = null,
+)
 
 sealed interface HomeEvent {
     data class OpenEditor(val projectId: String) : HomeEvent
@@ -32,10 +38,31 @@ class HomeViewModel @Inject constructor(
     private val importer: MediaImporter,
     private val repository: ProjectRepository,
     private val clock: Clock,
+    cleaner: UnusedMediaCleaner,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            repository.observeProjects().collect { projects -> _uiState.update { it.copy(projects = projects) } }
+        }
+        // No editor is open on this screen, so unused recordings can't be needed for undo.
+        viewModelScope.launch { cleaner.sweep() }
+    }
+
+    fun onRename(projectId: String, name: String) {
+        viewModelScope.launch { repository.rename(projectId, name.trim()) }
+    }
+
+    fun onDuplicate(projectId: String) {
+        viewModelScope.launch { repository.duplicate(projectId, newId(), clock.millis()) }
+    }
+
+    fun onDelete(projectId: String) {
+        viewModelScope.launch { repository.delete(projectId) }
+    }
 
     private val _events = Channel<HomeEvent>(Channel.BUFFERED)
     val events: Flow<HomeEvent> = _events.receiveAsFlow()

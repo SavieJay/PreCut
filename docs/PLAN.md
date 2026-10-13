@@ -20,8 +20,23 @@ Follow all rules in `/CLAUDE.md`.
 - Auto-saved project drafts
 - Export to gallery: 720p / 1080p, H.264 + AAC MP4, with progress, running in a foreground service
 
-### v2 (do NOT build unless asked)
-Transitions, stickers, voiceover, keyframes, chroma key, multiple overlay tracks, 4K, cloud sync.
+### CapCut parity (added 2026-10-13 at the user's request — see §6 gap analysis)
+Phases 7–12 below bring the editor to CapCut level, **including CapCut Pro features**, for
+everything that runs on-device without AI or online content:
+- Phase 7 — core editing gaps found by auditing Phases 1–4: insert at playhead, camera, share-to,
+  full-screen preview, snapping, multi-select, cover, 0.1–100x speed, more ratios, text rows and transform
+- Phase 8 — look and frame: LUT filter library, Adjust incl. HSL and Curves, filter/adjust layers,
+  transform, crop, mirror, canvas, opacity, transitions, animations, speed curves, freeze, reverse
+- Phase 9 — overlays/PiP, masks, chroma key, overlapping transitions, keyframes with easing graphs
+- Phase 10 — rich text, templates, text-to-speech, drawing, stickers
+- Phase 11 — video effects pack
+- Phase 12 — export up to 4K/60 fps with HEVC/HDR, background export, settings, release
+
+### Out of scope (needs AI, online content, or Media3 can't do it)
+Auto captions/lyrics, background removal, AI effects/beauty/retouch, upscaling, smooth slow-mo
+(optical flow), auto reframe, stabilization, AutoCut/templates from the cloud, online
+stock/sticker/music/effect libraries, cloud sync, blend modes other than Normal (Media3's video
+compositor isn't pluggable — see Decisions log).
 
 ---
 
@@ -202,7 +217,7 @@ Each phase ends with acceptance criteria. Stop after each phase for user verific
 
 **Acceptance:** 3+ clips (including an image) can be split, reordered, trimmed, and deleted; preview plays them seamlessly; export matches preview.
 
-UI for Phases 3–7 follows `docs/design/DESIGN.md`.
+UI for all phases follows `docs/design/DESIGN.md`.
 
 ### Phase 4 — Editing tools
 - [x] Speed tool (0.25x–4x presets + slider); timeline width updates
@@ -231,33 +246,124 @@ Out of scope (AI or online content): noise reduction, AI voice changers/vocal is
 
 **Acceptance:** exported video contains original audio and music mixed at the chosen levels, with correct offset.
 
-### Phase 6 — Persistence and undo/redo
-- [ ] Room: `ProjectEntity(id, name, json, thumbnailPath, updatedAt)` + DAO
-- [ ] `ProjectRepository`: save, load, list, delete, rename
-- [ ] Auto-save on every edit (debounced ~500 ms)
-- [ ] Home screen: grid of drafts with thumbnail, name, duration; rename and delete
-- [ ] `History`: undo/redo stack (cap 50) wired into ViewModel; toolbar buttons
-- [ ] Missing-source handling: if a Uri can no longer be opened, mark the clip and offer to remove or replace it
-- [ ] Process-death safety: editor restores from repository
+### Phase 6 — Persistence, drafts and undo/redo
+- [x] Room: `ProjectEntity(id, name, json, thumbnailPath, durationMs, updatedAt)` + DAO
+- [x] `ProjectRepository`: save, load, observe list, delete, rename, duplicate
+- [x] Auto-save on every edit (debounced ~500 ms) and on leaving the editor
+- [x] Draft cover thumbnails (first frame of the first clip) saved with the project
+- [x] Home screen (CapCut "Projects"): grid of drafts with cover, name, duration, last edited; rename, duplicate and delete
+- [x] `History`: undo/redo stack (cap 50, rapid edits to the same target coalesced) wired into ViewModel; top-bar buttons
+- [x] Missing-source handling: unreadable media is marked on the timeline; remove all missing, or replace a missing clip
+- [x] Process-death safety: editor restores from repository
+- [x] Voiceover file cleanup when projects or voiceovers are deleted
 
 **Acceptance:** edit, kill the app, reopen → project restored exactly; undo/redo works across all edit types.
 
-### Phase 7 — Polish and release prep
+### Phase 7 — Core editing parity (gaps found by auditing Phases 1–4 against CapCut)
+Import and preview (Phase 1 gaps)
+- [ ] New media is inserted at the playhead (after the clip under it), not always at the end
+- [ ] Camera: record a video or take a photo from Home and from the editor's add button (system camera via `CaptureVideo` / `TakePicture` into app storage)
+- [ ] "Share to PreCut": accept `ACTION_SEND` / `ACTION_SEND_MULTIPLE` videos and photos from other apps and open them as a new project
+- [ ] Full-screen preview with its own scrub bar and play/pause (moved here from Phase 12)
+
+Timeline (Phase 2–3 gaps)
+- [ ] Trim handles and bar moves snap to the playhead and to neighbouring edges (haptic tick); auto-scroll when a drag nears the screen edge (moved here from Phase 12)
+- [ ] Frame-level zoom: ruler shows frame ticks at max zoom; the selected clip shows its duration; clip badges for speed, filter and muted
+- [ ] Multi-select mode: select several clips, texts or audio clips → delete, duplicate, or set speed/filter/volume at once (one undo step)
+- [ ] "Apply to all" for filter and volume (and for every later per-clip look tool)
+- [ ] Project cover: pick a frame of the video or a gallery photo (CapCut "Cover"); shown on the drafts grid, optionally exported as the first frame
+
+Speed and ratio (Phase 4 gaps)
+- [ ] Normal speed range 0.1x–100x like CapCut, with a "Keep pitch" toggle and the new length shown; verify Media3 behaviour at the extremes
+- [ ] More ratios: Original (first clip), 4:3, 3:4, 2:1, 2.35:1, 1.85:1, 9:19.5
+
+Text (Phase 4 gaps)
+- [ ] Overlapping texts auto-stack into rows like audio
+- [ ] Pinch to scale and two-finger rotate text on the preview, snapping to the centre lines and to 0°/90°; `TextOverlay.rotationDegrees`
+- [ ] Full colour picker (hue, saturation, hex, recent colours) and text opacity
+- [ ] Split text at the playhead, duplicate text
+- [ ] Unit tests: insert-at-playhead index, batch actions, text lanes, transform clamping, speed range, ratio sizes
+
+**Acceptance:** media shared from the gallery opens as a project; a camera clip inserts at the playhead; three overlapping texts sit on three rows and can be scaled/rotated on the preview; a multi-selected batch delete undoes in one step.
+
+### Phase 8 — Clip look and frame (CapCut "Edit", "Filters", "Adjust")
+- [ ] **Filter library:** about 40 bundled LUT filters in categories (Life, Film, Retro, Mono, Food, Nature, Style) via `SingleColorLut`; intensity 0–100%; apply to all; import your own `.cube` LUT (CapCut Pro)
+- [ ] **Adjust:** brightness, contrast, saturation, exposure, sharpen, highlights, shadows, temperature, tint, hue, fade, vignette, grain (custom GL shaders where Media3 has no built-in effect)
+- [ ] **HSL** per colour (8 hues: hue/saturation/lightness) and **Curves** (RGB + per channel) — CapCut Pro tools
+- [ ] **Filter and Adjust layers:** time-ranged bars on their own lane that affect everything underneath (composition-level, time-gated, like text)
+- [ ] **Transform main clips:** drag, pinch-scale and rotate any angle on the preview; Fit / Fill; snap to centre and 0°/90° (`MatrixTransformation`)
+- [ ] **Crop:** free and fixed ratios on the preview; **Mirror** horizontal / vertical
+- [ ] **Canvas / background:** black, colour, blur (4 strengths, `GaussianBlurWithFrameOverlaid`), or an image/pattern; apply to all
+- [ ] **Opacity** per clip
+- [ ] **Edge transitions** between clips (no overlap, total length unchanged): fade through black/white, flash, zoom in/out, blur, glitch, spin; adjustable duration; apply to all. Overlapping transitions come in Phase 9
+- [ ] **Clip animations** in/out/combo with duration: fade, zoom, slide, spin, bounce, shake
+- [ ] **Speed curves:** presets (Montage, Hero, Bullet, Jump cut, Flash in/out) and a custom curve editor with draggable points; variable `SpeedProvider`; timeline math handles variable speed
+- [ ] **Freeze frame:** insert a still (photo clip) of the frame under the playhead, splitting the clip
+- [ ] **Reverse:** pre-render a reversed copy (decode GOP by GOP, re-encode in reverse order, audio reversed) with a progress dialog, cached in app storage; undo restores the original
+- [ ] **Motion blur** (CapCut Pro): frame blending with `FrameCache` — stretch goal, verify performance
+- [x] **Replace clip** (keeps position, length and settings) — built in Phase 6 for missing media
+- [ ] Unit tests for every new action and spec mapping (curve integration, transition edge timing, LUT parsing, layer time gating)
+
+**Acceptance:** a project with a LUT filter at 60%, HSL + curves, a filter layer, a transformed and cropped clip, blurred canvas, 2 transitions, an animation, a speed curve, a freeze frame and a reversed clip exports identically to the preview.
+
+### Phase 9 — Overlays (PiP), masks and keyframes
+- [ ] Overlay track(s): add video/photo as picture-in-picture; overlays auto-stack into rows like audio
+- [ ] Composition gets extra video sequences; preview uses `MultipleInputVideoGraph`; per-input placement through `VideoCompositorSettings.getOverlaySettings(inputId, timeUs)`
+- [ ] Transform overlays directly on the preview: drag, pinch-scale, two-finger rotate; snap to centre lines
+- [ ] Overlay opacity, rotation, crop/adjust/filter reuse, animations, "Switch to main track" / "Switch to overlay"
+- [ ] **Masks** for main clips and overlays: linear, mirror, circle, rectangle (rounded corners), heart, star; feather, invert; move/scale/rotate on the preview (alpha-mask shader)
+- [ ] **Chroma key** (colour picker + intensity/shadow) as a custom GL shader
+- [ ] **Overlapping transitions** (CapCut style): dissolve, slide, push, wipe, zoom, spin. Neighbouring clips go on alternating A/B sequences that overlap by the transition duration, driven by time-dependent compositor settings plus masks; total length shrinks by the overlap like CapCut
+- [ ] **Keyframes** for position, scale, rotation, opacity, mask, chroma, filter intensity, adjust values and volume, on main clips, overlays and text: add/remove at the playhead, keyframe dots on the timeline
+- [ ] Keyframe easing: linear, ease in/out presets and a custom bezier graph (CapCut Pro "graphs")
+- [ ] Unit tests: keyframe interpolation and easing, overlay placement/lanes, compositor settings mapping, A/B transition layout
+
+**Acceptance:** a PiP overlay with keyframed motion, a heart mask and chroma key over a main clip, plus a dissolve between two main clips, exports identically to the preview.
+
+### Phase 10 — Text, stickers and drawing
+- [ ] Fonts (bundled open-licence set, plus import `.ttf`/`.otf` from the device), bold/italic/underline, alignment, letter/line spacing
+- [ ] Stroke (outline), shadow (colour, blur, distance, angle), glow, text box background with corner radius and padding
+- [ ] Curved text; rich text (different colour/size per selected characters)
+- [ ] Text animations in/out/loop with duration (fade, typewriter, slide, pop, bounce, wave)
+- [ ] Text style presets and bundled text templates (one-tap combinations of style + animation)
+- [ ] **Text-to-speech:** turn a text into a voiceover clip with the device's `TextToSpeech` engine (offline voices, speed/pitch)
+- [ ] Batch edit: change the style of all texts at once
+- [ ] Stickers: emoji picker and device images (PNG/WebP, animated GIF/WebP via `ImageDecoder` frames) on a sticker lane; transform on preview; animations; keyframes (reuse Phase 9)
+- [ ] **Draw:** freehand brush (colour, size, eraser) on the frame, saved as a sticker
+- [ ] Unit tests: style → render spec mapping, animation curves, rich-text spans, sticker lanes, TTS timing
+
+**Acceptance:** styled, curved, animated text with a TTS voiceover, an animated sticker and a drawing export identically to the preview.
+
+### Phase 11 — Video effects (CapCut "Effects", non-AI)
+- [ ] Effect lane: time-ranged effects applied to everything underneath; also per-clip effects
+- [ ] Bundled GLSL pack (~25): shake, zoom lens, glitch, RGB split, VHS, old film, film grain, light leak, flash, strobe, blur, pixelate, mirror, kaleidoscope, split screen (2/3/4/9), fisheye, vignette pulse, soft glow, bokeh, sparkle, black-and-white flash, wobble, edge, posterize, neon
+- [ ] Parameters per effect (intensity, speed), favourites, apply to all
+- [ ] Unit tests: effect time gating and parameter mapping
+
+Out of scope: body/face effects (need AI segmentation), online effect store.
+
+**Acceptance:** a project with two effect layers and a per-clip effect exports identically to the preview.
+
+### Phase 12 — Export settings, polish and release prep
 - [ ] Move export into `ExportService` (foreground, `dataSync`/`mediaProcessing` type as appropriate for targetSdk) with progress notification and cancel action
 - [ ] Notification permission request (Android 13+)
-- [ ] Export settings: 720p/1080p, quality (bitrate) presets, estimated file size
+- [ ] Export settings (CapCut-style sheet): resolution 480p/720p/1080p/2K/4K; frame rate 24/25/30/50/60 (`FrameDropEffect` lowers it; can't exceed the source); bitrate presets (`VideoEncoderSettings`); codec H.264/HEVC where supported; estimated file size; capability check per device
+- [ ] HDR: keep HDR10/HLG when the device can encode it (`Composition.HDR_MODE_KEEP_HDR`), otherwise tone-map to SDR; Ultra HDR photos
+- [ ] Export audio only (M4A); save the current frame as a photo; GIF export (stretch — Media3 has no GIF encoder)
+- [ ] Settings screen: default photo duration, default ratio, default export settings, cache size with clear
+- [ ] Pinch-zoom preview
 - [ ] Error handling: unsupported codec, low storage, export failure with retry
 - [ ] Loading/empty states everywhere; haptics on split/delete
-- [ ] Performance pass: thumbnail memory, recomposition counts, player rebuild debounce
+- [ ] Performance pass: thumbnail memory, recomposition counts, player rebuild debounce, effect shader cost
 - [ ] App icon, splash screen, dark theme review
 - [ ] R8 enabled for release, keep rules verified, release build tested
 - [ ] Basic UI tests for the main flow (create → edit → export)
 
-**Acceptance:** release build runs smoothly on a low-end device; exporting while the app is backgrounded completes; no crashes in the main flow.
+**Acceptance:** release build runs smoothly on a low-end device; a 4K/60 (where supported) export while the app is backgrounded completes; no crashes in the main flow.
 
 ---
 
-## 4. Manual test matrix (use at the end of phases 3–7)
+## 4. Manual test matrix (use at the end of phases 3–12)
 - Portrait and landscape videos mixed in one project
 - Very short (< 1 s) and long (> 10 min) clips
 - MP4 (H.264), HEVC, MOV from different phones
@@ -271,7 +377,96 @@ Out of scope (AI or online content): noise reduction, AI voice changers/vocal is
 - **Memory pressure from thumbnails** → low-res frames, LRU cache, cancel off-screen loads.
 - **Media3 API changes** → verify against the installed version's sources; document workarounds here.
 
-## 6. Decisions log
+## 6. CapCut gap analysis (2026-10-13)
+✅ have · ⚠️ partial · ❌ missing → planned phase · ⛔ out of scope (AI / online / Media3 limit).
+"Pro" marks CapCut Pro (paid) features. Audit of each built phase against CapCut, then the overall picture.
+
+### 6.1 Phase 1 — Import and playback
+| CapCut | PreCut | Plan |
+|---|---|---|
+| Pick videos + photos, multi-select, selection order, preview | ✅ system Photo Picker | — |
+| New clips inserted at the playhead | ❌ always appended at the end | 7 |
+| Camera (record / photo) inside the app | ❌ | 7 |
+| Share to CapCut / open with | ❌ | 7 |
+| Play/pause, time readout, scrub | ✅ | — |
+| Full-screen preview | ❌ | 7 |
+| HDR / Ultra HDR media | ❌ shown as SDR | 12 |
+| Stock library, AutoCut, cloud templates | ⛔ online/AI | — |
+
+### 6.2 Phase 2 — Trim and export
+| CapCut | PreCut | Plan |
+|---|---|---|
+| Trim by dragging clip edges, precise trim | ✅ (handles + Trim tool) | — |
+| Trim snaps to playhead/edges with haptic | ❌ | 7 |
+| Export to gallery, progress, cancel, open/share | ✅ | — |
+| No watermark / ending clip (Pro) | ✅ never added | — |
+| Resolution 480p–4K | ⚠️ fixed 1080p | 12 |
+| Frame rate 24–60, bitrate, size estimate | ❌ | 12 |
+| HEVC, HDR export (Pro) | ❌ | 12 |
+| Export in background | ❌ | 12 |
+| Export audio only, save frame, GIF | ❌ | 12 (GIF stretch) |
+
+### 6.3 Phase 3 — Timeline
+| CapCut | PreCut | Plan |
+|---|---|---|
+| Thumbnails, ruler, centre playhead, pinch zoom | ✅ | — |
+| Select, split, delete, duplicate, long-press reorder | ✅ | — |
+| Replace clip | ✅ (Phase 6) | — |
+| Undo / redo, drafts | ✅ (Phase 6) | — |
+| Frame-level zoom, duration and speed badges on clips | ⚠️ muted badge only | 7 |
+| Auto-scroll when dragging near the edge | ❌ | 7 |
+| Multi-select / batch edit | ❌ | 7 |
+| Apply to all | ❌ | 7 (+ every look tool) |
+| Cover (frame or photo) | ⚠️ automatic first frame only | 7 |
+| Freeze frame, reverse | ❌ | 8 |
+
+### 6.4 Phase 4 — Editing tools
+| CapCut | PreCut | Plan |
+|---|---|---|
+| Speed 0.1x–100x, keep-pitch toggle | ⚠️ 0.25x–4x, pitch always kept | 7 |
+| Speed curves + custom curve editor | ❌ | 8 |
+| Smooth slow-mo (Pro) | ⛔ AI (optical flow) | — |
+| Filters: ~100 in categories + intensity | ⚠️ 7 filters, no intensity | 8 (LUT pack) |
+| Custom LUT import (Pro) | ❌ | 8 |
+| Filter / Adjust as timeline layers | ❌ | 8 |
+| Adjust incl. sharpen, highlights, shadows, grain, vignette | ❌ | 8 |
+| HSL, Curves (Pro) | ❌ | 8 |
+| Rotate 90° | ✅ | — |
+| Transform (move, scale, any-angle rotate), Fit/Fill | ❌ | 8 |
+| Crop, mirror | ❌ | 8 |
+| Ratios (11 incl. Original, 4:3, 2.35:1) | ⚠️ 4 ratios | 7 |
+| Canvas colour / blur / image | ❌ black only | 8 |
+| Opacity | ❌ | 8 |
+| Mask (Pro shapes) | ❌ | 9 |
+| Transitions, clip animations | ❌ | 8 (edge), 9 (overlapping) |
+| Keyframes + easing graphs (Pro) | ❌ | 9 |
+| Motion blur (Pro) | ❌ | 8 (stretch) |
+| Video effects | ❌ | 11 |
+| Text: add, size, colour, background, position, timing | ✅ | — |
+| Text rows when overlapping, pinch/rotate on preview | ❌ all on one row | 7 |
+| Text full colour picker, opacity, split, duplicate | ❌ | 7 |
+| Fonts, stroke, shadow, glow, curved, rich text | ❌ | 10 |
+| Text animations, templates, presets | ❌ | 10 |
+| Text-to-speech | ❌ | 10 (device TTS) |
+| Stickers, draw | ❌ | 10 (emoji + own images; online store ⛔) |
+| Auto captions, remove background, retouch, upscale, stabilize | ⛔ AI | — |
+
+### 6.5 Overall
+| Area | PreCut after Phase 6 | Plan |
+|---|---|---|
+| Projects, undo/redo | ✅ | — |
+| Main track editing | ✅ core · ❌ batch, cover, insert at playhead | 7 |
+| Speed | ✅ normal | 7 (range), 8 (curves) |
+| Look | ✅ basic filters | 8 |
+| Frame | ✅ rotate/ratio | 7 (ratios), 8 (transform, crop, canvas) |
+| Motion | ❌ | 8, 9 |
+| Overlays, masks, chroma key | ❌ | 9 (blend modes ⛔) |
+| Text and stickers | ✅ basic | 7, 10 |
+| Audio | ✅ (Phase 5; AI voice/noise ⛔) | — |
+| Effects | ❌ | 11 (body effects ⛔) |
+| Export | ✅ 1080p | 12 |
+
+## 7. Decisions log
 Claude Code: append significant technical decisions or deviations from this plan here, with a one-line reason.
 
 - **2026-10-12 — Package `com.savie.precut`, app name "PreCut".** `com.example.*` is rejected by Google Play.
@@ -314,3 +509,14 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-13 — Voiceovers are app-private files** (`filesDir/voiceovers`); deleting a voiceover clip doesn't delete its file yet (cleanup belongs with Phase 6 persistence). No timeline vertical scrolling: the timeline grows with the number of audio rows.
 - **2026-10-13 — Volume is a `GainProcessor` (constant `DefaultGainProvider`) per item, 0–200%;** omitted at 100%. Clips have a separate `muted` flag so unmuting restores the volume.
 - **2026-10-13 — Text and audio bars share `TimelineBar`** (drag body to move, handles to trim, commit on release, optional snapping). The audio start handle trims the source and moves the start together so the remaining audio stays in place.
+- **2026-10-13 — CapCut gap analysis added (§6) and the plan extended with Phases 7–10** at the user's request. Persistence/undo (Phase 6) stays first: every later feature needs undo, and drafts are core CapCut behaviour.
+- **2026-10-13 — Projects are stored in Room as JSON** (`ProjectEntity.json`) plus list columns (name, cover, duration, dates). `ProjectSerializer` ignores unknown keys and omits defaults, so drafts survive model changes without migrations for additive fields.
+- **2026-10-13 — Draft covers** are JPEGs of the first clip's first frame (via `ThumbnailLoader`), regenerated only when the first clip changes, with a new file name per change so Coil never shows a stale image.
+- **2026-10-13 — Undo/redo is a pure `History`** (cap 50); text typing on the same overlay within 1 s coalesces into one step. `ProjectSession` owns history and debounced (500 ms) auto-save; saves run in an application-scoped `CoroutineScope` so the final flush on leaving the editor completes.
+- **2026-10-13 — Missing media** is detected on open (`MediaProbe.isReadable`); the preview plays the rest, export is disabled until the media is replaced (`ReplaceClip`, audio Replace) or removed (`RemoveItems`, one undo step).
+- **2026-10-13 — Unused voiceover files are swept on the Projects screen only,** never while an editor is open (its undo history may still need them).
+- **2026-10-13 — Second CapCut audit (Phases 1–4, including Pro features), at the user's request.** Gaps went into a new Phase 7 (core editing parity); the old Phases 7–10 became 8–12, expanded, and a video-effects phase was added (11). Full tables in §6.
+- **2026-10-13 — Reverse moved from out of scope to Phase 8** as a pre-rendered reversed copy (CapCut also renders it). Real-time backwards decoding is still impossible with Media3.
+- **2026-10-13 — Real (overlapping) transitions are feasible** with A/B video sequences: `VideoCompositorSettings.getOverlaySettings(inputId, presentationTimeUs)` is time-dependent, so alpha/position can animate across the overlap. Edge transitions (Phase 8) need only one sequence.
+- **2026-10-13 — Blend modes other than Normal are out of scope:** in Media3 1.11.1 `MultipleInputVideoGraph.Factory` has no compositor parameter and `DefaultVideoCompositor` only alpha-blends. Revisit if Media3 makes the compositor pluggable.
+- **2026-10-13 — Export frame rate can only be lowered** (`FrameDropEffect`); the settings sheet caps choices at the source frame rate. HDR export uses `Composition.HDR_MODE_KEEP_HDR` behind a device capability check.

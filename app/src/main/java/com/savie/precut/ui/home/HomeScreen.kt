@@ -51,9 +51,16 @@ fun HomeScreen(
 
     HomeContent(
         isImporting = uiState.isImporting,
+        projects = uiState.projects,
         snackbarHostState = snackbarHostState,
         onNewProject = {
             picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
+        },
+        actions = object : ProjectActions {
+            override fun onOpen(projectId: String) = onOpenEditor(projectId)
+            override fun onRename(projectId: String, name: String) = viewModel.onRename(projectId, name)
+            override fun onDuplicate(projectId: String) = viewModel.onDuplicate(projectId)
+            override fun onDelete(projectId: String) = viewModel.onDelete(projectId)
         },
     )
 }

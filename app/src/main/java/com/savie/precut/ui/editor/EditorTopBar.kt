@@ -12,13 +12,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditorTopBar(canExport: Boolean, onBack: () -> Unit, onExport: () -> Unit) {
+fun EditorTopBar(
+    canExport: Boolean,
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onBack: () -> Unit,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    onExport: () -> Unit,
+) {
     TopAppBar(
         title = {},
         navigationIcon = {
@@ -27,11 +36,17 @@ fun EditorTopBar(canExport: Boolean, onBack: () -> Unit, onExport: () -> Unit) {
             }
         },
         actions = {
+            IconButton(onClick = onUndo, enabled = canUndo) {
+                Icon(painterResource(R.drawable.ic_undo), contentDescription = stringResource(R.string.action_undo))
+            }
+            IconButton(onClick = onRedo, enabled = canRedo) {
+                Icon(painterResource(R.drawable.ic_redo), contentDescription = stringResource(R.string.action_redo))
+            }
             Button(
                 onClick = onExport,
                 enabled = canExport,
                 contentPadding = PaddingValues(horizontal = 18.dp),
-                modifier = Modifier.padding(end = 8.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
             ) {
                 Text(stringResource(R.string.action_export))
             }

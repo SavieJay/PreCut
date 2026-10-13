@@ -31,7 +31,13 @@ fun timelineHeight(project: Project): Dp {
 }
 
 /** What's selected on the timeline; at most one of these is set. */
-data class TimelineSelection(val clipId: String? = null, val textId: String? = null, val audioId: String? = null)
+data class TimelineSelection(
+    val clipId: String? = null,
+    val textId: String? = null,
+    val audioId: String? = null,
+    /** Items whose media is missing (drawn in red). */
+    val missingIds: Set<String> = emptySet(),
+)
 
 /** Ruler, clip strip, text lane and audio rows, stacked; laid out in timeline px. */
 @Composable
@@ -66,6 +72,7 @@ fun TimelineLanes(
     ClipStrip(
         project = project,
         selectedClipId = selection.clipId,
+        missingIds = selection.missingIds,
         pxPerMs = pxPerMs,
         clipHeight = ClipHeight,
         visiblePx = visiblePx,

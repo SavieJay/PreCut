@@ -2,7 +2,7 @@ package com.savie.precut.model
 
 data class OutputSize(val width: Int, val height: Int)
 
-/** Default export/preview short side until export settings arrive (Phase 7). */
+/** Default export/preview short side until export settings arrive (Phase 12). */
 const val DEFAULT_SHORT_SIDE_PX = 1080
 
 /** Output frame size for [aspectRatio] with the given short side; both dimensions even for encoders. */
