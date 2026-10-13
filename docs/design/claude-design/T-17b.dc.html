@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T-17b Animations – Combo</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid" style="background:#000"><div class="s-city" style="position:absolute;inset:0;background-size:100% 100%;transform:rotate(-4deg) scale(1.08)"></div></div></div>
+  <div class="pb">
+    <div class="tc">0:06.1 <span class="sec">/ 0:18</span></div>
+    <button class="ib" aria-label="Play"><span class="ms f s32">play_arrow</span></button>
+    <button class="ib r" aria-label="Full screen"><span class="ms">fullscreen</span></button>
+  </div>
+  <div class="tl">
+    <div class="lane ru">
+      <span class="rl" style="left:142px">0:04</span><span class="rl" style="left:206px">0:06</span><span class="rl" style="left:270px">0:08</span><span class="rl" style="left:334px">0:10</span><span class="rl" style="left:398px">0:12</span>
+      <div class="ticks" style="background-position:14px 0"></div>
+    </div>
+    <div class="lane main">
+      <div class="clip s-beach" style="left:-6px;width:133px"></div>
+      <div class="clip s-city" style="left:129px;width:177px"><div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 20px,rgba(255,255,255,0) 20px 40px);z-index:1"></div></div>
+      <div class="sel" style="left:129px;width:177px"></div>
+      <div class="hl" style="left:115px"></div>
+      <div class="hr" style="left:306px"></div>
+      <div class="pinl"><button class="mutebtn" aria-label="Mute clip audio"><span class="ms">volume_up</span></button></div>
+    </div>
+    <div class="phd"></div>
+  </div>
+  <div class="pnl">
+    <div class="pnl-h"><div class="t">Animation</div><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="pnl-b" style="gap:12px">
+      <div class="tabs"><button class="tab">In</button><button class="tab">Out</button><button class="tab on">Combo</button></div>
+      <div class="tg">
+        <button class="pt"><span class="im"><span class="ms">block</span></span>None</button>
+        <button class="pt"><span class="im"><span class="ms">gradient</span><span class="ms mh">repeat</span></span>Fade pulse</button>
+        <button class="pt"><span class="im"><span class="ms">zoom_in_map</span><span class="ms mh">repeat</span></span>Zoom in-out</button>
+        <button class="pt"><span class="im"><span class="ms">swap_horiz</span><span class="ms mh">repeat</span></span>Slide swing</button>
+        <button class="pt on"><span class="im"><span class="ms">vibration</span><span class="ms mh">repeat</span></span>Rock</button>
+        <button class="pt"><span class="im"><span class="ms">autorenew</span><span class="ms mh">repeat</span></span>Spin zoom</button>
+        <button class="pt"><span class="im"><span class="ms">sports_basketball</span><span class="ms mh">repeat</span></span>Bounce</button>
+        <button class="pt"><span class="im"><span class="ms">waves</span><span class="ms mh">repeat</span></span>Shake</button>
+      </div>
+      <div class="sl"><span class="lb">Speed</span><div class="trk"><div class="fill" style="width:50%"></div><div class="knob" style="left:50%"></div></div><span class="vl">1.0x</span></div>
+      <div class="sub">Combo loops for the whole clip and replaces In/Out.</div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S-03 Effects</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city">
+    <div class="s-city" style="position:absolute;inset:0;background-size:100% 100%;transform:translateX(6px);opacity:.45;filter:hue-rotate(140deg) saturate(2)"></div>
+    <div style="position:absolute;left:0;right:0;top:38%;height:14px;background:rgba(255,255,255,.12);transform:translateX(-12px)"></div>
+    <div style="position:absolute;left:0;right:0;top:58%;height:6px;background:rgba(0,255,220,.2)"></div>
+  </div></div>
+  <div class="tl">
+    <div class="lane ru">
+      <span class="rl" style="left:46px">0:02</span><span class="rl" style="left:110px">0:04</span><span class="rl" style="left:174px">0:06</span><span class="rl" style="left:238px">0:08</span><span class="rl" style="left:302px">0:10</span><span class="rl" style="left:366px">0:12</span>
+      <div class="ticks" style="background-position:14px 0"></div>
+    </div>
+    <div class="lane main" style="height:40px">
+      <div class="clip sm s-beach" style="left:-18px;width:133px"></div>
+      <div class="clip sm s-city" style="left:117px;width:177px"></div>
+      <div class="clip sm s-dog" style="left:296px;width:262px"></div>
+    </div>
+    <div class="lane"><div class="bar b-efx on" style="left:174px;width:96px"><span class="ms">flare</span><span>Glitch</span></div><div class="bh l" style="left:164px"></div><div class="bh r" style="left:270px"></div></div>
+    <div class="phd"></div>
+  </div>
+  <div class="pnl">
+    <div class="pnl-h"><div class="t">Effects</div><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="pnl-b">
+      <div class="hs"><button class="chip">Basic</button><button class="chip">Retro</button><button class="chip on">Glitch</button><button class="chip">Light</button><button class="chip">Lens</button><button class="chip">Split</button></div>
+      <div class="hs" style="gap:10px;padding-top:4px;padding-bottom:4px">
+        <button class="ft"><span class="im"><span class="ms">block</span></span>None</button>
+        <button class="ft on"><span class="im"><span class="g s-city" style="filter:hue-rotate(140deg) saturate(1.6)"></span><span class="ms" style="position:absolute;right:3px;bottom:3px;font-size:12px;color:#fff">play_arrow</span></span>Glitch</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="filter:saturate(2) contrast(1.2)"></span><span class="ms" style="position:absolute;right:3px;bottom:3px;font-size:12px;color:#fff">play_arrow</span></span>RGB split</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="filter:sepia(.4) contrast(.9) blur(.6px)"></span><span class="ms" style="position:absolute;right:3px;bottom:3px;font-size:12px;color:#fff">play_arrow</span></span>VHS</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="transform:rotate(-4deg) scale(1.1)"></span><span class="ms" style="position:absolute;right:3px;bottom:3px;font-size:12px;color:#fff">play_arrow</span></span>Shake</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="filter:brightness(1.6)"></span><span class="ms" style="position:absolute;right:3px;bottom:3px;font-size:12px;color:#fff">play_arrow</span></span>Strobe</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="filter:contrast(2) saturate(.4)"></span><span class="ms" style="position:absolute;right:3px;bottom:3px;font-size:12px;color:#fff">play_arrow</span></span>Pixelate</button>
+      </div>
+      <div class="sl"><span class="lb">Intensity</span><div class="trk"><div class="fill" style="width:65%"></div><div class="knob" style="left:65%"></div></div><span class="vl">65</span></div>
+      <div class="sl"><span class="lb">Speed</span><div class="trk"><div class="fill" style="width:50%"></div><div class="knob" style="left:50%"></div></div><span class="vl">1.0x</span></div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

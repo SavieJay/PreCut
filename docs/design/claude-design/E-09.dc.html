@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>E-09 Full screen – portrait, controls</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph" style="background:#000">
+  <div class="pv" style="flex:1"><div class="vid s-city" style="height:100%"><div class="cap" style="top:64%;font-size:26px;line-height:32px">Lagos nights</div></div></div>
+  <div style="position:absolute;left:0;right:0;top:0;height:120px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0))"></div>
+  <button class="ib" style="position:absolute;left:8px;top:36px;background:rgba(14,14,16,.6)" aria-label="Exit full screen"><span class="ms">fullscreen_exit</span></button>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:48px 16px 40px;background:linear-gradient(0deg,rgba(0,0,0,.7) 40%,rgba(0,0,0,0));display:flex;flex-direction:column;gap:6px">
+    <div class="sl" style="height:32px">
+      <div class="trk"><div class="fill" style="width:39%;background:#fff"></div><div class="knob" style="left:39%;width:16px;height:16px;margin:-8px 0 0 -8px"></div></div>
+    </div>
+    <div class="row">
+      <button class="ib" aria-label="Pause"><span class="ms f s32">pause</span></button>
+      <div class="tc">0:07 <span class="sec">/ 0:18</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

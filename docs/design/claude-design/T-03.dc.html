@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T-03 Speed curves</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city"></div></div>
+  <div class="pb">
+    <div class="tc">0:05.9 <span class="sec">/ 0:16</span></div>
+    <button class="ib" aria-label="Play"><span class="ms f s32">play_arrow</span></button>
+    <button class="ib r" aria-label="Full screen"><span class="ms">fullscreen</span></button>
+  </div>
+  <div class="tl">
+    <div class="lane ru">
+      <span class="rl" style="left:46px">0:02</span><span class="rl" style="left:110px">0:04</span><span class="rl" style="left:174px">0:06</span><span class="rl" style="left:238px">0:08</span><span class="rl" style="left:302px">0:10</span><span class="rl" style="left:366px">0:12</span>
+      <div class="ticks" style="background-position:14px 0"></div>
+    </div>
+    <div class="lane main">
+      <div class="clip s-beach" style="left:-18px;width:133px"></div>
+      <div class="clip s-city" style="left:117px;width:129px"><div class="bdgs"><span class="bdg">4.1s</span><span class="bdg"><span class="ms">show_chart</span>Montage</span></div></div>
+      <div class="clip s-dog" style="left:248px;width:262px"></div>
+      <div class="sel" style="left:117px;width:129px"></div>
+      <div class="hl" style="left:103px"></div>
+      <div class="hr" style="left:246px"></div>
+      <div class="pinl"><button class="mutebtn" aria-label="Mute clip audio"><span class="ms">volume_up</span></button></div>
+    </div>
+    <div class="phd" style="left:170px"></div>
+  </div>
+  <div class="pnl">
+    <div class="pnl-h"><div class="t">Speed</div><button class="tbtn sec">Reset</button><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="pnl-b">
+      <div class="tabs"><button class="tab">Normal</button><button class="tab on">Curve</button></div>
+      <div class="hs" style="gap:10px">
+        <button class="pt"><span class="im"><span class="ms">edit</span></span>Custom</button>
+        <button class="pt on"><span class="im"><span class="ms">show_chart</span></span>Montage</button>
+        <button class="pt"><span class="im"><span class="ms">bolt</span></span>Hero</button>
+        <button class="pt"><span class="im"><span class="ms">trending_flat</span></span>Bullet</button>
+        <button class="pt"><span class="im"><span class="ms">stairs</span></span>Jump cut</button>
+        <button class="pt"><span class="im"><span class="ms">flash_on</span></span>Flash in</button>
+        <button class="pt"><span class="im"><span class="ms">flash_off</span></span>Flash out</button>
+      </div>
+      <div class="row" style="align-items:stretch;gap:6px">
+        <div class="col" style="justify-content:space-between;font-size:10px;color:#9A9AA3;padding:2px 0;width:28px;text-align:right" aria-hidden="true"><span>10x</span><span style="color:#F2F2F5">1x</span><span>0.1x</span></div>
+        <div class="graph f1" style="height:150px">
+          <div style="position:absolute;left:0;right:0;top:50%;border-top:1px dashed #9A9AA3"></div>
+          <svg viewBox="0 0 336 150" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><path d="M0 60 C 40 60, 50 30, 84 30 S 130 120, 168 118 S 220 30, 252 32 S 300 75, 336 75" fill="none" stroke="#FF4D6D" stroke-width="2.5"/></svg>
+          <div class="gp" style="left:0%;top:40%"></div>
+          <div class="gp" style="left:25%;top:20%"></div>
+          <div class="gp on" style="left:50%;top:78.7%"></div>
+          <div class="gp" style="left:75%;top:21.3%"></div>
+          <div class="gp" style="left:100%;top:50%"></div>
+          <div style="position:absolute;top:0;bottom:0;left:22%;width:2px;background:#fff"></div>
+          <span class="bub" style="left:50%;bottom:auto;top:96px">0.3x</span>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between"><span class="sub">Tap to add · long-press to remove a point</span><span class="tnum" style="font-size:14px;font-weight:600">5.6s → 4.1s</span></div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

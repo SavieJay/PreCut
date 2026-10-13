@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EX-02 Exporting</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="f1" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:0 32px">
+    <div style="position:relative;width:240px;height:240px" role="progressbar" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100" aria-label="Export progress">
+      <div style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(#FF4D6D 0 64%,#2E2E33 0);-webkit-mask:radial-gradient(circle,transparent 111px,#000 112px);mask:radial-gradient(circle,transparent 111px,#000 112px)"></div>
+      <div class="s-city" style="position:absolute;left:62px;top:28px;width:116px;height:184px;border-radius:12px;background-size:100% 100%"></div>
+      <div style="position:absolute;left:62px;top:28px;width:116px;height:184px;border-radius:12px;background:rgba(14,14,16,.55);display:grid;place-items:center"><span class="tnum" style="font-size:36px;font-weight:700">64%</span></div>
+    </div>
+    <div class="col" style="gap:8px;align-items:center;text-align:center">
+      <h1 style="font-size:22px;line-height:28px;font-weight:600">Exporting “Lagos weekend”</h1>
+      <p class="sec" style="font-size:14px;line-height:20px">1080p · 30 fps · about 12 seconds left</p>
+      <p class="sec" style="font-size:14px;line-height:20px">Keep PreCut open or continue in the background — you’ll get a notification when it’s saved.</p>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center;padding:0 0 56px;flex:none"><button class="btn o">Cancel</button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

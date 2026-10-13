@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Redline – T-06 Filters</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>
+body{margin:0;background:#141417}
+.mk{position:absolute;left:426px;width:22px;height:22px;margin-top:-11px;border-radius:11px;background:#4DD0E1;color:#0E0E10;font-size:11px;font-weight:800;display:grid;place-items:center;z-index:40}
+.mk::before{content:'';position:absolute;right:22px;top:10px;width:14px;height:1.5px;background:#4DD0E1}
+.ri{display:flex;gap:10px;align-items:flex-start}
+.ri .n{width:22px;height:22px;border-radius:11px;background:#4DD0E1;color:#0E0E10;font-size:11px;font-weight:800;display:grid;place-items:center;flex:none}
+.ri .d{font-size:12.5px;line-height:18px;color:#C9C9D0}
+.ri b{color:#F2F2F5;font-weight:600}
+.tkn{color:#4DD0E1;font-weight:500}
+</style>
+</helmet>
+<div style="width:960px;height:1000px;background:#141417;color:#F2F2F5;font-family:'Roboto Flex',Roboto,system-ui,sans-serif;padding:40px 28px;box-sizing:border-box;display:flex;gap:28px">
+  <div style="position:relative;width:452px;height:915px;flex:none">
+    <div class="ph" style="border-radius:28px">
+      <div class="inset-t"></div>
+      <div class="tb">
+        <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+        <button class="ttl">Lagos weekend<span class="ms s18 sec">edit</span></button>
+        <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+        <button class="ib dim" aria-label="Redo"><span class="ms">redo</span></button>
+        <button class="pill">Export</button>
+      </div>
+      <div class="pv"><div class="vid s-beach" style="filter:saturate(1.35) hue-rotate(-12deg) contrast(1.12)"></div></div>
+      <div class="pb">
+        <div class="tc">0:02 <span class="sec">/ 0:18</span></div>
+        <button class="ib" aria-label="Play"><span class="ms f s32">play_arrow</span></button>
+        <button class="ib r" aria-label="Full screen"><span class="ms">fullscreen</span></button>
+      </div>
+      <div class="tl">
+        <div class="lane ru"><span class="rl" style="left:142px">0:00</span><span class="rl" style="left:206px">0:02</span><span class="rl" style="left:270px">0:04</span><span class="rl" style="left:334px">0:06</span><div class="ticks" style="background-position:14px 0"></div></div>
+        <div class="lane main">
+          <div class="clip s-beach" style="left:142px;width:133px"><div class="bdgs"><span class="bdg">4.2s</span></div></div>
+          <div class="clip s-city" style="left:277px;width:177px"></div>
+          <div class="sel" style="left:142px;width:133px"></div><div class="hl" style="left:128px"></div><div class="hr" style="left:275px"></div>
+          <div class="pinl"><button class="mutebtn" aria-label="Mute clip audio"><span class="ms">volume_up</span></button></div>
+        </div>
+        <div class="lane"></div>
+        <div class="lane au"><div class="bar b-mus" style="left:142px;width:384px"><div class="wave"></div><span class="ms">music_note</span><span>Afrobeat Sunrise</span></div></div>
+        <div class="phd"></div>
+      </div>
+      <div class="pnl">
+        <div class="pnl-h"><div class="t">Filters</div><button class="tbtn acc"><span class="ms s18">done_all</span>Apply to all</button><button class="done"><span class="ms">check</span>Done</button></div>
+        <div class="pnl-b">
+          <div class="hs"><button class="chip">Basic</button><button class="chip">Life</button><button class="chip on">Film</button><button class="chip">Retro</button><button class="chip">Mono</button><button class="chip">Food</button></div>
+          <div class="hs" style="gap:10px;padding-top:4px;padding-bottom:4px">
+            <button class="ft"><span class="im"><span class="ms">block</span></span>None</button>
+            <button class="ft on"><span class="im"><span class="g s-beach" style="filter:saturate(1.35) hue-rotate(-12deg) contrast(1.12)"></span></span>Teal &amp; Orange</button>
+            <button class="ft"><span class="im"><span class="g s-beach" style="filter:sepia(.45) saturate(1.2)"></span></span>Lagos Gold</button>
+            <button class="ft"><span class="im"><span class="g s-beach" style="filter:contrast(.8) brightness(1.1) saturate(.7)"></span></span>Faded</button>
+            <button class="ft"><span class="im"><span class="g s-beach" style="filter:contrast(1.3) saturate(.85) brightness(.9)"></span></span>Cinema</button>
+            <button class="ft"><span class="im"><span class="g s-beach" style="filter:hue-rotate(20deg) saturate(1.1)"></span></span>Velvet</button>
+          </div>
+          <div class="sl"><span class="lb" style="width:64px">Intensity</span><div class="trk"><div class="fill" style="width:80%"></div><div class="knob" style="left:80%"></div></div><span class="vl">80</span></div>
+        </div>
+        <div class="inset-b"></div>
+      </div>
+    </div>
+    <div class="mk" style="top:640px">1</div>
+    <div class="mk" style="top:653px;left:452px">2</div>
+    <div class="mk" style="top:700px">3</div>
+    <div class="mk" style="top:752px">4</div>
+    <div class="mk" style="top:800px">5</div>
+    <div class="mk" style="top:858px">6</div>
+  </div>
+  <div class="col" style="gap:14px;padding-top:4px">
+    <div style="font-size:22px;font-weight:700">T-06 · Filters redline</div>
+    <div class="sub" style="font-size:12px">2-row panel · timeline stays · preview shrinks</div>
+    <div class="ri"><span class="n">1</span><div class="d"><b>Panel shell</b> · <span class="tkn">Ink1</span>, 16 top radius, replaces the toolbar · total ≈ 264 + 24 nav inset</div></div>
+    <div class="ri"><span class="n">2</span><div class="d"><b>Header 52</b> · pad 16 start / 8 end · title titleMedium 16/24 600 · “Apply to all” text button 40 h, pad 10, 18 icon, <span class="tkn">Accent</span> 14/600 · Done 36 h radius 18 <span class="tkn">Ink3</span>, 20 check + labelLarge, 6 left margin</div></div>
+    <div class="ri"><span class="n">3</span><div class="d"><b>Category chips</b> · 32 h, pad 12, radius full, gap 8 · default <span class="tkn">Ink2</span> + <span class="tkn">TextPrimary</span> 13/18 500 · selected <span class="tkn">AccentContainer</span> + 1 inner <span class="tkn">Accent</span> border + <span class="tkn">OnAccentContainer</span> · row scrolls edge-to-edge (−16 margins, 16 padding) with 32 <span class="tkn">Ink1</span> fade</div></div>
+    <div class="ri"><span class="n">4</span><div class="d"><b>Filter tiles</b> · 60 × 60 radius 8, gap 10, label 6 below, labelMedium 11/13 500, max 2 lines, centred · default label <span class="tkn">TextSecondary</span>, selected <span class="tkn">TextPrimary</span> + 2 <span class="tkn">Accent</span> outer ring · “None” tile <span class="tkn">Ink2</span> + 24 block icon · images are the current frame through each filter, cached</div></div>
+    <div class="ri"><span class="n">5</span><div class="d"><b>Body spacing</b> · pad 16 h, 2 top, 12 bottom · 10 between rows</div></div>
+    <div class="ri"><span class="n">6</span><div class="d"><b>Intensity slider row 40</b> · label 64 w 13 <span class="tkn">TextSecondary</span> · gap 12 · track 4 <span class="tkn">Ink3</span>, fill <span class="tkn">Accent</span> · knob 20 white, shadow 0 1 3 · value 44 w right-aligned 13/500 tnum · applies on release</div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

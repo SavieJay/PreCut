@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C-03 Sliders and toggles</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}.cs-sec{display:flex;flex-direction:column;gap:10px;background:#17171A;border-radius:12px;padding:16px}.cs-h{font-size:15px;font-weight:600}.cs-cap{font-size:11px;line-height:14px;color:#9A9AA3}</style>
+</helmet>
+<div class="ph" style="width:1200px;height:1000px;padding:48px;gap:24px">
+  <div style="font-size:28px;line-height:36px;font-weight:700">Sliders &amp; toggles</div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px">
+    <div class="cs-sec"><div class="cs-h">Value slider · unipolar</div>
+      <div class="sl"><span class="lb">Intensity</span><div class="trk"><div class="fill" style="width:80%"></div><div class="knob" style="left:80%"></div></div><span class="vl">80</span></div>
+      <div class="cs-cap">Default · track Ink3 4 dp · fill Accent · knob 20 white</div>
+      <div class="sl" style="height:56px"><span class="lb">Intensity</span><div class="trk"><div class="fill" style="width:55%"></div><div class="knob big" style="left:55%"></div><span class="bub" style="left:55%;bottom:22px">55</span></div><span class="vl">55</span></div>
+      <div class="cs-cap">Dragging · knob 28 + 6 dp halo · value bubble · applies on release</div>
+      <div class="sl" style="opacity:.38"><span class="lb">Intensity</span><div class="trk"><div class="fill" style="width:80%;background:#9A9AA3"></div><div class="knob" style="left:80%;background:#9A9AA3"></div></div><span class="vl">80</span></div>
+      <div class="cs-cap">Disabled</div>
+    </div>
+    <div class="cs-sec"><div class="cs-h">Value slider with zero mark · bipolar</div>
+      <div class="sl"><span class="lb">Exposure</span><div class="trk"><div class="zm" style="left:50%"></div><div class="fill" style="left:50%;width:20%"></div><div class="knob" style="left:70%"></div></div><span class="vl">40</span></div>
+      <div class="sl"><span class="lb">Shadows</span><div class="trk"><div class="zm" style="left:50%"></div><div class="fill" style="left:32%;width:18%"></div><div class="knob" style="left:32%"></div></div><span class="vl">−36</span></div>
+      <div class="sl"><span class="lb">Tint</span><div class="trk"><div class="zm" style="left:50%"></div><div class="knob" style="left:50%"></div></div><span class="vl">0</span></div>
+      <div class="cs-cap">Fill grows from 0. Snaps to 0 within 4 dp (haptic). Double-tap knob resets.</div>
+    </div>
+    <div class="cs-sec"><div class="cs-h">Range slider · Trim</div>
+      <div style="position:relative;height:64px">
+        <div class="clip s-city" style="left:0;right:0;top:4px"></div>
+        <div style="position:absolute;left:0;width:13%;top:4px;height:56px;background:rgba(14,14,16,.72);border-radius:6px 0 0 6px;z-index:2"></div>
+        <div style="position:absolute;right:0;width:17%;top:4px;height:56px;background:rgba(14,14,16,.72);border-radius:0 6px 6px 0;z-index:2"></div>
+        <div class="sel" style="left:13%;width:70%;top:2px"></div>
+        <div class="hl" style="left:calc(13% - 14px);top:2px"></div>
+        <div class="hr" style="left:83%;top:2px"></div>
+      </div>
+      <div class="cs-cap">Outside range: Ink0 72%. Handles 14 × 60 white, grip 2 × 20 Ink0.</div>
+    </div>
+    <div class="cs-sec"><div class="cs-h">Logarithmic speed slider</div>
+      <div style="position:relative;height:52px;padding:0 10px;display:flex;align-items:center">
+        <div class="trk">
+          <div class="tk" style="left:0"></div><div class="tk" style="left:23.3%"></div><div class="tk" style="left:33.3%;height:14px;top:-5px;background:#9A9AA3"></div><div class="tk" style="left:43.4%"></div><div class="tk" style="left:56.6%"></div><div class="tk" style="left:66.7%"></div><div class="tk" style="left:100%"></div>
+          <span class="tkl" style="left:0">0.1x</span><span class="tkl" style="left:23.3%">0.5x</span><span class="tkl" style="left:33.3%">1x</span><span class="tkl" style="left:56.6%">5x</span><span class="tkl" style="left:66.7%">10x</span><span class="tkl" style="left:100%">100x</span>
+          <div class="fill" style="left:33.3%;width:10.1%"></div><div class="knob" style="left:43.4%"></div>
+        </div>
+      </div>
+      <div class="cs-cap">Position = log10(speed). Fill from the 1x mark. Presets snap with a tick.</div>
+    </div>
+    <div class="cs-sec"><div class="cs-h">Switch row · 48</div>
+      <div class="swr"><span>Keep pitch</span><button class="sw on" role="switch" aria-checked="true" aria-label="On"></button></div>
+      <div class="swr"><span>Background</span><button class="sw" role="switch" aria-checked="false" aria-label="Off"></button></div>
+      <div class="swr" style="color:rgba(242,242,245,.38)"><div class="col"><span>HDR</span><span class="d">Not supported on this device</span></div><button class="sw dis" role="switch" aria-checked="false" aria-disabled="true" aria-label="Disabled"></button></div>
+    </div>
+    <div class="cs-sec"><div class="cs-h">Segmented control · 40</div>
+      <div class="seg"><button>480p</button><button>720p</button><button class="on">1080p</button><button>2K</button><button class="dis">4K</button></div>
+      <div class="cs-cap">Selected: AccentContainer. Disabled segment: TextDisabled, reason on tap.</div>
+      <div class="seg"><button>Lower</button><button class="on">Recommended</button><button>Higher</button></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

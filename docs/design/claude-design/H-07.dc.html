@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>H-07 Importing</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb"><button class="ib" aria-label="Cancel import"><span class="ms">close</span></button></div>
+  <div class="f1" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:0 40px">
+    <div style="position:relative;width:180px;height:180px" aria-hidden="true">
+      <div class="s-beach" style="position:absolute;left:18px;top:30px;width:84px;height:112px;border-radius:10px;transform:rotate(-10deg);background-size:100% 100%"></div>
+      <div class="s-food" style="position:absolute;left:78px;top:30px;width:84px;height:112px;border-radius:10px;transform:rotate(9deg);background-size:100% 100%"></div>
+      <div class="s-dog" style="position:absolute;left:48px;top:20px;width:84px;height:112px;border-radius:10px;background-size:100% 100%;box-shadow:0 8px 20px rgba(0,0,0,.5)"></div>
+    </div>
+    <div class="col" style="gap:8px;align-items:center;text-align:center">
+      <h1 style="font-size:22px;line-height:28px;font-weight:600">Preparing 3 videos…</h1>
+      <p class="sec tnum" style="font-size:14px">2 of 3 · 64%</p>
+    </div>
+    <div style="width:100%;height:6px;border-radius:3px;background:#2E2E33;position:relative" role="progressbar" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100" aria-label="Import progress"><div style="position:absolute;left:0;top:0;bottom:0;width:64%;border-radius:3px;background:#FF4D6D"></div></div>
+  </div>
+  <div style="display:flex;justify-content:center;padding:0 0 56px;flex:none"><button class="btn o">Cancel</button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

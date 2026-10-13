@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EX-03 Export notification</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph" style="background:linear-gradient(180deg,#1B1D2A,#0E0E10)">
+  <div class="inset-t"></div>
+  <div style="padding:24px 12px;display:flex;flex-direction:column;gap:12px">
+    <div class="sect" style="padding:0 8px">During export</div>
+    <div style="background:#2A2A2F;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div class="row" style="gap:10px">
+        <div style="width:24px;height:24px;border-radius:12px;background:#FF4D6D;color:#0E0E10;display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 108 108" aria-hidden="true"><g transform="translate(54 54) scale(1.12) translate(-54 -54)"><path fill-rule="evenodd" fill="#0E0E10" d="M33 22 H60 C73 22 84 32 84 45 C84 58 73 67 60 67 H54 V82 C54 85 52 87 49 87 H35 C32 87 30 85 30 82 V25 C30 23 31 22 33 22 Z M41 31 C39.5 30.5 38.6 31.6 39 33 L45 60 C45.4 61.6 46.8 62 48 61 L70 44 C71.3 43 71 41.5 69.4 41 Z"/><circle cx="50" cy="45" r="7" fill="#0E0E10"/></g></svg></div>
+        <div class="f1" style="font-size:12px;color:#9A9AA3">PreCut · now</div>
+      </div>
+      <div style="font-size:15px;font-weight:600">Exporting “Lagos weekend”</div>
+      <div class="row" style="gap:10px"><div style="height:4px;border-radius:2px;background:#3A3A40;position:relative;flex:1"><div style="position:absolute;left:0;top:0;bottom:0;width:64%;border-radius:2px;background:#FF4D6D"></div></div><span class="sub tnum">64%</span></div>
+      <div class="row"><button class="btn t" style="padding:0 8px">Cancel</button></div>
+    </div>
+    <div class="sect" style="padding:16px 8px 0">When it’s done</div>
+    <div style="background:#2A2A2F;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div class="row" style="gap:10px">
+        <div style="width:24px;height:24px;border-radius:12px;background:#FF4D6D;color:#0E0E10;display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 108 108" aria-hidden="true"><g transform="translate(54 54) scale(1.12) translate(-54 -54)"><path fill-rule="evenodd" fill="#0E0E10" d="M33 22 H60 C73 22 84 32 84 45 C84 58 73 67 60 67 H54 V82 C54 85 52 87 49 87 H35 C32 87 30 85 30 82 V25 C30 23 31 22 33 22 Z M41 31 C39.5 30.5 38.6 31.6 39 33 L45 60 C45.4 61.6 46.8 62 48 61 L70 44 C71.3 43 71 41.5 69.4 41 Z"/><circle cx="50" cy="45" r="7" fill="#0E0E10"/></g></svg></div>
+        <div class="f1" style="font-size:12px;color:#9A9AA3">PreCut · 1 min ago</div>
+      </div>
+      <div class="row" style="gap:12px;align-items:flex-start">
+        <div class="f1 col" style="gap:2px"><div style="font-size:15px;font-weight:600">Video saved</div><div class="sub" style="font-size:13px">Lagos weekend · 0:18 · 86 MB · Movies/PreCut</div></div>
+        <div class="s-city" style="width:44px;height:60px;border-radius:8px;background-size:100% 100%;flex:none"></div>
+      </div>
+      <div class="row" style="gap:4px"><button class="btn t" style="padding:0 8px">Open</button><button class="btn t" style="padding:0 8px">Share</button></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

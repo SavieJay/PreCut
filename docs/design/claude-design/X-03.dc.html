@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>X-03 Colour picker sheet</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend</button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv" style="flex:none;height:300px"><div class="vid s-city"><div class="cap" style="top:60%;color:#FF9F43">Lagos nights</div></div></div>
+  <div class="sheet" style="padding:0 16px 40px;gap:14px">
+    <div class="grab"></div>
+    <div class="row"><div class="f1" style="font-size:16px;font-weight:600">Text colour</div><button class="done"><span class="ms">check</span>Done</button></div>
+    <div style="position:relative;height:200px;border-radius:12px;background:linear-gradient(0deg,#000,rgba(0,0,0,0)),linear-gradient(90deg,#fff,hsl(30,100%,50%))">
+      <div style="position:absolute;left:78%;top:12%;width:24px;height:24px;margin:-12px;border-radius:12px;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4);background:#FF9F43"></div>
+    </div>
+    <div style="position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)">
+      <div style="position:absolute;left:8.3%;top:50%;width:24px;height:24px;margin:-12px;border-radius:12px;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4);background:hsl(30,100%,50%)"></div>
+    </div>
+    <div class="row" style="gap:12px">
+      <div style="width:48px;height:48px;border-radius:12px;background:#FF9F43;flex:none" aria-label="Preview #FF9F43"></div>
+      <div class="fld f1"><label for="hex" style="position:absolute;left:-9999px">Hex</label><input id="hex" class="inp idle tnum" style="height:48px" value="#FF9F43"></div>
+    </div>
+    <div class="col" style="gap:8px">
+      <div class="sub">Used in this project</div>
+      <div class="sws">
+        <button class="swt" style="background:#FFD43B" aria-label="#FFD43B"></button>
+        <button class="swt" style="background:#FFFFFF" aria-label="#FFFFFF"></button>
+        <button class="swt" style="background:#0E0E10" aria-label="#0E0E10"></button>
+        <button class="swt on" style="background:#FF9F43" aria-label="#FF9F43, current"></button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

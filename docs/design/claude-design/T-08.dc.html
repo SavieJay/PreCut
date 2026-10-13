@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T-08 HSL</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-beach" style="filter:hue-rotate(-6deg) saturate(1.2)"></div></div>
+  <div class="pb">
+    <div class="tc">0:02 <span class="sec">/ 0:18</span></div>
+    <button class="ib" aria-label="Play"><span class="ms f s32">play_arrow</span></button>
+    <button class="ib r" aria-label="Full screen"><span class="ms">fullscreen</span></button>
+  </div>
+  <div class="tl">
+    <div class="lane ru">
+      <span class="rl" style="left:142px">0:00</span><span class="rl" style="left:206px">0:02</span><span class="rl" style="left:270px">0:04</span><span class="rl" style="left:334px">0:06</span><span class="rl" style="left:398px">0:08</span>
+      <div class="ticks" style="background-position:14px 0"></div>
+    </div>
+    <div class="lane main">
+      <div class="clip s-beach" style="left:142px;width:133px"></div>
+      <div class="clip s-city" style="left:277px;width:177px"></div>
+      <div class="sel" style="left:142px;width:133px"></div>
+      <div class="hl" style="left:128px"></div>
+      <div class="hr" style="left:275px"></div>
+      <div class="pinl"><button class="mutebtn" aria-label="Mute clip audio"><span class="ms">volume_up</span></button></div>
+    </div>
+    <div class="phd"></div>
+  </div>
+  <div class="pnl">
+    <div class="pnl-h" style="padding-left:4px"><button class="ib" aria-label="Back to Adjust"><span class="ms">arrow_back</span></button><div class="t">HSL</div><button class="tbtn sec">Reset</button><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="pnl-b" style="gap:6px">
+      <div class="row" style="justify-content:space-between;padding:4px 2px 8px">
+        <button class="swt" style="background:#E5484D" aria-label="Red"></button>
+        <button class="swt on" style="background:#F08A3C" aria-label="Orange, selected"></button>
+        <button class="swt" style="background:#F2C94C" aria-label="Yellow"></button>
+        <button class="swt" style="background:#4CB860" aria-label="Green"></button>
+        <button class="swt" style="background:#3CC4D6" aria-label="Cyan"></button>
+        <button class="swt" style="background:#3D6FE0" aria-label="Blue"></button>
+        <button class="swt" style="background:#8E5BE0" aria-label="Purple"></button>
+        <button class="swt" style="background:#DB4FB0" aria-label="Magenta"></button>
+      </div>
+      <div class="sub" style="font-weight:600;color:#F2F2F5">Orange</div>
+      <div class="sl"><span class="lb">Hue</span><div class="trk" style="height:6px;background:linear-gradient(90deg,#E5484D,#F08A3C,#F2C94C)"><div class="zm" style="left:50%;background:#0E0E10"></div><div class="knob" style="left:44%"></div></div><span class="vl">−12</span></div>
+      <div class="sl"><span class="lb">Saturation</span><div class="trk" style="height:6px;background:linear-gradient(90deg,#8A817A,#F08A3C)"><div class="zm" style="left:50%;background:#0E0E10"></div><div class="knob" style="left:60%"></div></div><span class="vl">20</span></div>
+      <div class="sl"><span class="lb">Lightness</span><div class="trk" style="height:6px;background:linear-gradient(90deg,#1B110A,#F08A3C,#FFF1E6)"><div class="zm" style="left:50%;background:#0E0E10"></div><div class="knob" style="left:50%"></div></div><span class="vl">0</span></div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

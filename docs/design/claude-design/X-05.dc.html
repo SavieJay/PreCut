@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>X-05 Rich text</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city"><div class="tbox" style="left:50%;top:54%;transform:translateX(-50%);padding:4px 10px;white-space:nowrap"><span style="font-size:20px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)">Lagos <span style="color:#FF4D6D;font-size:28px">nights</span></span></div></div></div>
+  <div class="pnl">
+    <div class="pnl-h"><div class="t">Text</div>
+      <button class="ib" aria-label="Split text"><span class="ms s20">content_cut</span></button>
+      <button class="ib" aria-label="Duplicate text"><span class="ms s20">content_copy</span></button>
+      <button class="ib" aria-label="Delete text"><span class="ms s20">delete</span></button>
+      <button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="pnl-b">
+      <div class="ta" style="min-height:64px" role="textbox" aria-label="Text" aria-multiline="true">Lagos <span style="background:rgba(255,77,109,.35);border-radius:2px;box-shadow:0 2px 0 #FF4D6D">nights</span></div>
+      <div class="row" style="gap:8px;padding:4px 0"><span class="ms s18" style="color:#FF4D6D">text_select_start</span><span style="font-size:13px;font-weight:600">Styling “nights” only</span><div class="f1"></div><button class="tbtn sec" style="height:32px">Clear</button></div>
+      <div class="sl"><span class="lb">Size</span><div class="trk"><div class="fill" style="width:56%"></div><div class="knob" style="left:56%"></div></div><span class="vl">44</span></div>
+      <div class="sws" style="justify-content:space-between;padding:4px 2px">
+        <button class="swt rb" aria-label="Custom colour"></button>
+        <button class="swt" style="background:#FFFFFF" aria-label="White"></button>
+        <button class="swt" style="background:#000000" aria-label="Black"></button>
+        <button class="swt" style="background:#FFD43B" aria-label="Yellow"></button>
+        <button class="swt on" style="background:#FF4D6D" aria-label="Pink, selected"></button>
+        <button class="swt" style="background:#FF8A3D" aria-label="Orange"></button>
+        <button class="swt" style="background:#38D9A9" aria-label="Mint"></button>
+        <button class="swt" style="background:#4DA3FF" aria-label="Blue"></button>
+        <button class="swt" style="background:#9B7BFF" aria-label="Violet"></button>
+      </div>
+      <div class="row" style="gap:8px"><button class="chip"><span class="ms">format_bold</span>Bold</button><button class="chip"><span class="ms">format_italic</span>Italic</button><button class="chip"><span class="ms">format_underlined</span>Underline</button></div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

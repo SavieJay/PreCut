@@ -315,6 +315,26 @@ Split into three stops, each ending with a device check (see Decisions log).
 
 **Acceptance:** a project with a LUT filter at 60%, HSL + curves, a filter layer, a transformed and cropped clip, blurred canvas, 2 transitions, an animation, a speed curve, a freeze frame and a reversed clip exports identically to the preview.
 
+### Phase 8.5 — Design refresh (Claude Design screens)
+Apply the Claude Design system (`docs/design/DESIGN.md`, `docs/design/claude-design/`) to everything already built. Two stops, each with a device check:
+
+**8.5a — Theme, components, editor**
+- [ ] Tokens: new colours (AccentFill, Ink4, Outline, error/inverse/scrim, SnapGuide, BeatDot, lane colours, MusicBar `#137D6F`, Ink0 labels on light bars) in `ui/theme`; Material colour scheme mapped so filled buttons/switches use AccentFill and sliders/selection use Accent
+- [ ] Type: Roboto Flex (OFL, bundled variable font) with the design's scale, including `labelChip` 13 sp and `timecode` 13 sp tnum
+- [ ] Icons: Material Symbols Rounded as vector drawables for every tool, replacing the current mixed set
+- [ ] Shared components: tool button/row (72 dp, 64 × 64 tiles, right fade), tool panel shell (52 dp header, Done pill, 16 dp top radius), chips, pill and segmented tabs, sliders (value, bipolar with zero mark, bubble, double-tap reset, preset snapping), switch rows, tiles, badges, snackbar/menu/dialog/sheet styling
+- [ ] Editor: top bar (title with rename, E-10), playback row, timeline (32 dp/s default, pinned fade zones, playhead knob, bar glyphs and sticky labels, handle sizes, multi-select outline and check badges, BeatDot), tall panels collapse the timeline to the main strip, system Back = Done
+- [ ] Missing-media banner, Optimizing chip, full-screen preview, reorder tiles per E-05–E-09
+
+**8.5b — Panels, Projects, Export, icon**
+- [ ] Every built panel per its frame: Trim, Speed, Volume, Fade, Filters (+ before/after peek), Adjust (icon chips, bipolar slider), HSL, Curves, Ratio, Cover, Text, colour picker, audio panels, voiceover, layers (T-01–T-11, X-01–X-03, U-01–U-07, L-01–L-02)
+- [ ] Projects: empty state, grid cards (own cover ratio, 48 dp meta, duration badge), long-press menu, FAB hide on scroll, dialogs, importing (H-01–H-08)
+- [ ] Export progress and done screens (EX-02, EX-04)
+- [ ] App icon (adaptive + monochrome) and Android 12 splash from the logo (A-01, A-02)
+- [ ] Compose UI checks at 412 and 360 dp widths; no behaviour changes (unit tests stay green)
+
+**Acceptance:** the built screens match their frames on a device (412 and 360 dp), with no feature regressions.
+
 ### Phase 9 — Overlays (PiP), masks and keyframes
 - [ ] Overlay track(s): add video/photo as picture-in-picture; overlays auto-stack into rows like audio
 - [ ] Composition gets extra video sequences; preview uses `MultipleInputVideoGraph`; per-input placement through `VideoCompositorSettings.getOverlaySettings(inputId, timeUs)`
@@ -547,3 +567,4 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-13 — `Clip.filter` (enum) became `Clip.look`;** `ProjectSerializer` migrates old drafts' `"filter": "WARM"` into `look.filterId = "basic.warm"`. The Basic presets reproduce the Phase 4 Media3 effects' values, so old projects look the same (within 33³ LUT interpolation).
 - **2026-10-13 — Look layers grade the composed frame** (composition-level `LookEffect`s gated by time, before the text/cover overlay so text stays ungraded). With nothing selected, Filters/Adjust add a 3 s layer at the playhead, like CapCut.
 - **2026-10-13 — Imported `.cube` LUTs** are validated (`CubeParser`: 3D only, 0..1 domain, ≤ 65³) and copied to `files/luts`; they show under "My LUTs" for every project. Grading sliders apply on release (preview rebuild), not live.
+- **2026-10-13 — Claude Design screens adopted as the design source** (all 118 frames, tokens, component sheets, redlines and interaction notes; a copy is in `docs/design/claude-design/`). Key changes: filled buttons use **AccentFill `#D92B50`** (white on `#FF4D6D` fails contrast); **Roboto Flex** bundled; **Material Symbols Rounded** icons; new lane colours (overlay, sticker, effect, transition, keyframe, beat); text bars get Ink0 labels; MusicBar darkened to `#137D6F`. A Phase 8.5 design refresh applies this to the built screens before 8B.

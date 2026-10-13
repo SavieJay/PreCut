@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>X-04c4 Text styles – Effects: Background</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city"><div class="tbox" style="left:50%;top:54%;transform:translateX(-50%);padding:4px;white-space:nowrap"><span style="display:block;font-size:22px;line-height:28px;font-weight:700;color:#0E0E10;background:rgba(255,212,59,.85);border-radius:8px;padding:4px 12px">Lagos nights</span></div></div></div>
+  <div class="pnl">
+    <div class="pnl-h" style="padding-left:4px"><button class="ib" aria-label="Back to Text"><span class="ms">arrow_back</span></button><div class="t">Text style</div><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="utabs"><button class="utab">Font</button><button class="utab">Style</button><button class="utab on">Effects</button><button class="utab">Animation</button><button class="utab">Templates</button></div>
+    <div class="pnl-b" style="padding-top:12px;gap:4px">
+      <div class="hs" style="padding-bottom:8px;margin-left:-60px">
+        <button class="chip">Shadow</button>
+        <button class="chip">Glow</button>
+        <button class="chip on">Background <span class="dot" style="background:#fff"></span></button>
+        <button class="chip">Curve</button>
+      </div>
+      <div class="row" style="gap:12px;height:44px"><span class="sub" style="width:72px;font-size:13px">Colour</span>
+        <div class="sws"><button class="swt rb" style="width:28px;height:28px" aria-label="Custom colour"></button><button class="swt" style="width:28px;height:28px;background:#0E0E10" aria-label="Black"></button><button class="swt" style="width:28px;height:28px;background:#fff" aria-label="White"></button><button class="swt on" style="width:28px;height:28px;background:#FFD43B" aria-label="Yellow, selected"></button><button class="swt" style="width:28px;height:28px;background:#FF4D6D" aria-label="Pink"></button><button class="swt" style="width:28px;height:28px;background:#4DA3FF" aria-label="Blue"></button></div>
+      </div>
+      <div class="sl"><span class="lb">Opacity</span><div class="trk"><div class="fill" style="width:85%"></div><div class="knob" style="left:85%"></div></div><span class="vl">85%</span></div>
+      <div class="sl"><span class="lb">Corners</span><div class="trk"><div class="fill" style="width:33%"></div><div class="knob" style="left:33%"></div></div><span class="vl">8</span></div>
+      <div class="sl"><span class="lb">Padding</span><div class="trk"><div class="fill" style="width:40%"></div><div class="knob" style="left:40%"></div></div><span class="vl">12</span></div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

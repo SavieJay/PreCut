@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PreCut screen checklist</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>
+body{margin:0;background:#0E0E10}
+.sec-c{background:#17171A;border-radius:14px;padding:16px 16px 10px;display:flex;flex-direction:column}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;font-size:15px;font-weight:700;padding-bottom:8px;border-bottom:1px solid #2E2E33;margin-bottom:6px}
+.sec-h span{font-size:12px;font-weight:600;color:#38D9A9}
+.ci{display:flex;align-items:center;gap:8px;min-height:27px;font-size:13px;line-height:17px;color:#C9C9D0}
+.ci .ck{font-size:18px;color:#38D9A9;font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 20}
+.ci b{color:#F2F2F5;font-weight:600;min-width:52px;font-variant-numeric:tabular-nums}
+.nw{font-size:9.5px;font-weight:700;letter-spacing:.4px;padding:1px 5px;border-radius:4px;background:#5C1426;color:#FFD9DF;margin-left:auto}
+.colx{display:flex;flex-direction:column;gap:20px}
+</style>
+</helmet>
+<div class="ph" style="width:1440px;height:1700px;padding:48px;gap:28px">
+  <div class="row" style="gap:20px;align-items:center">
+    <svg width="56" height="56" viewBox="0 0 108 108" aria-hidden="true"><defs><linearGradient id="sv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4F4F6"/><stop offset=".55" stop-color="#C9CACF"/><stop offset="1" stop-color="#9C9DA3"/></linearGradient></defs><g transform="translate(54 54) scale(1.12) translate(-54 -54)"><path fill-rule="evenodd" fill="url(#sv)" d="M33 22 H60 C73 22 84 32 84 45 C84 58 73 67 60 67 H54 V82 C54 85 52 87 49 87 H35 C32 87 30 85 30 82 V25 C30 23 31 22 33 22 Z M41 31 C39.5 30.5 38.6 31.6 39 33 L45 60 C45.4 61.6 46.8 62 48 61 L70 44 C71.3 43 71 41.5 69.4 41 Z"/><circle cx="50" cy="45" r="7" fill="url(#sv)"/><circle cx="48" cy="42.5" r="1.8" fill="#0E0E10"/><circle cx="52.4" cy="43.6" r="1.8" fill="#0E0E10"/><circle cx="49.4" cy="48" r="1.8" fill="#0E0E10"/><g stroke="#CFD0D4" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M66 78 L57 70 M66 78 L56 75"/><circle cx="72.4" cy="77" r="2.8"/><circle cx="68.4" cy="84.2" r="2.8"/></g></g></svg>
+    <div class="col" style="gap:4px">
+      <div style="font-size:36px;line-height:44px;font-weight:700;letter-spacing:-.4px">Screen checklist</div>
+      <div class="sec" style="font-size:15px">Every frame and state from the brief. <span style="color:#38D9A9;font-weight:600">✓ = designed and on the canvas</span> · <span class="nw" style="margin:0">NEW</span> added or reworked in this pass (missing states + official logo).</div>
+    </div>
+    <div class="f1"></div>
+    <div class="col" style="align-items:flex-end;gap:2px"><div class="tnum" style="font-size:40px;line-height:44px;font-weight:700;color:#38D9A9">118 / 118</div><div class="sub">items done</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;align-items:start">
+    <div class="colx">
+      <div class="sec-c"><div class="sec-h">A · App level <span>3 / 3</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>A-01</b>App icon (adaptive, mono, themed)<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>A-02</b>Splash screen<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>A-03</b>Notification permission<span class="nw">NEW</span></div>
+      </div>
+      <div class="sec-c"><div class="sec-h">H · Projects <span>9 / 9</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-01</b>Projects – empty</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-02</b>Projects – drafts grid</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-03</b>Card overflow menu</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-04</b>Rename dialog</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-05</b>Delete confirmation</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-06</b>Camera menu</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-07</b>Importing</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-08</b>Opened via Share to PreCut</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>H-09</b>Settings</div>
+      </div>
+      <div class="sec-c"><div class="sec-h">E · Editor base <span>16 / 16</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-01</b>Empty project</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-02</b>Add-media menu</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-03</b>Editor – default</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-03b</b>360 × 800 check</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-04</b>Clip selected</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-04b</b>Clip selected – 8B toolbar</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-05</b>Reordering</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-06</b>Missing media</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-07</b>Multi-select</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-08</b>Optimizing preview</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-08b</b>Preview ready</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-09</b>Full screen – portrait, controls</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-09b</b>Full screen – portrait, clean</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-09c</b>Full screen – landscape, controls</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-09d</b>Full screen – landscape, clean</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>E-10</b>Rename project</div>
+      </div>
+    </div>
+
+    <div class="colx">
+      <div class="sec-c"><div class="sec-h">T · Clip tool panels <span>27 / 27</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-01</b>Trim</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-02</b>Speed</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-03</b>Speed curves (8C)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-04</b>Volume</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-05</b>Fade</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-06</b>Filters</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-06b</b>Filters – My LUTs</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-06c</b>Filters – 360 × 800 panel check<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-07</b>Adjust</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-08</b>HSL</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-09</b>Curves</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-10</b>Ratio</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-11</b>Cover</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-12</b>Edit (8B)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-12b</b>Edit – crop mode</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-13</b>Canvas – Blur (8B)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-13b</b>Canvas – Colour</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-13c</b>Canvas – Image</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-14</b>Opacity (8B)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-15</b>Transform on preview (8B)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-16</b>Transitions (8C)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-17</b>Animations – In (8C)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-17b</b>Animations – Combo<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-18</b>Freeze frame (8C)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-19</b>Reverse – progress (8C)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-19b</b>Reverse – done</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>T-20</b>Rotate</div>
+      </div>
+    </div>
+
+    <div class="colx">
+      <div class="sec-c"><div class="sec-h">X · Text <span>14 / 14</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-01</b>Text panel</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-02</b>Text on preview</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-03</b>Colour picker sheet</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04a</b>Styles – Font</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04b</b>Styles – Style</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04c</b>Effects – Shadow</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04c2</b>Effects – Stroke<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04c3</b>Effects – Glow<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04c4</b>Effects – Background<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04c5</b>Effects – Curved text<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04d</b>Styles – Animation</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-04e</b>Styles – Templates</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-05</b>Rich text</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>X-06</b>Text-to-speech</div>
+      </div>
+      <div class="sec-c"><div class="sec-h">U · Audio <span>9 / 9</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-01</b>Audio menu</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-02</b>Audio clip selected</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-03</b>Voice effects</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-04</b>Beats – remove beat</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-04b</b>Beats – add beat<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-05</b>Voiceover – recording (stop)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-05b</b>Voiceover – ready (record)<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-06</b>Microphone permission</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>U-07</b>Audio speed</div>
+      </div>
+      <div class="sec-c"><div class="sec-h">L · Filter/Adjust layers <span>3 / 3</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>L-01</b>Layer selected</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>L-02</b>Filters from a layer</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>L-02b</b>Adjust from a layer<span class="nw">NEW</span></div>
+      </div>
+    </div>
+
+    <div class="colx">
+      <div class="sec-c"><div class="sec-h">P · Overlays, masks, keyframes <span>6 / 6</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>P-01</b>Overlay (PiP)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>P-02</b>Overlay selected</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>P-03</b>Mask</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>P-04</b>Chroma key</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>P-05</b>Keyframes + easing</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>P-06</b>Overlapping transition</div>
+      </div>
+      <div class="sec-c"><div class="sec-h">S · Stickers, draw, effects <span>6 / 6</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>S-01</b>Stickers sheet – Emoji</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>S-01b</b>Sticker placed + lane</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>S-01c</b>Stickers – My images<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>S-02</b>Draw</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>S-03</b>Effects + effect lane</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>S-04</b>Effect – apply to</div>
+      </div>
+      <div class="sec-c"><div class="sec-h">EX · Export <span>6 / 6</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>EX-01</b>Export settings sheet</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>EX-02</b>Exporting</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>EX-03</b>Notification – progress + saved<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>EX-04</b>Done</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>EX-05</b>Failed – encoder</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>EX-05b</b>Failed – storage</div>
+      </div>
+      <div class="sec-c"><div class="sec-h">Deliverables 2–6 <span>19 / 19</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>Tokens</b>Colours, type, radii, spacing, elevation</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>C-01</b>Buttons</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>C-02</b>Chips &amp; tiles</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>C-03</b>Sliders &amp; toggles</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>C-04</b>Panels, sheets, dialogs</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>C-05</b>Timeline parts</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>C-06</b>Badges, empty, loading</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>C-07</b>Icon set</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>R-E03</b>Redline – Editor</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>R-T06</b>Redline – Filters</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>R-T07</b>Redline – Adjust</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>R-EX01</b>Redline – Export</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>Notes</b>Interaction notes (stickies beside frames)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>Lanes</b>New lane colours (overlay, sticker, effect, transition)</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>Font</b>One open-licence family: Roboto Flex</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>Icons</b>One family: Material Symbols Rounded</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>360</b>Editor + panel checked at 360 × 800</div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>Logo</b>Official logo applied (icon, splash, home, notifications)<span class="nw">NEW</span></div>
+        <div class="ci"><span class="ms ck">check_circle</span><b>Compose</b>No blur-behind glass, no custom render engine</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

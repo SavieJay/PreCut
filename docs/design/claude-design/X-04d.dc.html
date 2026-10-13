@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>X-04d Text styles – Animation</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city"><div style="position:absolute;left:50%;top:54%;transform:translateX(-50%);white-space:nowrap;font-family:'Bebas Neue',sans-serif;font-size:36px;line-height:40px;color:#FFD43B;letter-spacing:1px">LAGOS NI<span style="opacity:.35">GHTS</span><span style="display:inline-block;width:2px;height:30px;background:#FFD43B;margin-left:2px;vertical-align:-4px"></span></div></div></div>
+  <div class="pnl">
+    <div class="pnl-h" style="padding-left:4px"><button class="ib" aria-label="Back to Text"><span class="ms">arrow_back</span></button><div class="t">Text style</div><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="utabs"><button class="utab">Font</button><button class="utab">Style</button><button class="utab">Effects</button><button class="utab on">Animation</button><button class="utab">Templates</button></div>
+    <div class="pnl-b" style="padding-top:12px;gap:12px">
+      <div class="tabs"><button class="tab on">In</button><button class="tab">Out</button><button class="tab">Loop</button></div>
+      <div class="tg4">
+        <button class="pt"><span class="im"><span class="ms">block</span></span>None</button>
+        <button class="pt on"><span class="im"><span class="ms">keyboard</span><span class="ms mh">play_arrow</span></span>Typewriter</button>
+        <button class="pt"><span class="im"><span class="ms">gradient</span><span class="ms mh">play_arrow</span></span>Fade</button>
+        <button class="pt"><span class="im"><span class="ms">east</span><span class="ms mh">play_arrow</span></span>Slide</button>
+        <button class="pt"><span class="im"><span class="ms">bubble_chart</span><span class="ms mh">play_arrow</span></span>Pop</button>
+        <button class="pt"><span class="im"><span class="ms">sports_basketball</span><span class="ms mh">play_arrow</span></span>Bounce</button>
+        <button class="pt"><span class="im"><span class="ms">waves</span><span class="ms mh">play_arrow</span></span>Wave</button>
+      </div>
+      <div class="sl"><span class="lb">Duration</span><div class="trk"><div class="fill" style="width:40%"></div><div class="knob" style="left:40%"></div></div><span class="vl">1.2s</span></div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

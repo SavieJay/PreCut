@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>H-04 Rename dialog</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <div class="apptitle row" style="gap:10px"><svg width="28" height="28" viewBox="0 0 108 108" aria-hidden="true"><g transform="translate(54 54) scale(1.12) translate(-54 -54)"><path fill-rule="evenodd" fill="#E4E4E8" d="M33 22 H60 C73 22 84 32 84 45 C84 58 73 67 60 67 H54 V82 C54 85 52 87 49 87 H35 C32 87 30 85 30 82 V25 C30 23 31 22 33 22 Z M41 31 C39.5 30.5 38.6 31.6 39 33 L45 60 C45.4 61.6 46.8 62 48 61 L70 44 C71.3 43 71 41.5 69.4 41 Z"/><circle cx="50" cy="45" r="7" fill="#E4E4E8"/><g stroke="#E4E4E8" stroke-width="3" fill="none" stroke-linecap="round"><path d="M66 78 L57 70 M66 78 L56 75"/><circle cx="72.4" cy="77" r="2.8"/><circle cx="68.4" cy="84.2" r="2.8"/></g></g></svg>PreCut</div>
+    <button class="ib" aria-label="Record or take photo"><span class="ms">photo_camera</span></button>
+    <button class="ib" aria-label="Settings"><span class="ms">settings</span></button>
+  </div>
+  <div class="sect" style="padding:4px 16px 12px">Drafts · 6</div>
+  <div style="display:flex;gap:12px;padding:0 16px;align-items:flex-start">
+    <div class="col f1" style="gap:16px">
+      <div class="card"><div class="cv s-beach"><span class="bdg">0:42</span></div><div class="cn">Trip to Lagos</div></div>
+      <div class="card"><div class="cv sq s-dog"><span class="bdg">1:05</span></div></div>
+    </div>
+    <div class="col f1" style="gap:16px">
+      <div class="card"><div class="cv sq s-food"><span class="bdg">0:18</span></div><div class="cn">Jollof night</div></div>
+      <div class="card"><div class="cv s-hike"><span class="bdg">0:27</span></div></div>
+    </div>
+  </div>
+  <div class="scrim"></div>
+  <div class="dlg" style="top:36%">
+    <h2>Rename project</h2>
+    <div class="fld">
+      <label for="pname">Name</label>
+      <input id="pname" class="inp" value="Trip to Lagos">
+      <div class="row" style="justify-content:flex-end"><span class="sub tnum">13 / 60</span></div>
+    </div>
+    <div class="acts">
+      <button class="btn t">Cancel</button>
+      <button class="btn t">Save</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

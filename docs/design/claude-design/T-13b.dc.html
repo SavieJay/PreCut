@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T-13b Canvas – Colour</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Balogun market<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv">
+    <div class="vid" style="background:#F3E6CF">
+      <div class="s-market" style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);aspect-ratio:16/9;background-size:100% 100%"></div>
+    </div>
+  </div>
+  <div class="pb">
+    <div class="tc">0:04 <span class="sec">/ 0:31</span></div>
+    <button class="ib" aria-label="Play"><span class="ms f s32">play_arrow</span></button>
+    <button class="ib r" aria-label="Full screen"><span class="ms">fullscreen</span></button>
+  </div>
+  <div class="tl">
+    <div class="lane ru">
+      <span class="rl" style="left:78px">0:00</span><span class="rl" style="left:142px">0:02</span><span class="rl" style="left:206px">0:04</span><span class="rl" style="left:270px">0:06</span><span class="rl" style="left:334px">0:08</span><span class="rl" style="left:398px">0:10</span>
+      <div class="ticks" style="background-position:14px 0"></div>
+    </div>
+    <div class="lane main">
+      <div class="clip s-market" style="left:78px;width:400px"></div>
+      <div class="sel" style="left:78px;width:400px"></div>
+      <div class="hl" style="left:64px"></div>
+      <div class="pinl"><button class="mutebtn" aria-label="Mute clip audio"><span class="ms">volume_up</span></button></div>
+    </div>
+    <div class="phd"></div>
+  </div>
+  <div class="pnl">
+    <div class="pnl-h"><div class="t">Canvas</div><button class="tbtn acc"><span class="ms s18">done_all</span>Apply to all</button><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="pnl-b">
+      <div class="tabs"><button class="tab on">Colour</button><button class="tab">Blur</button><button class="tab">Image</button></div>
+      <div class="sws" style="padding:6px 2px;justify-content:space-between">
+        <button class="swt rb" aria-label="Custom colour"></button>
+        <button class="swt" style="background:#000" aria-label="Black"></button>
+        <button class="swt" style="background:#FFFFFF" aria-label="White"></button>
+        <button class="swt on" style="background:#F3E6CF" aria-label="Cream, selected"></button>
+        <button class="swt" style="background:#FF4D6D" aria-label="Pink"></button>
+        <button class="swt" style="background:#F2C94C" aria-label="Yellow"></button>
+        <button class="swt" style="background:#16897A" aria-label="Teal"></button>
+        <button class="swt" style="background:#2F6FB8" aria-label="Blue"></button>
+      </div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

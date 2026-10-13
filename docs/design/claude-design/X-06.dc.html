@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>X-06 Text-to-speech</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city"><div class="cap" style="top:60%">Lagos nights</div></div></div>
+  <div class="pnl">
+    <div class="pnl-h"><div class="t">Text to speech</div><button class="ib" aria-label="Preview voice"><span class="ms f">play_circle</span></button><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="sub" style="padding:0 16px 4px">Voices installed on this phone</div>
+    <div class="lst">
+      <button class="li" style="min-height:52px;background:#222226"><span class="ms f" style="color:#FF4D6D">radio_button_checked</span><div class="f1"><div style="font-size:15px">English (Nigeria) · Voice 1</div><div class="d">Female · offline</div></div></button>
+      <button class="li" style="min-height:52px"><span class="ms">radio_button_unchecked</span><div class="f1"><div style="font-size:15px">English (Nigeria) · Voice 2</div><div class="d">Male · offline</div></div></button>
+      <button class="li" style="min-height:52px"><span class="ms">radio_button_unchecked</span><div class="f1"><div style="font-size:15px">English (UK) · Voice 3</div><div class="d">Female · offline</div></div></button>
+      <button class="li" style="min-height:52px"><span class="ms">radio_button_unchecked</span><div class="f1"><div style="font-size:15px">Yorùbá · Voice 1</div><div class="d">Needs download in Android settings</div></div></button>
+    </div>
+    <div class="pnl-b">
+      <div class="sl"><span class="lb">Speed</span><div class="trk"><div class="zm" style="left:40%"></div><div class="fill" style="width:40%"></div><div class="knob" style="left:40%"></div></div><span class="vl">1.0x</span></div>
+      <div class="sl"><span class="lb">Pitch</span><div class="trk"><div class="zm" style="left:50%"></div><div class="fill" style="left:50%;width:8%"></div><div class="knob" style="left:58%"></div></div><span class="vl">+2</span></div>
+      <button class="btn f w" style="height:48px;border-radius:24px"><span class="ms">record_voice_over</span>Add as voiceover</button>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

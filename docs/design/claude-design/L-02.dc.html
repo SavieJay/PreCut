@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>L-02 Filters from a layer</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city" style="filter:saturate(1.35) hue-rotate(-12deg) contrast(1.12)"></div></div>
+  <div class="pb">
+    <div class="tc">0:07 <span class="sec">/ 0:18</span></div>
+    <button class="ib" aria-label="Play"><span class="ms f s32">play_arrow</span></button>
+    <button class="ib r" aria-label="Full screen"><span class="ms">fullscreen</span></button>
+  </div>
+  <div class="tl">
+    <div class="lane ru">
+      <span class="rl" style="left:46px">0:02</span><span class="rl" style="left:110px">0:04</span><span class="rl" style="left:174px">0:06</span><span class="rl" style="left:238px">0:08</span><span class="rl" style="left:302px">0:10</span><span class="rl" style="left:366px">0:12</span>
+      <div class="ticks" style="background-position:14px 0"></div>
+    </div>
+    <div class="lane main">
+      <div class="clip s-beach" style="left:-18px;width:133px"></div>
+      <div class="clip s-city" style="left:117px;width:177px"></div>
+      <div class="clip s-dog" style="left:296px;width:262px"></div>
+      <div class="pinl"><button class="mutebtn" aria-label="Mute clip audio"><span class="ms">volume_up</span></button></div>
+    </div>
+    <div class="lane"><div class="bar b-look on" style="left:158px;width:96px"><span class="ms">filter</span><span>Teal &amp; Orange</span></div><div class="bh l" style="left:148px"></div><div class="bh r" style="left:254px"></div></div>
+    <div class="lane"><div class="bar b-txt" style="left:142px;width:128px"><span class="ms">title</span><span>Lagos nights</span></div></div>
+    <div class="phd"></div>
+  </div>
+  <div class="pnl">
+    <div class="pnl-h"><div class="t">Filters · layer</div><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="pnl-b">
+      <div class="hs">
+        <button class="chip">Basic</button><button class="chip">Life</button><button class="chip on">Film</button><button class="chip">Retro</button><button class="chip">Mono</button><button class="chip">Food</button><button class="chip">Nature</button><button class="chip">My LUTs</button>
+      </div>
+      <div class="hs" style="gap:10px;padding-top:4px;padding-bottom:4px">
+        <button class="ft"><span class="im"><span class="ms">block</span></span>None</button>
+        <button class="ft on"><span class="im"><span class="g s-city" style="filter:saturate(1.35) hue-rotate(-12deg) contrast(1.12)"></span></span>Teal &amp; Orange</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="filter:sepia(.45) saturate(1.2)"></span></span>Lagos Gold</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="filter:contrast(.8) brightness(1.1) saturate(.7)"></span></span>Faded</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="filter:contrast(1.3) saturate(.85) brightness(.9)"></span></span>Cinema</button>
+        <button class="ft"><span class="im"><span class="g s-city" style="filter:hue-rotate(20deg) saturate(1.1)"></span></span>Velvet</button>
+      </div>
+      <div class="sl"><span class="lb" style="width:64px">Intensity</span><div class="trk"><div class="fill" style="width:80%"></div><div class="knob" style="left:80%"></div></div><span class="vl">80</span></div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

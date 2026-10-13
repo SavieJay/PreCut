@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>X-01 Text panel</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city"><div class="tbox" style="left:50%;top:60%;transform:translateX(-50%);padding:4px 10px;white-space:nowrap"><span style="font-size:17px;font-weight:700;color:#FFD43B;text-shadow:0 1px 4px rgba(0,0,0,.6)">Lagos nights</span></div></div></div>
+  <div class="tl">
+    <div class="lane ru">
+      <span class="rl" style="left:46px">0:02</span><span class="rl" style="left:110px">0:04</span><span class="rl" style="left:174px">0:06</span><span class="rl" style="left:238px">0:08</span><span class="rl" style="left:302px">0:10</span><span class="rl" style="left:366px">0:12</span>
+      <div class="ticks" style="background-position:14px 0"></div>
+    </div>
+    <div class="lane main" style="height:40px">
+      <div class="clip sm s-beach" style="left:-18px;width:133px"></div>
+      <div class="clip sm s-city" style="left:117px;width:177px"></div>
+      <div class="clip sm s-dog" style="left:296px;width:262px"></div>
+    </div>
+    <div class="lane"><div class="bar b-txt on" style="left:142px;width:128px"><span class="ms">title</span><span>Lagos nights</span></div><div class="bh l" style="left:132px"></div><div class="bh r" style="left:270px"></div></div>
+    <div class="phd"></div>
+  </div>
+  <div class="pnl">
+    <div class="pnl-h"><div class="t">Text</div>
+      <button class="ib" aria-label="Split text"><span class="ms s20">content_cut</span></button>
+      <button class="ib" aria-label="Duplicate text"><span class="ms s20">content_copy</span></button>
+      <button class="ib" aria-label="Delete text"><span class="ms s20">delete</span></button>
+      <button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="pnl-b">
+      <label for="tx" style="position:absolute;left:-9999px">Text</label>
+      <textarea id="tx" class="ta" rows="2">Lagos nights</textarea>
+      <div class="sl"><span class="lb">Size</span><div class="trk"><div class="fill" style="width:40%"></div><div class="knob" style="left:40%"></div></div><span class="vl">32</span></div>
+      <div class="sl"><span class="lb">Opacity</span><div class="trk"><div class="fill" style="width:100%"></div><div class="knob" style="left:100%"></div></div><span class="vl">100%</span></div>
+      <div class="sws" style="justify-content:space-between;padding:4px 2px">
+        <button class="swt rb" aria-label="Custom colour"></button>
+        <button class="swt" style="background:#FFFFFF" aria-label="White"></button>
+        <button class="swt" style="background:#000000" aria-label="Black"></button>
+        <button class="swt on" style="background:#FFD43B" aria-label="Yellow, selected"></button>
+        <button class="swt" style="background:#FF4D6D" aria-label="Pink"></button>
+        <button class="swt" style="background:#FF8A3D" aria-label="Orange"></button>
+        <button class="swt" style="background:#38D9A9" aria-label="Mint"></button>
+        <button class="swt" style="background:#4DA3FF" aria-label="Blue"></button>
+        <button class="swt" style="background:#9B7BFF" aria-label="Violet"></button>
+      </div>
+      <div class="swr" style="min-height:44px"><span>Background</span><button class="sw" role="switch" aria-checked="false" aria-label="Text background"></button></div>
+      <button class="tbtn acc" style="align-self:flex-start;padding:0 4px"><span class="ms s18">format_shapes</span>Font, style, effects…</button>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

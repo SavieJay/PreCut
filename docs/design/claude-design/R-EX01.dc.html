@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Redline – EX-01 Export settings</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>
+body{margin:0;background:#141417}
+.mk{position:absolute;left:426px;width:22px;height:22px;margin-top:-11px;border-radius:11px;background:#4DD0E1;color:#0E0E10;font-size:11px;font-weight:800;display:grid;place-items:center;z-index:40}
+.mk::before{content:'';position:absolute;right:22px;top:10px;width:14px;height:1.5px;background:#4DD0E1}
+.ri{display:flex;gap:10px;align-items:flex-start}
+.ri .n{width:22px;height:22px;border-radius:11px;background:#4DD0E1;color:#0E0E10;font-size:11px;font-weight:800;display:grid;place-items:center;flex:none}
+.ri .d{font-size:12.5px;line-height:18px;color:#C9C9D0}
+.ri b{color:#F2F2F5;font-weight:600}
+.tkn{color:#4DD0E1;font-weight:500}
+</style>
+</helmet>
+<div style="width:960px;height:1000px;background:#141417;color:#F2F2F5;font-family:'Roboto Flex',Roboto,system-ui,sans-serif;padding:40px 28px;box-sizing:border-box;display:flex;gap:28px">
+  <div style="position:relative;width:452px;height:915px;flex:none">
+    <div class="ph" style="border-radius:28px">
+      <div class="inset-t"></div>
+      <div class="tb">
+        <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+        <div class="ttl">Lagos weekend</div>
+        <button class="pill pr">Export</button>
+      </div>
+      <div class="pv" style="flex:none;height:200px"><div class="vid s-city"></div></div>
+      <div class="scrim"></div>
+      <div class="sheet" style="padding:0 16px 40px;gap:14px">
+        <div class="grab"></div>
+        <div class="row"><div class="f1" style="font-size:20px;line-height:28px;font-weight:600">Export</div><button class="ib" aria-label="Close"><span class="ms">close</span></button></div>
+        <div class="col" style="gap:8px">
+          <div class="sect">Resolution</div>
+          <div class="seg"><button>480p</button><button>720p</button><button class="on">1080p</button><button>2K</button><button class="dis">4K</button></div>
+          <div class="row" style="gap:6px;justify-content:flex-end"><span class="ms s16 sec">info</span><span class="sub">4K: Not supported on this device</span></div>
+        </div>
+        <div class="col" style="gap:8px"><div class="sect">Frame rate</div><div class="seg"><button>24</button><button>25</button><button class="on">30</button><button>50</button><button>60</button></div></div>
+        <div class="col" style="gap:8px"><div class="sect">Bitrate</div><div class="seg"><button>Lower</button><button class="on">Recommended</button><button>Higher</button></div></div>
+        <div class="row" style="gap:16px;align-items:flex-end">
+          <div class="col" style="gap:8px;width:180px"><div class="sect">Codec</div><div class="seg"><button class="on">H.264</button><button>HEVC</button></div></div>
+          <div class="swr f1" style="min-height:40px"><div class="col"><span>HDR</span><span class="d">HDR10</span></div><button class="sw" role="switch" aria-checked="false" aria-label="HDR"></button></div>
+        </div>
+        <div class="row" style="justify-content:space-between;border-top:1px solid #2E2E33;padding-top:12px"><span class="sec" style="font-size:14px">Estimated size</span><span class="tnum" style="font-size:16px;font-weight:600">86 MB <span class="sec" style="font-weight:400">· 0:18</span></span></div>
+        <button class="btn f lg w"><span class="ms">movie</span>Export video</button>
+        <div class="row" style="gap:8px"><button class="btn o f1"><span class="ms">music_note</span>Audio only</button><button class="btn o f1"><span class="ms">image</span>Save frame</button></div>
+      </div>
+    </div>
+    <div class="mk" style="top:290px">1</div>
+    <div class="mk" style="top:322px">2</div>
+    <div class="mk" style="top:400px">3</div>
+    <div class="mk" style="top:432px;left:452px">4</div>
+    <div class="mk" style="top:650px">5</div>
+    <div class="mk" style="top:720px">6</div>
+    <div class="mk" style="top:790px">7</div>
+    <div class="mk" style="top:848px">8</div>
+  </div>
+  <div class="col" style="gap:13px;padding-top:4px">
+    <div style="font-size:22px;font-weight:700">EX-01 · Export redline</div>
+    <div class="sub" style="font-size:12px">Modal bottom sheet over the editor · scrim 60%</div>
+    <div class="ri"><span class="n">1</span><div class="d"><b>Sheet</b> · <span class="tkn">Ink1</span>, 16 top radius, pad 16 h / 40 bottom, rows gap 14 · grab 32 × 4 <span class="tkn">Outline</span>, 12 top 8 bottom</div></div>
+    <div class="ri"><span class="n">2</span><div class="d"><b>Title row</b> · “Export” titleLarge 20/28 600 · close icon button 48</div></div>
+    <div class="ri"><span class="n">3</span><div class="d"><b>Section label</b> · bodySmall 12/16 600 caps +0.4 <span class="tkn">TextSecondary</span> · 8 to control</div></div>
+    <div class="ri"><span class="n">4</span><div class="d"><b>Segmented control 40</b> · radius full, 1 <span class="tkn">Outline</span> border + dividers · labels 13/500 · selected <span class="tkn">AccentContainer</span> / <span class="tkn">OnAccentContainer</span> · unsupported <span class="tkn">TextDisabled</span> + reason row 12/16 with 16 info icon, right-aligned</div></div>
+    <div class="ri"><span class="n">5</span><div class="d"><b>Codec + HDR</b> · codec segment 180 w · HDR switch 52 × 32 (on <span class="tkn">AccentFill</span>), helper 12/16 · row hidden when HDR isn’t supported</div></div>
+    <div class="ri"><span class="n">6</span><div class="d"><b>Estimate row</b> · 1 <span class="tkn">Ink3</span> divider, 12 above text · label 14 <span class="tkn">TextSecondary</span> · value 16/600 tnum + duration</div></div>
+    <div class="ri"><span class="n">7</span><div class="d"><b>Primary</b> · “Export video” 56 h full width, radius 28, <span class="tkn">AccentFill</span>, 22 icon + 16/600 label</div></div>
+    <div class="ri"><span class="n">8</span><div class="d"><b>Secondary</b> · two outlined 40 h buttons, equal width, gap 8 · “Audio only” exports .m4a · “Save frame” saves the frame at the playhead as PNG</div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

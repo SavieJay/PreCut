@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>H-09 Settings</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <div class="ttl" style="font-size:20px">Settings</div>
+  </div>
+  <div class="lst">
+    <div class="sect" style="padding:16px 16px 4px;color:#FF4D6D">New projects</div>
+    <button class="li"><span class="ms">schedule</span><div class="f1"><div>Default photo duration</div><div class="d">3.0 s</div></div></button>
+    <button class="li"><span class="ms">aspect_ratio</span><div class="f1"><div>Default aspect ratio</div><div class="d">9:16 · Portrait</div></div></button>
+    <div class="hr1"></div>
+    <div class="sect" style="padding:16px 16px 4px;color:#FF4D6D">Export</div>
+    <button class="li"><span class="ms">movie</span><div class="f1"><div>Default export settings</div><div class="d">1080p · 30 fps · Recommended · H.264</div></div></button>
+    <div class="hr1"></div>
+    <div class="sect" style="padding:16px 16px 4px;color:#FF4D6D">Storage</div>
+    <div class="li"><span class="ms">cached</span><div class="f1"><div>Preview cache</div><div class="d tnum">1.2 GB · rebuilt when needed</div></div><button class="btn o" style="height:36px;padding:0 16px">Clear</button></div>
+    <button class="li"><span class="ms">palette</span><div class="f1"><div>Imported LUTs</div><div class="d">4 files · 2.1 MB</div></div><span class="ms">chevron_right</span></button>
+    <div class="hr1"></div>
+    <div class="sect" style="padding:16px 16px 4px;color:#FF4D6D">About</div>
+    <button class="li"><span class="ms">info</span><div class="f1"><div>About PreCut</div><div class="d">Version 1.4.0 (142)</div></div></button>
+    <button class="li"><span class="ms">description</span><div class="f1"><div>Open-source licences</div></div><span class="ms">chevron_right</span></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

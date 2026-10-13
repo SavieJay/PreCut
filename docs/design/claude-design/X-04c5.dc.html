@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>X-04c5 Text styles – Effects: Curved text</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend<span class="ms s18 sec">edit</span></button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city">
+    <div class="tbox" style="left:8%;right:8%;top:40%;height:96px">
+      <svg viewBox="0 0 240 96" style="width:100%;height:100%" role="img" aria-label="Lagos nights, curved"><defs><path id="arc" d="M10 86 Q120 -10 230 86"/></defs><text font-family="Bebas Neue, sans-serif" font-size="34" fill="#FFD43B" letter-spacing="2"><textPath href="#arc" startOffset="50%" text-anchor="middle">LAGOS NIGHTS</textPath></text></svg>
+    </div>
+  </div></div>
+  <div class="pnl">
+    <div class="pnl-h" style="padding-left:4px"><button class="ib" aria-label="Back to Text"><span class="ms">arrow_back</span></button><div class="t">Text style</div><button class="done"><span class="ms">check</span>Done</button></div>
+    <div class="utabs"><button class="utab">Font</button><button class="utab">Style</button><button class="utab on">Effects</button><button class="utab">Animation</button><button class="utab">Templates</button></div>
+    <div class="pnl-b" style="padding-top:12px;gap:8px">
+      <div class="hs" style="padding-bottom:4px;margin-left:-110px">
+        <button class="chip">Glow</button>
+        <button class="chip">Background</button>
+        <button class="chip on">Curve <span class="dot" style="background:#fff"></span></button>
+      </div>
+      <div style="position:relative;height:56px;display:flex;align-items:center;gap:12px">
+        <span class="lb sub" style="width:56px;font-size:13px">Amount</span>
+        <div class="trk"><div class="zm" style="left:50%"></div><div class="fill" style="left:50%;width:22%"></div><div class="knob" style="left:72%"></div><span class="bub" style="left:72%">+45</span></div>
+        <span class="vl">+45</span>
+      </div>
+      <div class="row" style="justify-content:space-between"><span class="sub">◡ Arch down</span><span class="sub">0 = straight</span><span class="sub">Arch up ◠</span></div>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>E-03b Editor – 360 × 800 check</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./precut.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<style>body{margin:0;background:#0E0E10}</style>
+</helmet>
+<div class="ph c">
+  <div class="inset-t"></div>
+  <div class="tb">
+    <button class="ib" aria-label="Back"><span class="ms">arrow_back</span></button>
+    <button class="ttl" aria-label="Rename project">Lagos weekend</button>
+    <button class="ib" aria-label="Undo"><span class="ms">undo</span></button>
+    <button class="ib dim" aria-label="Redo, unavailable"><span class="ms">redo</span></button>
+    <button class="pill" style="padding:0 14px">Export</button>
+  </div>
+  <div class="pv"><div class="vid s-city"><div class="cap" style="top:64%;font-size:17px">Lagos nights</div></div></div>
+  <div class="pb">
+    <div class="tc">0:07 <span class="sec">/ 0:18</span></div>
+    <button class="ib" aria-label="Play"><span class="ms f s32">play_arrow</span></button>
+    <button class="ib r" aria-label="Full screen"><span class="ms">fullscreen</span></button>
+  </div>
+  <div class="tl">
+    <div class="lane ru">
+      <span class="rl" style="left:20px">0:02</span><span class="rl" style="left:84px">0:04</span><span class="rl" style="left:148px">0:06</span><span class="rl" style="left:212px">0:08</span><span class="rl" style="left:276px">0:10</span><span class="rl" style="left:340px">0:12</span>
+      <div class="ticks" style="background-position:4px 0"></div>
+    </div>
+    <div class="lane main">
+      <div class="clip s-beach" style="left:-44px;width:133px"></div>
+      <div class="clip s-city" style="left:91px;width:177px"></div>
+      <div class="clip s-dog" style="left:270px;width:262px"></div>
+      <div class="pinl"><button class="mutebtn" aria-label="Mute clip audio"><span class="ms">volume_up</span></button></div>
+      <div class="pinr"><button class="addbtn" aria-label="Add media"><span class="ms">add</span></button></div>
+    </div>
+    <div class="lane"><div class="bar b-txt" style="left:116px;width:128px"><span class="ms">title</span><span>Lagos nights</span></div></div>
+    <div class="lane au"><div class="bar b-mus" style="left:-44px;width:384px;padding-left:50px"><div class="wave"></div><div class="beats" style="background-position:14px 0"></div><span class="ms">music_note</span><span>Afrobeat Sunrise</span></div></div>
+    <div class="lane au"><div class="bar b-mus" style="left:212px;width:256px"><div class="wave"></div><span class="ms">music_note</span><span>Ocean waves</span></div></div>
+    <div class="phd" style="left:179px"></div>
+  </div>
+  <div class="bot">
+    <div class="tbar">
+      <button class="tool"><span class="ms">content_cut</span>Split</button>
+      <button class="tool"><span class="ms">width</span>Trim</button>
+      <button class="tool"><span class="ms">music_note</span>Audio</button>
+      <button class="tool"><span class="ms">speed</span>Speed</button>
+      <button class="tool"><span class="ms">volume_up</span>Volume</button>
+      <button class="tool"><span class="ms">gradient</span>Fade</button>
+    </div>
+    <div class="inset-b"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
