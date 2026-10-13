@@ -20,6 +20,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,13 +46,15 @@ import com.savie.precut.ui.components.formatDurationMs
 @Composable
 fun FullScreenPreview(
     player: Player,
-    state: PreviewState,
+    previewState: State<PreviewState>,
     onPlayPause: () -> Unit,
     onScrubStart: () -> Unit,
+    onScrubEnd: () -> Unit,
     onSeek: (Long) -> Unit,
     onClose: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
+    val state = previewState.value
     HideSystemBars()
     var controls by remember { mutableStateOf(true) }
     var scrubMs by remember { mutableStateOf<Long?>(null) }
@@ -82,7 +85,10 @@ fun FullScreenPreview(
                         scrubMs = it.toLong()
                         onSeek(it.toLong())
                     },
-                    onValueChangeFinished = { scrubMs = null },
+                    onValueChangeFinished = {
+                        scrubMs = null
+                        onScrubEnd()
+                    },
                     valueRange = 0f..state.durationMs.coerceAtLeast(1L).toFloat(),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {

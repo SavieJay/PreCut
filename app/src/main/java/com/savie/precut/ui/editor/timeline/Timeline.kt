@@ -33,6 +33,7 @@ import com.savie.precut.model.totalDurationMs
 /** Everything the timeline reports back; implemented by the editor screen with ViewModel calls. */
 interface TimelineActions : AudioRowActions {
     fun onScrubStart()
+    fun onScrubEnd()
     fun onSeek(positionMs: Long)
     fun onSelectClip(clipId: String?)
     fun onTrim(clipId: String, trimStartMs: Long, trimEndMs: Long)
@@ -50,7 +51,8 @@ interface TimelineActions : AudioRowActions {
 fun Timeline(
     project: Project,
     selection: TimelineSelection,
-    positionMs: Long,
+    /** Read lazily (in effects and lambdas), so the timeline doesn't recompose as time moves. */
+    positionMs: () -> Long,
     loader: ThumbnailLoader,
     waveforms: WaveformLoader,
     actions: TimelineActions,
@@ -66,8 +68,7 @@ fun Timeline(
         val halfWidth = maxWidth / 2
 
         val scrollState = rememberScrollState()
-        ScrubSync(scrollState, positionMs, pxPerMs, actions::onScrubStart, actions::onSeek)
-        val playhead by rememberUpdatedState(positionMs)
+        ScrubSync(scrollState, positionMs, pxPerMs, actions::onScrubStart, actions::onScrubEnd, actions::onSeek)
         val coroutineScope = rememberCoroutineScope()
         val autoScroller = remember(scrollState) {
             with(density) { EdgeAutoScroller(scrollState, coroutineScope, edgePx = 48.dp.toPx(), maxSpeedPx = 14.dp.toPx()) }
@@ -76,6 +77,7 @@ fun Timeline(
             actions.onScrubStart()
             actions.onSeek(TimelineGeometry.pxToMs(px.toFloat(), pxPerMs))
         }
+        autoScroller.onScrollEnd = actions::onScrubEnd
 
         val reorderState = remember { mutableStateOf<ReorderState?>(null) }
         val reorder = reorderState.value
@@ -121,7 +123,7 @@ fun Timeline(
                     .padding(horizontal = halfWidth, vertical = VerticalPadding),
             ) {
                 CompositionLocalProvider(LocalEdgeAutoScroller provides autoScroller) {
-                    TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, { playhead }, actions)
+                    TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, positionMs, actions)
                 }
             }
             MuteOriginalButton(

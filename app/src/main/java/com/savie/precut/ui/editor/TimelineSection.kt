@@ -36,7 +36,8 @@ import com.savie.precut.ui.theme.TextPrimary
 @Composable
 fun TimelineSection(
     state: EditorUiState.Ready,
-    positionMs: Long,
+    /** Read lazily: the playhead changes every frame. */
+    positionMs: () -> Long,
     loader: ThumbnailLoader,
     waveforms: WaveformLoader,
     actions: TimelineActions,

@@ -37,6 +37,7 @@ interface VideoExporter {
 class ExportManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val compositionBuilder: CompositionBuilder,
+    private val proxies: ProxyManager,
 ) : VideoExporter {
 
     override fun export(project: Project): Flow<ExportState> {
@@ -73,6 +74,8 @@ class ExportManager @Inject constructor(
             .build()
 
         trySend(ExportState.Running(percent = null))
+        // Background proxying would compete for the encoder; it resumes when the export ends.
+        proxies.pause()
         transformer.start(composition, output.absolutePath)
 
         val progressHolder = ProgressHolder()
@@ -86,6 +89,7 @@ class ExportManager @Inject constructor(
         }
 
         awaitClose {
+            proxies.resume()
             poller.cancel()
             if (!finished) {
                 transformer.cancel()

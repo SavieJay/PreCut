@@ -162,4 +162,5 @@
     <string name="color_hex">Hex</string>
     <string name="color_recent">Used in this project</string>
     <string name="color_custom">Custom colour</string>
+    <string name="preview_optimizing">Optimizing preview %1$d%%</string>
 </resources>

@@ -7,6 +7,7 @@ import com.savie.precut.model.OutputSize
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.CoverSource
+import com.savie.precut.model.DEFAULT_SHORT_SIDE_PX
 import com.savie.precut.model.coverSource
 import com.savie.precut.model.outputSize
 import com.savie.precut.model.audioLanes
@@ -114,8 +115,9 @@ fun textSizePx(textSizeSp: Float, frameShortSidePx: Int): Float = textSizeSp * f
 /** Maps a 0..1 position (y down) to Media3's normalized device coordinates (y up). */
 fun toNdc(xNorm: Float, yNorm: Float): Pair<Float, Float> = (xNorm * 2f - 1f) to (1f - yNorm * 2f)
 
-fun compositionSpecOf(project: Project): CompositionSpec {
-    val outputSize = project.outputSize()
+/** The composition for [project] with an output short side of [shortSidePx] (preview renders smaller). */
+fun compositionSpecOf(project: Project, shortSidePx: Int = DEFAULT_SHORT_SIDE_PX): CompositionSpec {
+    val outputSize = project.outputSize(shortSidePx)
     return CompositionSpec(
         items = project.clips.map { itemSpecOf(it, project.originalAudioMuted) },
         outputSize = outputSize,

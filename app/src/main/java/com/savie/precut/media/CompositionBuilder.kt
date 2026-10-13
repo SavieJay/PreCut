@@ -9,6 +9,7 @@ import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
+import com.savie.precut.model.DEFAULT_SHORT_SIDE_PX
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.Project
 import javax.inject.Inject
@@ -16,9 +17,9 @@ import javax.inject.Inject
 /** The single Project → Composition path shared by preview and export. */
 class CompositionBuilder @Inject constructor(private val effectsFactory: EffectsFactory) {
 
-    /** Returns null when the project has nothing to play. */
-    fun build(project: Project): Composition? {
-        val spec = compositionSpecOf(project)
+    /** Returns null when the project has nothing to play. [shortSidePx] sets the output size. */
+    fun build(project: Project, shortSidePx: Int = DEFAULT_SHORT_SIDE_PX): Composition? {
+        val spec = compositionSpecOf(project, shortSidePx)
         if (spec.items.isEmpty()) return null
         val sequence = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
             .addItems(spec.items.map { toEditedMediaItem(it, spec.outputSize) })

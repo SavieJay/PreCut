@@ -41,7 +41,9 @@ fun EditorScreen(
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val previewState by viewModel.previewState.collectAsStateWithLifecycle()
+    // Kept as a State and read only where needed: the playhead changes every frame while
+    // playing or scrubbing, and the whole editor must not recompose with it.
+    val previewState = viewModel.previewState.collectAsStateWithLifecycle()
     val canSplit by viewModel.canSplit.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -141,9 +143,10 @@ fun EditorScreen(
         (uiState as? EditorUiState.Ready)?.takeIf { it.fullScreen && it.project.clips.isNotEmpty() }?.let {
             FullScreenPreview(
                 player = viewModel.player,
-                state = previewState,
+                previewState = previewState,
                 onPlayPause = viewModel::onPlayPause,
                 onScrubStart = viewModel::onScrubStart,
+                onScrubEnd = viewModel::onScrubEnd,
                 onSeek = viewModel::onSeek,
                 onClose = { viewModel.onFullScreen(false) },
             )

@@ -9,6 +9,7 @@ import com.savie.precut.ui.editor.timeline.TimelineActions
 fun rememberTimelineActions(viewModel: EditorViewModel): TimelineActions = remember(viewModel) {
     object : TimelineActions {
         override fun onScrubStart() = viewModel.onScrubStart()
+        override fun onScrubEnd() = viewModel.onScrubEnd()
         override fun onSeek(positionMs: Long) = viewModel.onSeek(positionMs)
         override fun onSelectClip(clipId: String?) = viewModel.onClipSelected(clipId)
         override fun onTrim(clipId: String, trimStartMs: Long, trimEndMs: Long) =

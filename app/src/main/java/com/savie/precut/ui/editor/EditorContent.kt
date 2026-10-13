@@ -6,17 +6,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.media.PreviewState
 import com.savie.precut.model.outputSize
 import com.savie.precut.ui.editor.preview.PlaybackControls
 import com.savie.precut.ui.editor.preview.PreviewSurface
+import com.savie.precut.ui.editor.preview.ProxyStatusChip
 import com.savie.precut.ui.editor.preview.TextTransformOverlay
 import com.savie.precut.ui.editor.timeline.TimelineActions
 import com.savie.precut.ui.theme.TextSecondary
@@ -25,7 +29,7 @@ import com.savie.precut.ui.theme.TextSecondary
 @Composable
 fun EditorContent(
     state: EditorUiState.Ready,
-    previewState: PreviewState,
+    previewState: State<PreviewState>,
     canSplit: Boolean,
     viewModel: EditorViewModel,
     timelineActions: TimelineActions,
@@ -44,6 +48,7 @@ fun EditorContent(
             }
         } else {
             Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black)) {
+                ProxyStatusChip(viewModel.proxyProgress, Modifier.align(Alignment.TopStart).padding(8.dp))
                 // While full screen shows the video, this surface steps aside: one player can
                 // only render to one surface, and re-attaching on return is reliable.
                 if (!state.fullScreen) PreviewSurface(player = viewModel.player, modifier = Modifier.fillMaxSize())
@@ -52,16 +57,22 @@ fun EditorContent(
                 }
             }
         }
-        PlaybackControls(state = previewState, onPlayPause = viewModel::onPlayPause, onFullScreen = { viewModel.onFullScreen(true) })
+        LivePlaybackControls(previewState, onPlayPause = viewModel::onPlayPause, onFullScreen = { viewModel.onFullScreen(true) })
         TimelineSection(
             state = state,
-            positionMs = previewState.positionMs,
+            positionMs = { previewState.value.positionMs },
             loader = viewModel.thumbnails,
             waveforms = viewModel.waveforms,
             actions = timelineActions,
             onAddMedia = onAddMedia,
             onCamera = viewModel::onCameraRequested,
         )
-        EditorBottomPanel(state, canSplit, previewState.positionMs, viewModel)
+        EditorBottomPanel(state, canSplit, { previewState.value.positionMs }, viewModel)
     }
+}
+
+/** Reads the preview state in its own scope, so only the controls recompose as time moves. */
+@Composable
+private fun LivePlaybackControls(previewState: State<PreviewState>, onPlayPause: () -> Unit, onFullScreen: () -> Unit) {
+    PlaybackControls(state = previewState.value, onPlayPause = onPlayPause, onFullScreen = onFullScreen)
 }

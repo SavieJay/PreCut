@@ -11,6 +11,9 @@ import com.savie.precut.media.CaptureStore
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.MediaProbe
 import com.savie.precut.media.PreviewController
+import com.savie.precut.media.ProxyManager
+import com.savie.precut.media.ProxyRules
+import com.savie.precut.media.ProxyState
 import com.savie.precut.media.PreviewState
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.VoiceRecorder
@@ -22,6 +25,7 @@ import com.savie.precut.model.Project
 import com.savie.precut.model.clipAt
 import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.insertIndexAt
+import com.savie.precut.model.withMediaSubstitutes
 import com.savie.precut.model.edit.BatchEdits
 import com.savie.precut.model.edit.EditAction
 import com.savie.precut.model.edit.EditReducer
@@ -37,8 +41,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -110,6 +118,7 @@ class EditorViewModel @Inject constructor(
     private val probe: MediaProbe,
     @ApplicationScope private val appScope: CoroutineScope,
     private val captures: CaptureStore,
+    private val proxies: ProxyManager,
 ) : ViewModel() {
 
     val projectId = savedStateHandle.requireProjectId()
@@ -126,6 +135,19 @@ class EditorViewModel @Inject constructor(
     val canSplit: StateFlow<Boolean> = combine(_uiState, previewState) { ui, preview ->
         ui is EditorUiState.Ready && EditReducer.canSplit(ui.project, preview.positionMs)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Ready preview proxies (source Uri → proxy Uri); the preview plays these instead of originals. */
+    private val readyProxies: StateFlow<Map<String, String>> = proxies.states
+        .map { states -> states.mapNotNull { (uri, state) -> (state as? ProxyState.Ready)?.let { uri to it.uri } }.toMap() }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** Progress (0–100) of this project's preview proxies still being made, or null when none are. */
+    val proxyProgress: StateFlow<Int?> = combine(_uiState, proxies.states) { ui, states ->
+        val project = (ui as? EditorUiState.Ready)?.project ?: return@combine null
+        val pending = proxiedUris(project).mapNotNull { states[it] as? ProxyState.Pending }
+        if (pending.isEmpty()) null else pending.sumOf { it.percent ?: 0 } / pending.size
+    }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** For attaching the video surface only; control playback through the event methods. */
     val player: Player get() = previewController.player
@@ -162,6 +184,9 @@ class EditorViewModel @Inject constructor(
     /** Edits, undo history and auto-save; set once the project has loaded. */
     private var session: ProjectSession? = null
 
+    /** What the preview currently plays, to skip rebuilds that wouldn't change anything. */
+    private var previewed: Project? = null
+
     /** Latest edited project; the preview rebuilds once edits pause, so rapid edits rebuild once. */
     private val pendingPreview = MutableStateFlow<Project?>(null)
 
@@ -174,15 +199,27 @@ class EditorViewModel @Inject constructor(
             }
             session = ProjectSession(project, repository, clock, appScope, viewModelScope)
             val missing = findMissing(project)
-            previewController.setProject(playable(project, missing))
+            showInPreview(playable(project, missing), 0L)
             _uiState.value = EditorUiState.Ready(project, missingIds = missing)
+            requestProxies(project)
+        }
+        viewModelScope.launch {
+            // A newly finished proxy swaps in once the preview is idle, so it never interrupts
+            // playback or a scrub.
+            readyProxies.collectLatest {
+                val ready = _uiState.value as? EditorUiState.Ready ?: return@collectLatest
+                if (playable(ready.project, ready.missingIds) == previewed) return@collectLatest
+                previewState.first { state -> !state.isPlaying && !state.isScrubbing }
+                val latest = _uiState.value as? EditorUiState.Ready ?: return@collectLatest
+                showInPreview(playable(latest.project, latest.missingIds), previewState.value.positionMs)
+            }
         }
         viewModelScope.launch {
             pendingPreview.filterNotNull().debounce(PREVIEW_REBUILD_DEBOUNCE_MS).collect { project ->
                 val missing = (_uiState.value as? EditorUiState.Ready)?.missingIds.orEmpty()
                 val playable = playable(project, missing)
                 val resumeAt = previewState.value.positionMs.coerceAtMost(playable.totalDurationMs())
-                previewController.setProject(playable, resumeAt)
+                showInPreview(playable, resumeAt)
             }
         }
     }
@@ -191,7 +228,10 @@ class EditorViewModel @Inject constructor(
 
     fun onPlayPause() = previewController.togglePlayPause()
 
-    fun onScrubStart() = previewController.pause()
+    /** A timeline drag starts: fast, frequent seeks until [onScrubEnd]. */
+    fun onScrubStart() = previewController.startScrub()
+
+    fun onScrubEnd() = previewController.endScrub()
 
     fun onSeek(positionMs: Long) = previewController.seekTo(positionMs)
 
@@ -200,6 +240,7 @@ class EditorViewModel @Inject constructor(
     /** Leaving the screen pauses playback and finishes (keeps) any voiceover in progress. */
     fun onScreenStopped() {
         audio.onRecordStop()
+        previewController.endScrub()
         previewController.pause()
         session?.flush()
     }
@@ -227,6 +268,7 @@ class EditorViewModel @Inject constructor(
         }
         previewController.pause()
         pendingPreview.value = project
+        requestProxies(project)
     }
 
     // Missing media
@@ -266,13 +308,29 @@ class EditorViewModel @Inject constructor(
             .map { it.first }
             .toSet()
 
-    /** The project without media that can't be opened, so the rest still previews. */
-    private fun playable(project: Project, missing: Set<String>): Project =
-        if (missing.isEmpty()) {
+    /** What the preview plays: without media that can't be opened, and with ready proxies. */
+    private fun playable(project: Project, missing: Set<String>): Project {
+        val present = if (missing.isEmpty()) {
             project
         } else {
             project.copy(clips = project.clips.filterNot { it.id in missing }, audioClips = project.audioClips.filterNot { it.id in missing })
         }
+        return present.withMediaSubstitutes(readyProxies.value)
+    }
+
+    private fun showInPreview(playable: Project, positionMs: Long) {
+        previewed = playable
+        previewController.setProject(playable, positionMs)
+    }
+
+    private fun proxiedUris(project: Project): List<String> =
+        project.clips.filter(ProxyRules::needsProxy).map { it.uri }.distinct()
+
+    /** Queues preview proxies for the project's videos (cheap when they already exist). */
+    private fun requestProxies(project: Project) {
+        val missing = (_uiState.value as? EditorUiState.Ready)?.missingIds.orEmpty()
+        proxies.request(project.clips.filter { ProxyRules.needsProxy(it) && it.id !in missing }.map { it.uri })
+    }
 
     // Selection and tools
 
@@ -481,6 +539,7 @@ class EditorViewModel @Inject constructor(
         _uiState.value = ready.copy(project = edited, canUndo = currentSession.history.canUndo, canRedo = false)
         previewController.pause()
         pendingPreview.value = edited
+        if (edited.clips !== ready.project.clips) requestProxies(edited)
     }
 
     private fun Project.containsItem(id: String) =

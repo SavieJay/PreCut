@@ -25,7 +25,15 @@ data class PreviewState(
     val isPlaying: Boolean = false,
     val positionMs: Long = 0L,
     val durationMs: Long = 0L,
+    /** A timeline drag is in progress (scrubbing mode). */
+    val isScrubbing: Boolean = false,
 )
+
+/**
+ * The preview renders at this short side (export uses the project's own size). Texts scale with
+ * the short side, so the picture looks the same with far fewer pixels to process per frame.
+ */
+const val PREVIEW_SHORT_SIDE_PX = 720
 
 /**
  * Owns the preview player, fed by [CompositionBuilder] so preview matches export.
@@ -60,7 +68,7 @@ class PreviewController @Inject constructor(
 
     /** Rebuilds the preview from [project], starting at [startPositionMs]. */
     fun setProject(project: Project, startPositionMs: Long = 0L) {
-        val composition = compositionBuilder.build(project)
+        val composition = compositionBuilder.build(project, PREVIEW_SHORT_SIDE_PX)
         if (composition == null) {
             // CompositionPlayer can't clear its media; stop it and report an empty timeline.
             compositionPlayer.stop()
@@ -73,6 +81,7 @@ class PreviewController @Inject constructor(
     }
 
     fun togglePlayPause() {
+        endScrub()
         if (compositionPlayer.isPlaying) {
             compositionPlayer.pause()
         } else {
@@ -88,6 +97,25 @@ class PreviewController @Inject constructor(
     /** Silences preview playback, e.g. while recording a voiceover so the mic doesn't pick it up. */
     fun setMuted(muted: Boolean) {
         compositionPlayer.volume = if (muted) 0f else 1f
+    }
+
+    /**
+     * Starts a timeline drag: pauses and switches the player to scrubbing mode, which keeps
+     * decoders warm and drops seeks that arrive while a frame is still being rendered, so the
+     * preview follows the finger instead of falling behind a queue of exact seeks.
+     */
+    fun startScrub() {
+        if (compositionPlayer.isScrubbingModeEnabled) return
+        compositionPlayer.pause()
+        compositionPlayer.setScrubbingModeEnabled(true)
+        publishState()
+    }
+
+    /** Ends a timeline drag; the player lands exactly on the last requested position. */
+    fun endScrub() {
+        if (!compositionPlayer.isScrubbingModeEnabled) return
+        compositionPlayer.setScrubbingModeEnabled(false)
+        publishState()
     }
 
     fun seekTo(positionMs: Long) {
@@ -107,6 +135,7 @@ class PreviewController @Inject constructor(
             isPlaying = compositionPlayer.isPlaying,
             positionMs = compositionPlayer.currentPosition.coerceIn(0L, duration),
             durationMs = duration,
+            isScrubbing = compositionPlayer.isScrubbingModeEnabled,
         )
     }
 

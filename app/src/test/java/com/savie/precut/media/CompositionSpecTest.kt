@@ -187,4 +187,17 @@ class CompositionSpecTest {
         val clip = videoClip("a").copy(sourceWidth = 1920, sourceHeight = 1080)
         assertEquals(OutputSize(1920, 1080), compositionSpecOf(project(clip).copy(aspectRatio = AspectRatio.ORIGINAL)).outputSize)
     }
+
+    @Test
+    fun previewSpec_differsOnlyInOutputAndTextPixelSize() {
+        val text = TextOverlay("t", "Hi", 0L, 1_000L)
+        val p = project(videoClip("a")).copy(textOverlays = listOf(text))
+        val export = compositionSpecOf(p)
+        val preview = compositionSpecOf(p, shortSidePx = 720)
+        assertEquals(OutputSize(720, 1280), preview.outputSize)
+        assertEquals(export.items, preview.items)
+        assertEquals(export.audioLanes, preview.audioLanes)
+        assertEquals(export.texts.single().textSizePx * 720 / 1080, preview.texts.single().textSizePx, 0.01f)
+        assertEquals(export.texts.single().copy(textSizePx = 0f), preview.texts.single().copy(textSizePx = 0f))
+    }
 }

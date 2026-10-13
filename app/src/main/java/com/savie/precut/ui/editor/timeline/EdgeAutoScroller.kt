@@ -27,6 +27,9 @@ class EdgeAutoScroller(
     /** Moves the playhead with the scroll (scroll px == timeline px), like a user scrub. */
     var onScrollTo: (scrollPx: Int) -> Unit = {}
 
+    /** Called once auto-scrolling stops, to end the scrub. */
+    var onScrollEnd: () -> Unit = {}
+
     private var job: Job? = null
     private var speed = 0f
     private var onScrolled: (Float) -> Unit = {}
@@ -49,9 +52,11 @@ class EdgeAutoScroller(
     }
 
     fun stop() {
+        val wasScrolling = job != null
         job?.cancel()
         job = null
         speed = 0f
+        if (wasScrolling) onScrollEnd()
     }
 }
 

@@ -3,7 +3,9 @@ package com.savie.precut.ui.editor
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
@@ -31,7 +33,7 @@ import com.savie.precut.ui.editor.tools.VolumeSlider
  * main toolbar. Audio-clip panels live in [AudioPanels].
  */
 @Composable
-fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs: Long, viewModel: EditorViewModel) {
+fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs: () -> Long, viewModel: EditorViewModel) {
     val context = LocalContext.current
     val recording by viewModel.audio.recording.collectAsStateWithLifecycle()
     val clip = state.project.clips.firstOrNull { it.id == state.selectedClipId }
@@ -69,7 +71,7 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         state.activeTool == EditorTool.TEXT && text != null ->
             TextTool(
                 overlay = text,
-                canSplit = canSplitAt(positionMs, text.startMs, text.endMs),
+                canSplit = rememberCanSplit(positionMs, text.startMs, text.endMs),
                 recentColors = state.project.textOverlays.map { it.colorArgb }.distinct(),
                 actions = rememberTextToolActions(viewModel),
                 onDone = close,
@@ -81,13 +83,13 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         state.activeTool == EditorTool.COVER -> CoverTool(
             cover = state.project.cover,
             inExport = state.project.coverInExport,
-            playheadMs = positionMs,
+            playheadMs = positionMs(),
             actions = rememberCoverActions(viewModel),
             onDone = close,
         )
         state.activeTool == EditorTool.VOICEOVER -> VoiceoverTool(
             recording = recording,
-            playheadMs = positionMs,
+            playheadMs = positionMs(),
             onRecord = {
                 val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                     PackageManager.PERMISSION_GRANTED
@@ -115,5 +117,12 @@ fun AudioVolumeTool(volume: Float, onVolumeChanged: (Float) -> Unit, onDone: () 
 }
 
 /** Whether the playhead is far enough inside [startMs, endMs) for a split to leave two usable halves. */
+/** [canSplitAt] that only recomposes its reader when the answer changes, not as time moves. */
+@Composable
+fun rememberCanSplit(positionMs: () -> Long, startMs: Long, endMs: Long): Boolean {
+    val canSplit by remember(startMs, endMs) { derivedStateOf { canSplitAt(positionMs(), startMs, endMs) } }
+    return canSplit
+}
+
 fun canSplitAt(positionMs: Long, startMs: Long, endMs: Long): Boolean =
     positionMs > startMs + MIN_CLIP_DURATION_MS && positionMs < endMs - MIN_CLIP_DURATION_MS
