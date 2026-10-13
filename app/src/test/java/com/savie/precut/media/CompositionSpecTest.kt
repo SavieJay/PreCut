@@ -1,6 +1,9 @@
 package com.savie.precut.media
 
+import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.ClipType
+import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
+import com.savie.precut.model.OutputSize
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.project
@@ -33,9 +36,23 @@ class CompositionSpecTest {
     }
 
     @Test
-    fun v1_mapsFirstClipOnly() {
-        val spec = compositionSpecOf(project(videoClip("a"), videoClip("b")))
-        assertEquals(1, spec.items.size)
-        assertEquals("content://media/a", (spec.items.single() as ItemSpec.Video).uri)
+    fun allClips_areMappedInTimelineOrder_includingImages() {
+        val image = clipFromMedia("i", "content://i", MediaInfo(ClipType.IMAGE, 0L, 4000, 3000, 0))
+        val spec = compositionSpecOf(project(videoClip("a"), image, videoClip("b", trimStartMs = 2_000L)))
+        assertEquals(
+            listOf(
+                ItemSpec.Video("content://media/a", 10_000L, 0L, 10_000L),
+                ItemSpec.Image("content://i", DEFAULT_IMAGE_DURATION_MS),
+                ItemSpec.Video("content://media/b", 10_000L, 2_000L, 10_000L),
+            ),
+            spec.items,
+        )
+    }
+
+    @Test
+    fun outputSize_followsProjectAspectRatio() {
+        assertEquals(OutputSize(1080, 1920), compositionSpecOf(project()).outputSize) // default 9:16
+        val landscape = project().copy(aspectRatio = AspectRatio.RATIO_16_9)
+        assertEquals(OutputSize(1920, 1080), compositionSpecOf(landscape).outputSize)
     }
 }

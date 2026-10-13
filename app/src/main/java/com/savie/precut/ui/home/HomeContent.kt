@@ -42,6 +42,8 @@ fun HomeContent(
             if (!isImporting) {
                 ExtendedFloatingActionButton(
                     onClick = onNewProject,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                     text = { Text(stringResource(R.string.home_new_project)) },
                 )

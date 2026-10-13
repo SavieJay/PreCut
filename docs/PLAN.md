@@ -189,18 +189,20 @@ Each phase ends with acceptance criteria. Stop after each phase for user verific
 **Acceptance:** trim a clip, export, and the result appears in the gallery with correct length and audio.
 
 ### Phase 3 — Multi-clip timeline
-- [ ] `EditAction` + `EditReducer`: AddClips, DeleteClip, SplitClip(atTimelineMs), MoveClip(from,to), DuplicateClip, TrimClip — all unit-tested
-- [ ] `CompositionBuilder` v2: all clips in one sequence, images supported
-- [ ] Preview rebuilt when the project changes (debounced) — CompositionPlayer switch already done in Phase 2
-- [ ] `ThumbnailLoader`: lazy frame extraction at low resolution with LRU memory cache
-- [ ] Timeline UI: horizontal scroll, thumbnail strip per clip proportional to duration, time ruler, fixed center playhead synced to playback in both directions (scroll seeks, playback scrolls)
-- [ ] Pinch to zoom timeline
-- [ ] Tap to select clip; selected clip highlighted with trim handles
-- [ ] Long-press drag to reorder
-- [ ] Bottom toolbar: Split, Delete, Duplicate, Trim
-- [ ] Export uses the full composition
+- [x] `EditAction` + `EditReducer`: AddClips, DeleteClip, SplitClip(atTimelineMs), MoveClip(from,to), DuplicateClip, TrimClip — all unit-tested
+- [x] `CompositionBuilder` v2: all clips in one sequence, images supported
+- [x] Preview rebuilt when the project changes (debounced) — CompositionPlayer switch already done in Phase 2
+- [x] `ThumbnailLoader`: lazy frame extraction at low resolution with LRU memory cache
+- [x] Timeline UI: horizontal scroll, thumbnail strip per clip proportional to duration, time ruler, fixed center playhead synced to playback in both directions (scroll seeks, playback scrolls)
+- [x] Pinch to zoom timeline
+- [x] Tap to select clip; selected clip highlighted with trim handles
+- [x] Long-press drag to reorder
+- [x] Bottom toolbar: Split, Delete, Duplicate, Trim
+- [x] Export uses the full composition
 
 **Acceptance:** 3+ clips (including an image) can be split, reordered, trimmed, and deleted; preview plays them seamlessly; export matches preview.
+
+UI for Phases 3–7 follows `docs/design/DESIGN.md`.
 
 ### Phase 4 — Editing tools
 - [ ] Speed tool (0.25x–4x presets + slider); timeline width updates
@@ -284,3 +286,9 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-12 — ViewModels depend on `VideoExporter` / `MediaSaver` interfaces,** never on `Composition`; `ExportManager` builds the composition itself.
 - **2026-10-12 — Route args are read with `SavedStateHandle.requireProjectId()`** instead of `toRoute()`, which needs Android's Bundle and breaks JVM ViewModel tests. `RoutesTest` guards the argument name.
 - **2026-10-12 — Android 8–9 export saving uses the deprecated `getExternalStoragePublicDirectory` + `WRITE_EXTERNAL_STORAGE` (maxSdk 28),** suppressed at the narrowest scope; there is no non-deprecated alternative before API 29.
+- **2026-10-12 — Design system defined in-house** (`docs/design/DESIGN.md`) instead of waiting for Sleek designs: dark-only, accent `#FF4D6D`, no dynamic colour.
+- **2026-10-12 — Every composition item gets a `Presentation` (fit into the project frame, 1080 short side)** from Phase 3, not Phase 4: without a fixed output size, mixed portrait/landscape clips and full-resolution photos export at the wrong size or fail. Only the aspect-ratio *picker* remains in Phase 4.
+- **2026-10-12 — Photo clips: `sourceDurationMs` = 60 s max, trim range = display duration (default 3 s),** so a photo can be lengthened with its trim handles, not just shortened.
+- **2026-10-12 — Clip tools act on the selected clip, else the clip under the playhead.** Split always acts at the playhead.
+- **2026-10-12 — Timeline is a custom `horizontalScroll` with manual thumbnail culling,** not a LazyRow: clip widths are time-proportional and the content must stay aligned with the ruler and playhead. Zoom is capped so content stays under ~120k px (Compose's layout limit is ~262k).
+- **2026-10-12 — Tap and long-press-to-reorder are detected on the timeline container,** not per clip, so the gesture survives the switch to reorder tiles mid-gesture. Long-presses within 24dp of the selected clip's edges are left to the trim handles.

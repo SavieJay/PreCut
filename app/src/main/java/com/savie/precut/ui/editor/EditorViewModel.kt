@@ -5,19 +5,34 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import com.savie.precut.data.ProjectRepository
+import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.PreviewState
+import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.model.Project
+import com.savie.precut.model.clipAt
+import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.edit.EditAction
 import com.savie.precut.model.edit.EditReducer
+import com.savie.precut.model.totalDurationMs
 import com.savie.precut.ui.navigation.requireProjectId
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
+import java.util.UUID
 import javax.inject.Inject
 
 enum class EditorTool { TRIM }
@@ -25,14 +40,28 @@ enum class EditorTool { TRIM }
 sealed interface EditorUiState {
     data object Loading : EditorUiState
     data object NotFound : EditorUiState
-    data class Ready(val project: Project, val activeTool: EditorTool? = null) : EditorUiState
+    data class Ready(
+        val project: Project,
+        val selectedClipId: String? = null,
+        val activeTool: EditorTool? = null,
+        val isImporting: Boolean = false,
+    ) : EditorUiState
 }
 
+sealed interface EditorEvent {
+    data class SomeFilesSkipped(val count: Int) : EditorEvent
+    data object NothingImported : EditorEvent
+}
+
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class EditorViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: ProjectRepository,
     private val previewController: PreviewController,
+    private val importer: MediaImporter,
+    /** For the timeline's thumbnail tiles. */
+    val thumbnails: ThumbnailLoader,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -41,10 +70,21 @@ class EditorViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<EditorUiState>(EditorUiState.Loading)
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
 
+    private val _events = Channel<EditorEvent>(Channel.BUFFERED)
+    val events: Flow<EditorEvent> = _events.receiveAsFlow()
+
     val previewState: StateFlow<PreviewState> = previewController.state
+
+    /** Whether Split would do something at the current playhead. */
+    val canSplit: StateFlow<Boolean> = combine(_uiState, previewState) { ui, preview ->
+        ui is EditorUiState.Ready && EditReducer.canSplit(ui.project, preview.positionMs)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** For attaching the video surface only; control playback through the event methods. */
     val player: Player get() = previewController.player
+
+    /** Latest edited project; the preview rebuilds once edits pause, so rapid edits rebuild once. */
+    private val pendingPreview = MutableStateFlow<Project?>(null)
 
     init {
         viewModelScope.launch {
@@ -56,20 +96,83 @@ class EditorViewModel @Inject constructor(
             previewController.setProject(project)
             _uiState.value = EditorUiState.Ready(project)
         }
+        viewModelScope.launch {
+            pendingPreview.filterNotNull().debounce(PREVIEW_REBUILD_DEBOUNCE_MS).collect { project ->
+                val resumeAt = previewState.value.positionMs.coerceAtMost(project.totalDurationMs())
+                previewController.setProject(project, resumeAt)
+            }
+        }
     }
 
+    // Playback
+
     fun onPlayPause() = previewController.togglePlayPause()
+
+    fun onScrubStart() = previewController.pause()
 
     fun onSeek(positionMs: Long) = previewController.seekTo(positionMs)
 
     fun onScreenStopped() = previewController.pause()
 
-    fun onToolSelected(tool: EditorTool) = updateReady { it.copy(activeTool = if (it.activeTool == tool) null else tool) }
+    // Selection and tools
+
+    fun onClipSelected(clipId: String?) = updateReady {
+        it.copy(selectedClipId = clipId, activeTool = if (clipId == null) null else it.activeTool)
+    }
+
+    fun onToolSelected(tool: EditorTool) {
+        val clipId = targetClipId() ?: return
+        updateReady { it.copy(selectedClipId = clipId, activeTool = if (it.activeTool == tool) null else tool) }
+    }
 
     fun onToolClosed() = updateReady { it.copy(activeTool = null) }
 
+    // Edits
+
+    fun onSplit() = applyEdit(EditAction.SplitClip(previewState.value.positionMs, newId()))
+
+    fun onDelete() {
+        val clipId = targetClipId() ?: return
+        applyEdit(EditAction.DeleteClip(clipId))
+        updateReady { it.copy(selectedClipId = null, activeTool = null) }
+    }
+
+    fun onDuplicate() {
+        val clipId = targetClipId() ?: return
+        applyEdit(EditAction.DuplicateClip(clipId, newId()))
+    }
+
     fun onTrim(clipId: String, trimStartMs: Long, trimEndMs: Long) =
         applyEdit(EditAction.TrimClip(clipId, trimStartMs, trimEndMs))
+
+    fun onMove(from: Int, to: Int) = applyEdit(EditAction.MoveClip(from, to))
+
+    fun onMediaPicked(uris: List<String>) {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        if (uris.isEmpty() || ready.isImporting) return
+        updateReady { it.copy(isImporting = true) }
+        viewModelScope.launch {
+            try {
+                val result = importer.import(uris)
+                if (result.imported.isEmpty()) {
+                    _events.send(EditorEvent.NothingImported)
+                    return@launch
+                }
+                if (result.failedCount > 0) _events.send(EditorEvent.SomeFilesSkipped(result.failedCount))
+                applyEdit(EditAction.AddClips(result.imported.map { clipFromMedia(newId(), it.uri, it.info) }))
+            } finally {
+                updateReady { it.copy(isImporting = false) }
+            }
+        }
+    }
+
+    /** The clip a clip tool acts on: the selected one, otherwise the one under the playhead. */
+    private fun targetClipId(): String? {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return null
+        ready.selectedClipId?.let { return it }
+        val position = ready.project.clipAt(previewState.value.positionMs) ?: return null
+        return ready.project.clips[position.index].id
+    }
 
     private fun applyEdit(action: EditAction) {
         val ready = _uiState.value as? EditorUiState.Ready ?: return
@@ -78,14 +181,20 @@ class EditorViewModel @Inject constructor(
         val saved = edited.copy(updatedAt = clock.millis())
         _uiState.value = ready.copy(project = saved)
         previewController.pause()
-        previewController.setProject(saved)
+        pendingPreview.value = saved
         viewModelScope.launch { repository.save(saved) }
     }
 
     private fun updateReady(transform: (EditorUiState.Ready) -> EditorUiState.Ready) =
         _uiState.update { if (it is EditorUiState.Ready) transform(it) else it }
 
+    private fun newId() = UUID.randomUUID().toString()
+
     override fun onCleared() {
         previewController.release()
+    }
+
+    private companion object {
+        const val PREVIEW_REBUILD_DEBOUNCE_MS = 150L
     }
 }

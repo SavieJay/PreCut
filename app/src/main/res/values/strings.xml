@@ -21,9 +21,14 @@
     </plurals>
 
     <string name="editor_title">Editor</string>
+    <string name="editor_empty">Tap + to add videos or photos.</string>
     <string name="editor_not_found">This project is no longer available.</string>
 
     <string name="tool_trim">Trim</string>
+    <string name="tool_split">Split</string>
+    <string name="tool_duplicate">Duplicate</string>
+    <string name="tool_delete">Delete</string>
+    <string name="timeline_add_media">Add media</string>
     <string name="trim_duration">Duration %1$s</string>
 
     <string name="export_title">Export</string>

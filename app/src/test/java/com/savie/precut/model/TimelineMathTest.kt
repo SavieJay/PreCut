@@ -95,8 +95,9 @@ class TimelineMathTest {
     @Test
     fun clipFromMedia_imagesGetDefaultDuration() {
         val image = clipFromMedia("i", "content://i", MediaInfo(ClipType.IMAGE, 0L, 100, 200, 90))
-        assertEquals(DEFAULT_IMAGE_DURATION_MS, image.sourceDurationMs)
+        assertEquals(MAX_IMAGE_DURATION_MS, image.sourceDurationMs)
         assertEquals(DEFAULT_IMAGE_DURATION_MS, image.trimEndMs)
+        assertEquals(DEFAULT_IMAGE_DURATION_MS, image.timelineDurationMs())
         assertEquals(90, image.sourceRotationDegrees)
 
         val video = clipFromMedia("v", "content://v", MediaInfo(ClipType.VIDEO, 5_500L, 1920, 1080, 0))

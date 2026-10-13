@@ -1,44 +1,38 @@
 package com.savie.precut.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColors = darkColorScheme(
-    primary = Coral80,
-    secondary = Slate80,
-    tertiary = Teal80,
-)
-
-private val LightColors = lightColorScheme(
-    primary = Coral40,
-    secondary = Slate40,
-    tertiary = Teal40,
+/** PreCut is dark-only so footage stands out; no dynamic color to keep the brand consistent. */
+private val PreCutColors = darkColorScheme(
+    primary = Accent,
+    onPrimary = OnAccent,
+    primaryContainer = AccentContainer,
+    onPrimaryContainer = TextPrimary,
+    secondary = TextPrimary,
+    onSecondary = Ink0,
+    tertiary = Accent,
+    background = Ink0,
+    onBackground = TextPrimary,
+    surface = Ink0,
+    onSurface = TextPrimary,
+    surfaceVariant = Ink2,
+    onSurfaceVariant = TextSecondary,
+    surfaceContainerLowest = Ink0,
+    surfaceContainerLow = Ink1,
+    surfaceContainer = Ink1,
+    surfaceContainerHigh = Ink2,
+    surfaceContainerHighest = Ink3,
+    outline = Ink3,
+    outlineVariant = Ink2,
+    error = ErrorRed,
 )
 
 @Composable
-fun PreCutTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit,
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
-    }
-
+fun PreCutTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = PreCutColors,
         typography = PreCutTypography,
         content = content,
     )

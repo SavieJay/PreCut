@@ -4,12 +4,15 @@ import kotlinx.serialization.Serializable
 
 const val DEFAULT_IMAGE_DURATION_MS = 3_000L
 
+/** Photos have no intrinsic length; this is how far their trim range can be extended. */
+const val MAX_IMAGE_DURATION_MS = 60_000L
+
 @Serializable
 data class Clip(
     val id: String,
     val uri: String,
     val type: ClipType,
-    /** For IMAGE: the chosen display duration. */
+    /** For IMAGE: [MAX_IMAGE_DURATION_MS]; the trim range is the display duration. */
     val sourceDurationMs: Long,
     val trimStartMs: Long = 0,
     /** Exclusive. */
@@ -38,16 +41,16 @@ data class MediaInfo(
 )
 
 fun clipFromMedia(id: String, uri: String, info: MediaInfo): Clip {
-    val duration = when (info.type) {
-        ClipType.VIDEO -> info.durationMs
-        ClipType.IMAGE -> DEFAULT_IMAGE_DURATION_MS
+    val (sourceDuration, shownDuration) = when (info.type) {
+        ClipType.VIDEO -> info.durationMs to info.durationMs
+        ClipType.IMAGE -> MAX_IMAGE_DURATION_MS to DEFAULT_IMAGE_DURATION_MS
     }
     return Clip(
         id = id,
         uri = uri,
         type = info.type,
-        sourceDurationMs = duration,
-        trimEndMs = duration,
+        sourceDurationMs = sourceDuration,
+        trimEndMs = shownDuration,
         sourceWidth = info.width,
         sourceHeight = info.height,
         sourceRotationDegrees = info.rotationDegrees,

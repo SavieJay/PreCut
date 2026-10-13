@@ -62,8 +62,10 @@ class PreviewController @Inject constructor(
     fun setProject(project: Project, startPositionMs: Long = 0L) {
         val composition = compositionBuilder.build(project)
         if (composition == null) {
+            // CompositionPlayer can't clear its media; stop it and report an empty timeline.
             compositionPlayer.stop()
-            compositionPlayer.clearMediaItems()
+            stopTicker()
+            _state.value = PreviewState()
             return
         }
         compositionPlayer.setComposition(composition, startPositionMs.coerceAtLeast(0L))
