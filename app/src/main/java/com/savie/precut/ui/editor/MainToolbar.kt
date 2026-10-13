@@ -15,6 +15,7 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onTrim() = viewModel.onToolSelected(EditorTool.TRIM)
             override fun onSpeed() = viewModel.onToolSelected(EditorTool.SPEED)
             override fun onFilters() = viewModel.onToolSelected(EditorTool.FILTER)
+            override fun onAdjust() = viewModel.onToolSelected(EditorTool.ADJUST)
             override fun onVolume() = viewModel.onToolSelected(EditorTool.VOLUME)
             override fun onFade() = viewModel.onToolSelected(EditorTool.FADE)
             override fun onAudio() = viewModel.onAudioMenu(true)

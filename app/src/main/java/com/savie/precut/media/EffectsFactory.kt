@@ -7,15 +7,11 @@ import androidx.media3.common.audio.DefaultGainProvider
 import androidx.media3.common.audio.GainProcessor
 import androidx.media3.common.audio.SonicAudioProcessor
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.effect.Brightness
-import androidx.media3.effect.Contrast
-import androidx.media3.effect.HslAdjustment
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
-import androidx.media3.effect.RgbAdjustment
-import androidx.media3.effect.RgbFilter
-import androidx.media3.effect.RgbMatrix
 import androidx.media3.effect.ScaleAndRotateTransformation
+import com.savie.precut.media.look.LookEffect
+import com.savie.precut.media.look.LutCache
 import com.savie.precut.model.OutputSize
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -25,11 +21,12 @@ import javax.inject.Inject
 class EffectsFactory @Inject constructor(
     private val textRenderer: TextOverlayRenderer,
     private val thumbnails: ThumbnailLoader,
+    private val luts: LutCache,
 ) {
 
-    /** Colour effects, then user rotation, then fit into the output frame. */
+    /** Grading (at source resolution), then user rotation, then fit into the output frame. */
     fun videoEffects(visual: VisualSpec, outputSize: OutputSize): List<Effect> = buildList {
-        visual.filter.forEach { add(filterEffect(it)) }
+        visual.look?.let { add(LookEffect(it, luts)) }
         if (visual.rotationDegrees % 360 != 0) {
             // Media3 rotates counter-clockwise for positive angles; the model is clockwise.
             add(ScaleAndRotateTransformation.Builder().setRotationDegrees(-visual.rotationDegrees.toFloat()).build())
@@ -74,19 +71,7 @@ class EffectsFactory @Inject constructor(
         return OverlayEffect(listOfNotNull(coverOverlay) + texts.map { TimedTextOverlay(it, textRenderer.render(it, outputSize)) })
     }
 
-    private fun filterEffect(effect: FilterEffect): Effect = when (effect) {
-        is FilterEffect.Brightness -> Brightness(effect.amount)
-        is FilterEffect.Contrast -> Contrast(effect.amount)
-        is FilterEffect.Saturation -> HslAdjustment.Builder().adjustSaturation(effect.amount).build()
-        FilterEffect.Grayscale -> RgbFilter.createGrayscaleFilter()
-        is FilterEffect.RgbScale -> RgbAdjustment.Builder()
-            .setRedScale(effect.red)
-            .setGreenScale(effect.green)
-            .setBlueScale(effect.blue)
-            .build()
-        is FilterEffect.Matrix -> {
-            val values = effect.values.toFloatArray()
-            RgbMatrix { _, _ -> values }
-        }
-    }
+    /** Look layers, each active only in its time range (composition time). */
+    fun lookLayerEffects(layers: List<LookLayerSpec>): List<Effect> =
+        layers.map { LookEffect(it.look, luts, it.startUs until it.endUs) }
 }

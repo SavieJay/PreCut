@@ -12,6 +12,7 @@ import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.WaveformLoader
 import com.savie.precut.model.Project
 import com.savie.precut.model.audioLanes
+import com.savie.precut.model.lookLayerLanes
 import com.savie.precut.model.textLanes
 import com.savie.precut.model.clipStartTimesMs
 import com.savie.precut.model.timelineAt
@@ -27,9 +28,11 @@ private val AudioRowHeight = 24.dp
 
 /** Height the timeline needs for its text and audio rows (at least one of each). */
 fun timelineHeight(project: Project): Dp {
+    val layerRows = project.lookLayerLanes().size
     val textRows = project.textLanes().size.coerceAtLeast(1)
     val audioRows = project.audioLanes().size.coerceAtLeast(1)
     return VerticalPadding * 2 + RulerHeight + LaneGap + ClipHeight + LaneGap +
+        (TextLaneHeight + LaneGap) * layerRows +
         TextLaneHeight * textRows + LaneGap * (textRows - 1) + (LaneGap + AudioRowHeight) * audioRows
 }
 
@@ -38,6 +41,7 @@ data class TimelineSelection(
     val clipId: String? = null,
     val textId: String? = null,
     val audioId: String? = null,
+    val layerId: String? = null,
     /** Items whose media is missing (drawn in red). */
     val missingIds: Set<String> = emptySet(),
     /** Items picked in multi-select mode (highlighted, no handles). */
@@ -89,6 +93,16 @@ fun TimelineLanes(
         onTrim = actions::onTrim,
     )
     Spacer(Modifier.height(LaneGap))
+    LookLayerRows(
+        lanes = project.lookLayerLanes(),
+        selectedLayerId = selection.layerId,
+        pxPerMs = pxPerMs,
+        widthPx = contentWidthPx,
+        rowHeight = TextLaneHeight,
+        rowGap = LaneGap,
+        snap = snap,
+        actions = actions,
+    )
     TextRows(
         lanes = project.textLanes(),
         selectedTextId = selection.textId,
@@ -120,6 +134,7 @@ private fun snapTargetsOf(project: Project): List<Pair<String, Long>> = buildLis
     project.clipStartTimesMs().forEach { add("" to it) }
     add("" to project.totalDurationMs())
     project.textOverlays.forEach { add(it.id to it.startMs); add(it.id to it.endMs) }
+    project.lookLayers.forEach { add(it.id to it.startMs); add(it.id to it.endMs) }
     project.audioClips.forEach { audio ->
         add(audio.id to audio.timelineStartMs)
         add(audio.id to audio.timelineEndMs())

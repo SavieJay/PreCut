@@ -1,5 +1,7 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.look.LookLayer
+
 /**
  * Items stacked into rows so none overlap (CapCut behaviour): each item, in start order, goes on
  * the first row whose last item has ended. Deterministic: ties break by [id].
@@ -20,3 +22,7 @@ fun Project.audioLanes(): List<List<AudioClip>> =
 /** Text overlays stacked into rows. */
 fun Project.textLanes(): List<List<TextOverlay>> =
     stackIntoLanes(textOverlays, TextOverlay::startMs, TextOverlay::endMs, TextOverlay::id)
+
+/** Look layers stacked into rows. */
+fun Project.lookLayerLanes(): List<List<LookLayer>> =
+    stackIntoLanes(lookLayers, LookLayer::startMs, LookLayer::endMs, LookLayer::id)

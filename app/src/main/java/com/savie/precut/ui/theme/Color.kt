@@ -23,3 +23,4 @@ val TextLaneBar = Color(0xFFB8860B) // amber, distinct from clips and the accent
 val MusicBar = Color(0xFF16897A) // teal
 val VoiceoverBar = Color(0xFF7B5BD6) // violet
 val ExtractedAudioBar = Color(0xFF2F6FB8) // blue
+val LookLayerBar = Color(0xFFB0457A) // plum, for filter/adjust layers

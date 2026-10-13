@@ -23,9 +23,6 @@ enum class AspectRatio(val widthRatio: Int, val heightRatio: Int) {
 enum class ClipType { VIDEO, IMAGE }
 
 @Serializable
-enum class FilterType { NONE, BRIGHTNESS, CONTRAST, SATURATION, GRAYSCALE, WARM, COOL, VINTAGE }
-
-@Serializable
 enum class ExportQuality(val shortSidePx: Int) {
     P720(720),
     P1080(1080),

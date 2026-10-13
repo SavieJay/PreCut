@@ -31,7 +31,7 @@ import com.savie.precut.model.Project
 import com.savie.precut.model.totalDurationMs
 
 /** Everything the timeline reports back; implemented by the editor screen with ViewModel calls. */
-interface TimelineActions : AudioRowActions {
+interface TimelineActions : AudioRowActions, LookLayerActions {
     fun onScrubStart()
     fun onScrubEnd()
     fun onSeek(positionMs: Long)

@@ -14,7 +14,7 @@ class EditorText(private val host: EditorHost) {
         val start = host.positionMs
         val overlay = TextOverlay(id = host.newId(), text = "", startMs = start, endMs = start + DEFAULT_TEXT_DURATION_MS)
         host.applyEdit(EditAction.AddText(overlay))
-        host.update { it.copy(selectedTextId = overlay.id, selectedClipId = null, activeTool = EditorTool.TEXT) }
+        host.update { it.copy(selectedTextId = overlay.id, selectedClipId = null, selectedLayerId = null, activeTool = EditorTool.TEXT) }
     }
 
     fun onChanged(overlay: TextOverlay) = host.applyEdit(EditAction.UpdateText(overlay))

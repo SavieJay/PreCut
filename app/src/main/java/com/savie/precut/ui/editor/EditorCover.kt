@@ -12,7 +12,7 @@ class EditorCover(private val host: EditorHost, private val importer: MediaImpor
     fun onOpen() {
         val ready = host.ready ?: return
         if (ready.project.clips.isEmpty()) return
-        host.update { it.copy(activeTool = EditorTool.COVER, selectedClipId = null, selectedTextId = null, selectedAudioId = null) }
+        host.update { it.copy(activeTool = EditorTool.COVER, selectedClipId = null, selectedTextId = null, selectedAudioId = null, selectedLayerId = null) }
         (ready.project.cover as? ProjectCover.Frame)?.let { host.seekTo(it.timelineMs) }
     }
 

@@ -2,7 +2,7 @@ package com.savie.precut.model.edit
 
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.ClipType
-import com.savie.precut.model.FilterType
+import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.TextOverlay
@@ -28,10 +28,10 @@ class Phase7EditsTest {
 
     @Test
     fun batch_appliesInOrder_asOneHistoryStep() {
-        val batch = EditAction.Batch(listOf(EditAction.SetSpeed("a", 2f), EditAction.SetFilter("b", FilterType.WARM)))
+        val batch = EditAction.Batch(listOf(EditAction.SetSpeed("a", 2f), EditAction.SetClipLook("b", ClipLook(filterId = "basic.warm"))))
         val edited = reduce(batch)
         assertEquals(2f, edited.clips[0].speed)
-        assertEquals(FilterType.WARM, edited.clips[1].filter)
+        assertEquals("basic.warm", edited.clips[1].look.filterId)
         val history = History(base).push(edited)
         assertEquals(base, history.undo()?.present)
         assertSame(base, reduce(EditAction.Batch(emptyList())))
@@ -42,7 +42,7 @@ class Phase7EditsTest {
         val ids = setOf("a", "p", "m", "t")
         // Speed: videos only (photo, audio and text skipped).
         assertEquals(listOf(EditAction.SetSpeed("a", 3f)), BatchEdits.speed(base, ids, 3f).actions)
-        assertEquals(listOf("a", "p"), BatchEdits.filter(base, ids, FilterType.COOL).actions.map { (it as EditAction.SetFilter).clipId })
+        assertEquals(listOf("a", "p"), BatchEdits.filter(base, ids, "basic.cool", 1f).actions.map { (it as EditAction.SetClipLook).clipId })
         val volume = reduce(BatchEdits.volume(base, ids, 0.5f))
         assertEquals(listOf(0.5f, 1f, 0.5f), volume.clips.map { it.volume })
         assertEquals(0.5f, volume.audioClips.single().volume)

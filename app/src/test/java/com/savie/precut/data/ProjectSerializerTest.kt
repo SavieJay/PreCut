@@ -36,6 +36,20 @@ class ProjectSerializerTest {
     }
 
     @Test
+    fun phase7Filter_migratesToLook() {
+        val json = """{"id":"p","name":"Old","createdAt":1,"updatedAt":2,""" +
+            """"clips":[{"id":"a","uri":"content://a","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000,"filter":"WARM"},""" +
+            """{"id":"b","uri":"content://b","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000}]}"""
+        val clips = ProjectSerializer.decode(json)?.clips
+        assertEquals("basic.warm", clips?.get(0)?.look?.filterId)
+        assertEquals(1f, clips?.get(0)?.look?.filterIntensity)
+        assertNull(clips?.get(1)?.look?.filterId)
+        // Saved again, it uses the new format only.
+        val again = ProjectSerializer.encode(requireNotNull(ProjectSerializer.decode(json)))
+        assertEquals(false, again.contains("\"filter\""))
+    }
+
+    @Test
     fun cover_roundTrips() {
         val frame = project(videoClip("a")).copy(cover = ProjectCover.Frame(1_200L), coverInExport = true)
         assertEquals(frame, ProjectSerializer.decode(ProjectSerializer.encode(frame)))

@@ -5,7 +5,7 @@ import com.savie.precut.model.MIN_CLIP_SPEED
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.MAX_VOLUME
 import com.savie.precut.model.ClipType
-import com.savie.precut.model.FilterType
+import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
@@ -174,10 +174,10 @@ class EditReducerTest {
     }
 
     @Test
-    fun setFilter_andRotate_updateOnlyTheTargetClip() {
-        val filtered = EditReducer.reduce(base, EditAction.SetFilter("b", FilterType.VINTAGE))
-        assertEquals(FilterType.VINTAGE, filtered.clips[1].filter)
-        assertEquals(FilterType.NONE, filtered.clips[0].filter)
+    fun setLook_andRotate_updateOnlyTheTargetClip() {
+        val filtered = EditReducer.reduce(base, EditAction.SetClipLook("b", ClipLook(filterId = "basic.vintage")))
+        assertEquals("basic.vintage", filtered.clips[1].look.filterId)
+        assertEquals(null, filtered.clips[0].look.filterId)
 
         var rotated = base
         repeat(3) { rotated = EditReducer.reduce(rotated, EditAction.RotateClip("a")) }

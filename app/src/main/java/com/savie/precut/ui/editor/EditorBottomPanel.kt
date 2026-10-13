@@ -19,7 +19,7 @@ import com.savie.precut.ui.editor.tools.AudioMenuBar
 import com.savie.precut.ui.editor.tools.ClipVolumeTool
 import com.savie.precut.ui.editor.tools.CoverTool
 import com.savie.precut.ui.editor.tools.FadeTool
-import com.savie.precut.ui.editor.tools.FilterTool
+import com.savie.precut.ui.editor.tools.LayerToolbar
 import com.savie.precut.ui.editor.tools.RatioTool
 import com.savie.precut.ui.editor.tools.SpeedTool
 import com.savie.precut.ui.editor.tools.TextTool
@@ -49,6 +49,18 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         AudioPanels(audio, state.activeTool, positionMs, viewModel)
         return
     }
+    state.project.lookLayers.firstOrNull { it.id == state.selectedLayerId }?.let { layer ->
+        val tool = state.activeTool
+        if (tool in LOOK_TOOLS && tool != null) {
+            LookPanels(state, layer.look, tool, viewModel)
+        } else {
+            LayerToolbar(
+                canSplit = rememberCanSplit(positionMs, layer.startMs, layer.endMs),
+                actions = rememberLayerToolbarActions(viewModel),
+            )
+        }
+        return
+    }
     when {
         state.activeTool == EditorTool.TRIM && clip != null ->
             TrimTool(clip, onTrim = { start, end -> viewModel.onTrim(clip.id, start, end) }, onDone = close)
@@ -58,10 +70,8 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
                 sourceLengthMs = clip.trimEndMs - clip.trimStartMs,
                 keepPitch = clip.keepPitch, onKeepPitchChanged = viewModel::onKeepPitchChanged,
             )
-        state.activeTool == EditorTool.FILTER && clip != null -> FilterTool(
-            clip, viewModel.thumbnails, onFilterSelected = viewModel::onFilterSelected, onDone = close,
-            onApplyAll = viewModel::onFilterApplyAll,
-        )
+        state.activeTool in LOOK_TOOLS && clip != null && state.activeTool != null ->
+            LookPanels(state, clip.look, state.activeTool, viewModel)
         state.activeTool == EditorTool.VOLUME && clip != null -> ClipVolumeTool(
             clip, viewModel::onClipVolumeChanged, viewModel::onClipMutedChanged, onDone = close,
             onApplyAll = viewModel::onVolumeApplyAll,
@@ -117,6 +127,9 @@ fun AudioVolumeTool(volume: Float, onVolumeChanged: (Float) -> Unit, onDone: () 
 }
 
 /** Whether the playhead is far enough inside [startMs, endMs) for a split to leave two usable halves. */
+/** The panels that edit a [com.savie.precut.model.look.ClipLook]. */
+val LOOK_TOOLS = setOf(EditorTool.FILTER, EditorTool.ADJUST, EditorTool.HSL, EditorTool.CURVES)
+
 /** [canSplitAt] that only recomposes its reader when the answer changes, not as time moves. */
 @Composable
 fun rememberCanSplit(positionMs: () -> Long, startMs: Long, endMs: Long): Boolean {

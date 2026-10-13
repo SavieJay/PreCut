@@ -1,6 +1,5 @@
 package com.savie.precut.ui.editor
 
-import com.savie.precut.model.FilterType
 import com.savie.precut.model.Project
 import com.savie.precut.model.edit.BatchEdits
 import com.savie.precut.model.edit.EditAction
@@ -20,6 +19,7 @@ class EditorSelection(private val host: EditorHost) {
             selectedClipId = null,
             selectedTextId = null,
             selectedAudioId = null,
+            selectedLayerId = null,
             activeTool = null,
             audioMenuOpen = false,
         )
@@ -41,7 +41,14 @@ class EditorSelection(private val host: EditorHost) {
 
     fun onSpeed(speed: Float) = apply { project, ids -> BatchEdits.speed(project, ids, speed) }
 
-    fun onFilter(filter: FilterType) = apply { project, ids -> BatchEdits.filter(project, ids, filter) }
+    fun onFilter(filterId: String?) = apply { project, ids -> BatchEdits.filter(project, ids, filterId, intensity = 1f) }
+
+    /** The filter strength on every picked clip, keeping their filters. */
+    fun onFilterIntensity(intensity: Float) = apply { project, ids ->
+        EditAction.Batch(
+            project.clips.filter { it.id in ids }.map { EditAction.SetClipLook(it.id, it.look.copy(filterIntensity = intensity)) },
+        )
+    }
 
     fun onVolume(volume: Float) = apply { project, ids -> BatchEdits.volume(project, ids, volume) }
 

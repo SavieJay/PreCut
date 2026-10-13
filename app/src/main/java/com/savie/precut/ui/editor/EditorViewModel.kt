@@ -12,6 +12,8 @@ import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.MediaProbe
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.ProxyManager
+import com.savie.precut.media.look.LookThumbnailer
+import com.savie.precut.media.look.LutCache
 import com.savie.precut.media.ProxyRules
 import com.savie.precut.media.ProxyState
 import com.savie.precut.media.PreviewState
@@ -20,7 +22,6 @@ import com.savie.precut.media.VoiceRecorder
 import com.savie.precut.media.WaveformLoader
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.ClipType
-import com.savie.precut.model.FilterType
 import com.savie.precut.model.Project
 import com.savie.precut.model.clipAt
 import com.savie.precut.model.clipFromMedia
@@ -59,7 +60,7 @@ import javax.inject.Inject
  * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
  * clip when there is one, otherwise on a video clip.
  */
-enum class EditorTool { TRIM, SPEED, FILTER, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER }
+enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -69,6 +70,8 @@ sealed interface EditorUiState {
         val selectedClipId: String? = null,
         val selectedTextId: String? = null,
         val selectedAudioId: String? = null,
+        /** A filter/adjust layer on the timeline. */
+        val selectedLayerId: String? = null,
         val activeTool: EditorTool? = null,
         /** The Audio sub-toolbar (Music, Extract, Record) is showing. */
         val audioMenuOpen: Boolean = false,
@@ -100,6 +103,9 @@ sealed interface EditorEvent {
     data object PickCoverImage : EditorEvent
     /** The screen should launch the camera app writing to [cameraUri]. */
     data class LaunchCamera(val cameraUri: String, val video: Boolean) : EditorEvent
+    /** The screen should open the file picker for a `.cube` LUT. */
+    data object PickLut : EditorEvent
+    data object LutImportFailed : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -119,6 +125,9 @@ class EditorViewModel @Inject constructor(
     @ApplicationScope private val appScope: CoroutineScope,
     private val captures: CaptureStore,
     private val proxies: ProxyManager,
+    luts: LutCache,
+    /** Filter picker tiles graded with the real LUTs. */
+    val lookThumbnails: LookThumbnailer,
 ) : ViewModel() {
 
     val projectId = savedStateHandle.requireProjectId()
@@ -177,6 +186,9 @@ class EditorViewModel @Inject constructor(
 
     /** Text overlays: add, edit, transform, split, duplicate, delete. */
     val text = EditorText(host)
+
+    /** Filters, Adjust, HSL, Curves and look layers. */
+    val look = EditorLook(host, luts)
 
     /** The camera capture in progress, until the camera app returns. */
     private var pendingCapture: Capture? = null
@@ -237,6 +249,11 @@ class EditorViewModel @Inject constructor(
 
     fun onFullScreen(open: Boolean) = updateReady { it.copy(fullScreen = open) }
 
+    /** The Filter panel's "Import .cube": the screen opens the file picker. */
+    fun onPickLut() {
+        viewModelScope.launch { _events.send(EditorEvent.PickLut) }
+    }
+
     /** Leaving the screen pauses playback and finishes (keeps) any voiceover in progress. */
     fun onScreenStopped() {
         audio.onRecordStop()
@@ -262,6 +279,7 @@ class EditorViewModel @Inject constructor(
                 selectedClipId = ready.selectedClipId?.takeIf { id -> project.clips.any { it.id == id } },
                 selectedTextId = ready.selectedTextId?.takeIf { id -> project.textOverlays.any { it.id == id } },
                 selectedAudioId = ready.selectedAudioId?.takeIf { id -> project.audioClips.any { it.id == id } },
+                selectedLayerId = ready.selectedLayerId?.takeIf { id -> project.lookLayers.any { it.id == id } },
                 multiSelect = ready.multiSelect?.filter { id -> project.containsItem(id) }?.toSet(),
                 activeTool = null,
             )
@@ -349,6 +367,7 @@ class EditorViewModel @Inject constructor(
                 selectedClipId = clipId,
                 selectedTextId = null,
                 selectedAudioId = null,
+                selectedLayerId = null,
                 audioMenuOpen = it.audioMenuOpen && clipId == null,
                 activeTool = if (keepTool) it.activeTool else null,
             )
@@ -366,10 +385,18 @@ class EditorViewModel @Inject constructor(
                 selectedTextId = textId,
                 selectedClipId = null,
                 selectedAudioId = null,
+                selectedLayerId = null,
                 audioMenuOpen = false,
                 activeTool = if (textId != null) EditorTool.TEXT else null,
             )
         }
+    }
+
+    /** Look layers aren't part of multi-select; tapping one leaves select mode alone. */
+    fun onLayerSelected(layerId: String) {
+        if (selection.isActive) return
+        text.dropBlankSelected()
+        look.onLayerSelected(layerId)
     }
 
     fun onAudioSelected(audioId: String) = if (selection.isActive) selection.toggle(audioId) else audio.onSelected(audioId)
@@ -390,27 +417,32 @@ class EditorViewModel @Inject constructor(
             EditorTool.RATIO, EditorTool.VOICEOVER -> updateReady { it.copy(activeTool = tool) }
             EditorTool.COVER -> cover.onOpen()
             EditorTool.TEXT -> text.onAdd()
+            EditorTool.FILTER, EditorTool.ADJUST, EditorTool.HSL, EditorTool.CURVES -> look.open(tool)
             EditorTool.VOICE, EditorTool.BEATS -> Unit // audio-only tools
-            EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.VOLUME, EditorTool.FADE -> {
+            EditorTool.TRIM, EditorTool.SPEED, EditorTool.VOLUME, EditorTool.FADE -> {
                 val clipId = targetClipId() ?: return
                 val clip = ready.project.clips.first { it.id == clipId }
                 if (tool == EditorTool.SPEED && clip.type == ClipType.IMAGE) {
                     viewModelScope.launch { _events.send(EditorEvent.SpeedNotForPhotos) }
                     return
                 }
-                updateReady { it.copy(selectedClipId = clipId, selectedTextId = null, selectedAudioId = null, activeTool = tool) }
+                updateReady { it.copy(selectedClipId = clipId, selectedTextId = null, selectedAudioId = null, selectedLayerId = null, activeTool = tool) }
             }
         }
     }
 
     fun onToolClosed() {
         text.dropBlankSelected()
-        // Audio selection stays so its toolbar comes back, like CapCut.
-        updateReady { it.copy(activeTool = null, selectedTextId = null) }
+        // Audio and layer selections stay so their toolbars come back, like CapCut. HSL and
+        // Curves are opened from Adjust, so closing them returns there.
+        updateReady {
+            val back = if (it.activeTool == EditorTool.HSL || it.activeTool == EditorTool.CURVES) EditorTool.ADJUST else null
+            it.copy(activeTool = back, selectedTextId = null)
+        }
     }
 
     fun onAudioMenu(open: Boolean) = updateReady {
-        it.copy(audioMenuOpen = open, selectedClipId = null, selectedTextId = null, selectedAudioId = null, activeTool = null)
+        it.copy(audioMenuOpen = open, selectedClipId = null, selectedTextId = null, selectedAudioId = null, selectedLayerId = null, activeTool = null)
     }
 
     // Edits
@@ -446,18 +478,6 @@ class EditorViewModel @Inject constructor(
     fun onKeepPitchChanged(keepPitch: Boolean) {
         val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
         applyEdit(EditAction.SetKeepPitch(clipId, keepPitch))
-    }
-
-    fun onFilterSelected(filter: FilterType) {
-        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
-        applyEdit(EditAction.SetFilter(clipId, filter))
-    }
-
-    /** "Apply to all": the selected clip's filter on every clip. */
-    fun onFilterApplyAll() {
-        val ready = _uiState.value as? EditorUiState.Ready ?: return
-        val filter = ready.project.clips.firstOrNull { it.id == ready.selectedClipId }?.filter ?: return
-        applyEdit(BatchEdits.filter(ready.project, BatchEdits.allClipIds(ready.project), filter))
     }
 
     /** "Apply to all": the selected clip's volume on every clip. */
@@ -558,7 +578,10 @@ class EditorViewModel @Inject constructor(
 
     private companion object {
         const val PREVIEW_REBUILD_DEBOUNCE_MS = 150L
-        val CLIP_TOOLS = setOf(EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.VOLUME, EditorTool.FADE)
+        val CLIP_TOOLS = setOf(
+            EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.ADJUST, EditorTool.HSL, EditorTool.CURVES,
+            EditorTool.VOLUME, EditorTool.FADE,
+        )
         val AUDIO_TOOLS = setOf(EditorTool.VOLUME, EditorTool.FADE, EditorTool.SPEED, EditorTool.VOICE, EditorTool.BEATS)
     }
 }

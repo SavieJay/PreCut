@@ -50,7 +50,12 @@ fun TimelineSection(
         Timeline(
             project = state.project,
             selection = TimelineSelection(
-                state.selectedClipId, state.selectedTextId, state.selectedAudioId, state.missingIds, state.multiSelect.orEmpty(),
+                clipId = state.selectedClipId,
+                textId = state.selectedTextId,
+                audioId = state.selectedAudioId,
+                layerId = state.selectedLayerId,
+                missingIds = state.missingIds,
+                multiIds = state.multiSelect.orEmpty(),
             ),
             positionMs = positionMs,
             loader = loader,

@@ -287,22 +287,31 @@ Text (Phase 4 gaps)
 **Acceptance:** media shared from the gallery opens as a project; a camera clip inserts at the playhead; three overlapping texts sit on three rows and can be scaled/rotated on the preview; a multi-selected batch delete undoes in one step.
 
 ### Phase 8 — Clip look and frame (CapCut "Edit", "Filters", "Adjust")
-- [ ] **Filter library:** about 40 bundled LUT filters in categories (Life, Film, Retro, Mono, Food, Nature, Style) via `SingleColorLut`; intensity 0–100%; apply to all; import your own `.cube` LUT (CapCut Pro)
-- [ ] **Adjust:** brightness, contrast, saturation, exposure, sharpen, highlights, shadows, temperature, tint, hue, fade, vignette, grain (custom GL shaders where Media3 has no built-in effect)
-- [ ] **HSL** per colour (8 hues: hue/saturation/lightness) and **Curves** (RGB + per channel) — CapCut Pro tools
-- [ ] **Filter and Adjust layers:** time-ranged bars on their own lane that affect everything underneath (composition-level, time-gated, like text)
-- [ ] **Transform main clips:** drag, pinch-scale and rotate any angle on the preview; Fit / Fill; snap to centre and 0°/90° (`MatrixTransformation`)
+Split into three stops, each ending with a device check (see Decisions log).
+
+**8A — Look**
+- [x] **Filter library:** ~40 filters in categories (Basic, Life, Film, Retro, Mono, Food, Nature), generated as colour grades baked into 3D LUTs (no licensed assets); intensity 0–100%; apply to all; import your own `.cube` LUT (CapCut Pro)
+- [x] **Adjust:** brightness, contrast, saturation, exposure, sharpen, highlights, shadows, temperature, tint, hue, fade, vignette, grain — one PreCut shader (`LookShaderProgram`) with the LUT, in a single pass
+- [x] **HSL** per colour (8 bands) and **Curves** (RGB + per channel) — CapCut Pro tools
+- [x] **Filter and Adjust layers:** time-ranged bars on their own lane that affect everything underneath (composition-level, time-gated)
+- [x] Old drafts' filters migrate to the new look model unchanged
+- [x] Unit tests: colour math, curve spline, LUT baking, `.cube` parsing, migration, reducer, spec mapping
+
+**8B — Frame**
+- [ ] **Transform main clips:** drag, pinch-scale and rotate any angle on the preview; Fit / Fill; snap to centre and 0°/90°
 - [ ] **Crop:** free and fixed ratios on the preview; **Mirror** horizontal / vertical
-- [ ] **Canvas / background:** black, colour, blur (4 strengths, `GaussianBlurWithFrameOverlaid`), or an image/pattern; apply to all
+- [ ] **Canvas / background:** black, colour, blur (4 strengths), or an image; apply to all
 - [ ] **Opacity** per clip
+
+**8C — Motion and time**
 - [ ] **Edge transitions** between clips (no overlap, total length unchanged): fade through black/white, flash, zoom in/out, blur, glitch, spin; adjustable duration; apply to all. Overlapping transitions come in Phase 9
 - [ ] **Clip animations** in/out/combo with duration: fade, zoom, slide, spin, bounce, shake
 - [ ] **Speed curves:** presets (Montage, Hero, Bullet, Jump cut, Flash in/out) and a custom curve editor with draggable points; variable `SpeedProvider`; timeline math handles variable speed
 - [ ] **Freeze frame:** insert a still (photo clip) of the frame under the playhead, splitting the clip
-- [ ] **Reverse:** pre-render a reversed copy (decode GOP by GOP, re-encode in reverse order, audio reversed) with a progress dialog, cached in app storage; undo restores the original
-- [ ] **Motion blur** (CapCut Pro): frame blending with `FrameCache` — stretch goal, verify performance
+- [ ] **Reverse:** pre-render a reversed copy with a progress dialog, cached in app storage; undo restores the original (prototype first; stretch if unreliable across devices)
+- [ ] **Motion blur** (CapCut Pro): frame blending with `FrameCache` — stretch goal
 - [x] **Replace clip** (keeps position, length and settings) — built in Phase 6 for missing media
-- [ ] Unit tests for every new action and spec mapping (curve integration, transition edge timing, LUT parsing, layer time gating)
+- [ ] Unit tests for every new action and spec mapping (curve integration, transition edge timing)
 
 **Acceptance:** a project with a LUT filter at 60%, HSL + curves, a filter layer, a transformed and cropped clip, blurred canvas, 2 transitions, an animation, a speed curve, a freeze frame and a reversed clip exports identically to the preview.
 
@@ -532,3 +541,9 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-13 — Preview proxies (CapCut-style) for smooth scrubbing.** `ProxyManager` transcodes each video larger than 540p (short side) once, in the background, to a 540p H.264 copy with a keyframe every 0.2 s (`cacheDir/proxies/<sha1>.mp4`). The preview plays proxies via `Project.withMediaSubstitutes`, which only swaps video Uris, so the same `CompositionBuilder` path is used. Export always uses originals and pauses proxying. Proxies swap in once the preview is idle; failures fall back to the original. The janitor trims orphans and caps the cache at 2 GB. Plan said "skip ≤ 720p"; lowered to ≤ 540p because long keyframe intervals, not resolution, are what make 720p sources scrub badly. **Verify on device** that encoders honour the 0.2 s keyframe interval.
 - **2026-10-13 — Preview renders at a 720 short side** (`PREVIEW_SHORT_SIDE_PX`), export at 1080. The spec differs only in output size and text pixel size; texts scale with the short side.
 - **2026-10-13 — The playhead is passed as a lambda/State through the editor UI,** so only the time label, the timeline scroll and a few derived flags (`rememberCanSplit`, beat-at-playhead) react to it. Nothing recomposes the whole editor 60 times a second while playing or scrubbing.
+- **2026-10-13 — Phase 8 split into 8A (look), 8B (frame), 8C (motion and time),** each with its own plan and device check; it was too big to verify in one go.
+- **2026-10-13 — Looks are one custom GL pass** (`LookShaderProgram`, a `BaseGlShaderProgram`): LUT with intensity, Adjust, HSL bands and curves. Media3's `SingleColorLut` has no intensity. Filters are code-defined grades baked into 33³ LUTs, and thumbnails are graded on the CPU with the same math. SDR effects run in the source's gamma-encoded colour space (Media3's `WORKING_COLOR_SPACE_DEFAULT`), which the CPU math matches.
+- **2026-10-13 — Per-clip effects see composition time** (checked in 1.11.1 sources: export adds each item's offset in `VideoEncoderGraphInput`, preview adds `bufferTimestampAdjustmentUs`). Time-dependent per-clip effects (8C animations) are given their clip's timeline start.
+- **2026-10-13 — `Clip.filter` (enum) became `Clip.look`;** `ProjectSerializer` migrates old drafts' `"filter": "WARM"` into `look.filterId = "basic.warm"`. The Basic presets reproduce the Phase 4 Media3 effects' values, so old projects look the same (within 33³ LUT interpolation).
+- **2026-10-13 — Look layers grade the composed frame** (composition-level `LookEffect`s gated by time, before the text/cover overlay so text stays ungraded). With nothing selected, Filters/Adjust add a 3 s layer at the playhead, like CapCut.
+- **2026-10-13 — Imported `.cube` LUTs** are validated (`CubeParser`: 3D only, 0..1 domain, ≤ 65³) and copied to `files/luts`; they show under "My LUTs" for every project. Grading sliders apply on release (preview rebuild), not live.

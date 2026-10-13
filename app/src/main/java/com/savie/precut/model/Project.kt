@@ -1,5 +1,6 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.look.LookLayer
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -10,6 +11,8 @@ data class Project(
     val clips: List<Clip> = emptyList(),
     val textOverlays: List<TextOverlay> = emptyList(),
     val audioClips: List<AudioClip> = emptyList(),
+    /** Time-ranged filter/adjust layers over everything (CapCut's filter/adjust tracks). */
+    val lookLayers: List<LookLayer> = emptyList(),
     /** CapCut's "Mute clip audio": silences every video clip's own sound. */
     val originalAudioMuted: Boolean = false,
     /** Chosen cover; null means the first frame. */

@@ -31,7 +31,8 @@ object EditReducer {
                 if (it.type == ClipType.IMAGE) it else it.copy(speed = action.speed.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED))
             }
             is EditAction.SetKeepPitch -> project.updateClip(action.clipId) { it.copy(keepPitch = action.keepPitch) }
-            is EditAction.SetFilter -> project.updateClip(action.clipId) { it.copy(filter = action.filter) }
+            is EditAction.SetClipLook -> project.updateClip(action.clipId) { it.copy(look = action.look.normalized()) }
+            is EditAction.LayerEdit -> project.applyLayerEdit(action)
             is EditAction.RotateClip -> project.updateClip(action.clipId) { it.copy(rotationDegrees = (it.rotationDegrees + 90) % 360) }
             is EditAction.SetAspectRatio ->
                 if (project.aspectRatio == action.aspectRatio) project else project.copy(aspectRatio = action.aspectRatio)
@@ -62,7 +63,7 @@ object EditReducer {
             }
             is EditAction.AudioEdit -> project.applyAudioEdit(action)
         }
-        return if (edited === project) project else edited.withClampedTexts()
+        return if (edited === project) project else edited.withClampedTexts().withClampedLayers()
     }
 
     /** True if [reduce] would split something at [atTimelineMs]. Used to enable the Split button. */
@@ -171,7 +172,7 @@ object EditReducer {
             keepPitch = keepPitch,
             volume = volume,
             muted = muted,
-            filter = filter,
+            look = look,
             rotationDegrees = rotationDegrees,
             fadeInMs = fadeInMs,
             fadeOutMs = fadeOutMs,

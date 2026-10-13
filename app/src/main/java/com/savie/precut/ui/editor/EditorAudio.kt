@@ -38,7 +38,7 @@ class EditorAudio(
     // Selection
 
     fun onSelected(audioId: String) = host.update {
-        it.copy(selectedAudioId = audioId, selectedClipId = null, selectedTextId = null, audioMenuOpen = false, activeTool = null)
+        it.copy(selectedAudioId = audioId, selectedClipId = null, selectedTextId = null, selectedLayerId = null, audioMenuOpen = false, activeTool = null)
     }
 
     // Adding audio

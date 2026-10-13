@@ -2,7 +2,8 @@ package com.savie.precut.media
 
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.AudioClip
-import com.savie.precut.model.FilterType
+import com.savie.precut.model.look.ClipLook
+import com.savie.precut.model.look.LookLayer
 import com.savie.precut.model.VoiceEffect
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.ClipType
@@ -69,26 +70,23 @@ class CompositionSpecTest {
     }
 
     @Test
-    fun speedFilterAndRotation_areCarriedPerItem() {
-        val clip = videoClip("a").copy(speed = 2f, filter = FilterType.GRAYSCALE, rotationDegrees = 90)
+    fun speedLookAndRotation_areCarriedPerItem() {
+        val look = ClipLook(filterId = "basic.mono")
+        val clip = videoClip("a").copy(speed = 2f, look = look, rotationDegrees = 90)
         val item = compositionSpecOf(project(clip)).items.single() as ItemSpec.Video
         assertEquals(2f, item.speed)
-        assertEquals(VisualSpec(listOf(FilterEffect.Grayscale), rotationDegrees = 90), item.visual)
+        assertEquals(VisualSpec(look, rotationDegrees = 90), item.visual)
     }
 
     @Test
-    fun filters_mapToEffects() {
-        assertEquals(emptyList<FilterEffect>(), filterEffectsFor(FilterType.NONE))
-        FilterType.entries.filter { it != FilterType.NONE }.forEach { assertTrue(it.name, filterEffectsFor(it).isNotEmpty()) }
-    }
-
-    @Test
-    fun vintageMatrix_isColumnMajorBlendOfSepia() {
-        // Output red from input red: 0.8 * 0.393 + 0.2 = 0.5144; output red from input green: 0.8 * 0.769.
-        assertEquals(0.5144f, VINTAGE_MATRIX[0], 1e-4f)
-        assertEquals(0.8f * 0.769f, VINTAGE_MATRIX[4], 1e-4f)
-        assertEquals(1f, VINTAGE_MATRIX[15])
-        assertEquals(0f, VINTAGE_MATRIX[12])
+    fun identityLook_addsNoGrading_andLayersCarryTimelineMicros() {
+        val clip = videoClip("a").copy(look = ClipLook(filterId = "basic.mono", filterIntensity = 0f))
+        assertEquals(null, (compositionSpecOf(project(clip)).items.single() as ItemSpec.Video).visual.look)
+        val warm = ClipLook(filterId = "basic.warm")
+        val p = project(videoClip("a")).copy(
+            lookLayers = listOf(LookLayer("l", 1_000L, 2_500L, warm), LookLayer("empty", 0L, 500L)),
+        )
+        assertEquals(listOf(LookLayerSpec(1_000_000L, 2_500_000L, warm)), compositionSpecOf(p).lookLayers)
     }
 
     @Test

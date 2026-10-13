@@ -1,8 +1,8 @@
 package com.savie.precut.model.edit
 
 import com.savie.precut.model.ClipType
-import com.savie.precut.model.FilterType
 import com.savie.precut.model.Project
+import com.savie.precut.model.look.ClipLook
 
 /**
  * Builds one [EditAction.Batch] (one undo step) acting on several items, given by id across clips,
@@ -31,8 +31,23 @@ object BatchEdits {
         project.clips.filter { it.id in ids && it.type == ClipType.VIDEO }.map { EditAction.SetSpeed(it.id, speed) },
     )
 
-    fun filter(project: Project, ids: Set<String>, filter: FilterType): EditAction.Batch = EditAction.Batch(
-        project.clips.filter { it.id in ids }.map { EditAction.SetFilter(it.id, filter) },
+    /** Sets the filter (and its intensity) on each clip, keeping their other look settings. */
+    fun filter(project: Project, ids: Set<String>, filterId: String?, intensity: Float): EditAction.Batch = EditAction.Batch(
+        project.clips.filter { it.id in ids }.map {
+            EditAction.SetClipLook(it.id, it.look.copy(filterId = filterId, filterIntensity = intensity))
+        },
+    )
+
+    /** Adjust, HSL and Curves on each clip, keeping their filters. */
+    fun adjust(project: Project, ids: Set<String>, from: ClipLook): EditAction.Batch = EditAction.Batch(
+        project.clips.filter { it.id in ids }.map {
+            EditAction.SetClipLook(it.id, it.look.copy(adjust = from.adjust, hsl = from.hsl, curves = from.curves))
+        },
+    )
+
+    /** The whole look (filter, Adjust, HSL, Curves) on each clip. */
+    fun look(project: Project, ids: Set<String>, look: ClipLook): EditAction.Batch = EditAction.Batch(
+        project.clips.filter { it.id in ids }.map { EditAction.SetClipLook(it.id, look) },
     )
 
     /** Clips' own sound and audio clips. */

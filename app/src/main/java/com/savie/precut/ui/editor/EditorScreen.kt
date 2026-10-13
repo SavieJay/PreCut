@@ -65,6 +65,10 @@ fun EditorScreen(
         viewModel.cover.onImagePicked(uri?.toString())
     }
     val camera = rememberCameraLaunchers(viewModel::onCaptureResult)
+    // `.cube` files have no standard MIME type, so any file can be picked and is validated.
+    val lutPicker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
+        viewModel.look.onImportLut(uri?.toString())
+    }
     val micPermission = rememberLauncherForActivityResult(RequestPermission()) { granted ->
         if (granted) viewModel.audio.onRecordStart(hasPermission = true)
     }
@@ -79,6 +83,11 @@ fun EditorScreen(
             EditorEvent.NothingToExtract -> resources.getString(R.string.audio_nothing_to_extract)
             EditorEvent.PickReplacement -> {
                 replacementPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
+                return@ObserveAsEvents
+            }
+            EditorEvent.LutImportFailed -> resources.getString(R.string.filter_lut_import_failed)
+            EditorEvent.PickLut -> {
+                lutPicker.launch(arrayOf("*/*"))
                 return@ObserveAsEvents
             }
             EditorEvent.PickCoverImage -> {

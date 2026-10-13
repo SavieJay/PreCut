@@ -3,11 +3,12 @@ package com.savie.precut.model.edit
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.Clip
-import com.savie.precut.model.FilterType
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.VoiceEffect
+import com.savie.precut.model.look.ClipLook
+import com.savie.precut.model.look.LookLayer
 
 /**
  * Every change a user can make to a project. Applied by [EditReducer]. New ids are passed in so
@@ -37,7 +38,23 @@ sealed interface EditAction {
     /** Whether a sped-up/slowed clip keeps its audio pitch. */
     data class SetKeepPitch(val clipId: String, val keepPitch: Boolean) : EditAction
 
-    data class SetFilter(val clipId: String, val filter: FilterType) : EditAction
+    /** Filter, intensity, Adjust, HSL and Curves of a clip. */
+    data class SetClipLook(val clipId: String, val look: ClipLook) : EditAction
+
+    /** Look layer edits (time-ranged filter/adjust over everything), applied by `applyLayerEdit`. */
+    sealed interface LayerEdit : EditAction
+
+    data class AddLookLayer(val layer: LookLayer) : LayerEdit
+
+    /** Replaces the layer with the same id (look and timing); timing is clamped. */
+    data class UpdateLookLayer(val layer: LookLayer) : LayerEdit
+
+    data class DeleteLookLayer(val layerId: String) : LayerEdit
+
+    data class SplitLookLayer(val layerId: String, val atMs: Long, val newId: String) : LayerEdit
+
+    /** A copy starting where the original ends. */
+    data class DuplicateLookLayer(val layerId: String, val newId: String) : LayerEdit
 
     /** Rotates the clip a further 90° clockwise. */
     data class RotateClip(val clipId: String) : EditAction

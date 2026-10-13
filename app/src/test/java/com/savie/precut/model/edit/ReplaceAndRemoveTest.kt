@@ -2,7 +2,7 @@ package com.savie.precut.model.edit
 
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.ClipType
-import com.savie.precut.model.FilterType
+import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.project
 import com.savie.precut.model.videoClip
@@ -13,7 +13,7 @@ import org.junit.Test
 class ReplaceAndRemoveTest {
 
     private val styled = videoClip("a", 10_000L, trimStartMs = 2_000L, trimEndMs = 8_000L, speed = 2f)
-        .copy(filter = FilterType.GRAYSCALE, rotationDegrees = 90, volume = 0.5f)
+        .copy(look = ClipLook(filterId = "basic.mono"), rotationDegrees = 90, volume = 0.5f)
     private val base = project(styled, videoClip("b"))
 
     @Test

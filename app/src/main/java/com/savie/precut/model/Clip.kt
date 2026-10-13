@@ -1,5 +1,6 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.look.ClipLook
 import kotlinx.serialization.Serializable
 
 const val DEFAULT_IMAGE_DURATION_MS = 3_000L
@@ -30,7 +31,8 @@ data class Clip(
     /** Fades of the clip's own sound, in timeline time. */
     val fadeInMs: Long = 0,
     val fadeOutMs: Long = 0,
-    val filter: FilterType = FilterType.NONE,
+    /** Filter, Adjust, HSL and Curves. */
+    val look: ClipLook = ClipLook(),
     /** User-applied rotation: 0, 90, 180 or 270. */
     val rotationDegrees: Int = 0,
     /** Encoded frame size as stored in the file, before [sourceRotationDegrees] is applied. */

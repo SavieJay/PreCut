@@ -23,5 +23,7 @@ fun rememberTimelineActions(viewModel: EditorViewModel): TimelineActions = remem
         override fun onAudioTiming(audioId: String, timelineStartMs: Long, trimStartMs: Long, trimEndMs: Long) =
             viewModel.audio.onTiming(audioId, timelineStartMs, trimStartMs, trimEndMs)
         override fun onAddAudio() = viewModel.onAudioMenu(true)
+        override fun onSelectLayer(layerId: String) = viewModel.onLayerSelected(layerId)
+        override fun onLayerTiming(layerId: String, startMs: Long, endMs: Long) = viewModel.look.onLayerTiming(layerId, startMs, endMs)
     }
 }

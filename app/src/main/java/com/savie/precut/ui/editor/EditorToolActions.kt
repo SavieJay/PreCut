@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.ui.editor.tools.CoverActions
+import com.savie.precut.ui.editor.tools.LayerToolbarActions
 import com.savie.precut.ui.editor.tools.TextToolActions
 
 /** Text panel callbacks routed to the ViewModel. */
@@ -25,5 +26,17 @@ fun rememberCoverActions(viewModel: EditorViewModel): CoverActions = remember(vi
         override fun onPickImage() = viewModel.cover.onPickImage()
         override fun onReset() = viewModel.cover.onReset()
         override fun onInExportChanged(inExport: Boolean) = viewModel.cover.onInExportChanged(inExport)
+    }
+}
+
+/** Look layer toolbar callbacks routed to the ViewModel's look controller. */
+@Composable
+fun rememberLayerToolbarActions(viewModel: EditorViewModel): LayerToolbarActions = remember(viewModel) {
+    object : LayerToolbarActions {
+        override fun onFilter() = viewModel.onToolSelected(EditorTool.FILTER)
+        override fun onAdjust() = viewModel.onToolSelected(EditorTool.ADJUST)
+        override fun onSplit() = viewModel.look.onSplitLayer()
+        override fun onDuplicate() = viewModel.look.onDuplicateLayer()
+        override fun onDelete() = viewModel.look.onDeleteLayer()
     }
 }

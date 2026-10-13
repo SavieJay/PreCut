@@ -1,5 +1,6 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.look.ClipLook
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -14,7 +15,7 @@ class ProjectSerializationTest {
             aspectRatio = AspectRatio.RATIO_4_5,
             clips = listOf(
                 videoClip("a", trimStartMs = 500L, trimEndMs = 4_000L, speed = 1.5f)
-                    .copy(volume = 0f, filter = FilterType.VINTAGE, rotationDegrees = 270),
+                    .copy(volume = 0f, look = ClipLook(filterId = "basic.vintage", filterIntensity = 0.6f), rotationDegrees = 270),
                 clipFromMedia("b", "content://b", MediaInfo(ClipType.IMAGE, 0L, 800, 600, 0)),
             ),
             textOverlays = listOf(

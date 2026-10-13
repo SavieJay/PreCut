@@ -25,9 +25,12 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
             .addItems(spec.items.map { toEditedMediaItem(it, spec.outputSize) })
             .build()
         val builder = Composition.Builder(listOf(sequence) + spec.audioLanes.map(::audioSequence))
-        effectsFactory.overlayEffect(spec.texts, spec.cover, spec.outputSize)?.let { overlay ->
-            builder.setEffects(Effects(/* audioProcessors= */ emptyList(), /* videoEffects= */ listOf(overlay)))
-        }
+            // The look shader works in SDR; HDR sources are tone-mapped (HDR export: Phase 12).
+            .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL)
+        // Layers grade the composed frame; text and the cover go on top, ungraded.
+        val videoEffects = effectsFactory.lookLayerEffects(spec.lookLayers) +
+            listOfNotNull(effectsFactory.overlayEffect(spec.texts, spec.cover, spec.outputSize))
+        if (videoEffects.isNotEmpty()) builder.setEffects(Effects(/* audioProcessors= */ emptyList(), videoEffects))
         return builder.build()
     }
 
