@@ -86,4 +86,27 @@ class TimelineGeometryTest {
         // Longer than the timeline: pinned at 0 (the reducer then clamps the end).
         assertEquals(0L to 12_000L, TimelineGeometry.moveRange(0L, 12_000L, 500L, totalMs = 10_000L))
     }
+
+    @Test
+    fun dragTextRange_moveKeepsLength_andClamps() {
+        fun drag(move: Long = 0L, startDelta: Long = 0L, endDelta: Long = 0L) =
+            TimelineGeometry.dragTextRange(2_000L, 5_000L, move, startDelta, endDelta, totalMs = 10_000L)
+        assertEquals(2_000L to 5_000L, drag())
+        assertEquals(4_500L to 7_500L, drag(move = 2_500L))
+        assertEquals(0L to 3_000L, drag(move = -9_000L))
+        assertEquals(7_000L to 10_000L, drag(move = 9_000L))
+    }
+
+    @Test
+    fun dragTextRange_handlesRespectMinimumAndBounds() {
+        fun drag(move: Long = 0L, startDelta: Long = 0L, endDelta: Long = 0L) =
+            TimelineGeometry.dragTextRange(2_000L, 5_000L, move, startDelta, endDelta, totalMs = 10_000L)
+        assertEquals(1_000L to 5_000L, drag(startDelta = -1_000L))
+        assertEquals(0L to 5_000L, drag(startDelta = -9_000L))
+        assertEquals(4_900L to 5_000L, drag(startDelta = 9_000L)) // 100 ms minimum
+        assertEquals(2_000L to 10_000L, drag(endDelta = 9_000L))
+        assertEquals(2_000L to 2_100L, drag(endDelta = -9_000L))
+        // Move then extend the end: 3..6 s, end +1 s.
+        assertEquals(3_000L to 7_000L, drag(move = 1_000L, endDelta = 1_000L))
+    }
 }

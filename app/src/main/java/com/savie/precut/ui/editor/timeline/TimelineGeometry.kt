@@ -2,6 +2,7 @@ package com.savie.precut.ui.editor.timeline
 
 import com.savie.precut.model.Clip
 import com.savie.precut.model.timelineDurationMs
+import com.savie.precut.model.edit.MIN_CLIP_DURATION_MS
 import com.savie.precut.model.timelineOffsetToSourceMs
 import kotlin.math.ceil
 import kotlin.math.roundToLong
@@ -63,6 +64,26 @@ object TimelineGeometry {
         val length = endMs - startMs
         val start = (startMs + deltaMs).coerceIn(0L, (totalMs - length).coerceAtLeast(0L))
         return start to start + length
+    }
+
+    /**
+     * Where a text tile ends up after a body move ([moveDeltaMs], keeps the length) and handle
+     * drags ([startDeltaMs], [endDeltaMs]). Stays within `0..totalMs` and at least
+     * [MIN_CLIP_DURATION_MS] long (when the timeline allows).
+     */
+    fun dragTextRange(
+        startMs: Long,
+        endMs: Long,
+        moveDeltaMs: Long,
+        startDeltaMs: Long,
+        endDeltaMs: Long,
+        totalMs: Long,
+    ): Pair<Long, Long> {
+        val (movedStart, movedEnd) = moveRange(startMs, endMs, moveDeltaMs, totalMs)
+        val minLength = MIN_CLIP_DURATION_MS.coerceAtMost(totalMs.coerceAtLeast(0L))
+        val start = (movedStart + startDeltaMs).coerceIn(0L, (movedEnd - minLength).coerceAtLeast(0L))
+        val end = (movedEnd + endDeltaMs).coerceIn(start + minLength, maxOf(totalMs, start + minLength))
+        return start to end
     }
 
     /** Target slot when a reorder tile is dropped with its centre at [centerX] in a row of [count] tiles. */

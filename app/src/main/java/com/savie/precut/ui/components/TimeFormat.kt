@@ -14,3 +14,10 @@ fun formatDurationMs(durationMs: Long): String {
         String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
     }
 }
+
+/** Formats a time as `m:ss.t` (tenths), or `h:mm:ss.t` from one hour; for precise drag feedback. */
+fun formatPreciseMs(timeMs: Long): String {
+    val ms = timeMs.coerceAtLeast(0L)
+    val tenths = (ms % 1000) / 100
+    return formatDurationMs(ms) + "." + tenths
+}

@@ -2,7 +2,6 @@ package com.savie.precut.ui.editor.timeline
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -16,6 +15,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.TextOverlay
+import com.savie.precut.ui.components.formatPreciseMs
 import com.savie.precut.ui.theme.ClipSelection
 import com.savie.precut.ui.theme.TextLaneBar
 import kotlin.math.roundToInt
@@ -42,8 +44,8 @@ import kotlin.math.roundToLong
 private val BarShape = RoundedCornerShape(4.dp)
 
 /**
- * Text overlays as bars from start to end. The selected bar can be dragged to move it in time and
- * has handles for its start/end; any bar can be long-pressed and dragged (which also selects it).
+ * Text overlays as bars from start to end. Drag any bar sideways to move it in time (it gets
+ * selected); the selected bar also has handles for its start and end. Taps select.
  */
 @Composable
 fun TextLane(
@@ -56,10 +58,14 @@ fun TextLane(
     onTiming: (textId: String, startMs: Long, endMs: Long) -> Unit,
 ) {
     val density = LocalDensity.current
+    val totalMs = (widthPx / pxPerMs).roundToLong()
     Box(Modifier.width(with(density) { widthPx.toDp() }).height(height)) {
-        // The selected bar is drawn last so it sits on top of overlapping ones.
+        // The selected bar is drawn last so it sits on top of overlapping ones. key() keeps each
+        // bar's state and in-flight gesture when selection changes this order.
         overlays.sortedBy { it.id == selectedTextId }.forEach { overlay ->
-            TextBar(overlay, overlay.id == selectedTextId, pxPerMs, totalMs = (widthPx / pxPerMs).roundToLong(), onSelect, onTiming)
+            key(overlay.id) {
+                TextBar(overlay, overlay.id == selectedTextId, pxPerMs, totalMs, onSelect, onTiming)
+            }
         }
     }
 }
@@ -75,24 +81,41 @@ private fun TextBar(
 ) {
     val density = LocalDensity.current
     val haptics = LocalHapticFeedback.current
+    // Gesture callbacks outlive compositions, so they read these instead of captured values.
+    val currentOverlay by rememberUpdatedState(overlay)
+    val currentSelected by rememberUpdatedState(selected)
+    val currentPxPerMs by rememberUpdatedState(pxPerMs)
+    val currentTotalMs by rememberUpdatedState(totalMs)
     val currentOnSelect by rememberUpdatedState(onSelect)
-    // Pending drags in px, applied as new timing on release.
-    var startDragPx by remember(overlay.id) { mutableFloatStateOf(0f) }
-    var endDragPx by remember(overlay.id) { mutableFloatStateOf(0f) }
-    var moveDragPx by remember(overlay.id) { mutableFloatStateOf(0f) }
-    val (movedStart, movedEnd) = TimelineGeometry.moveRange(
-        overlay.startMs, overlay.endMs, (moveDragPx / pxPerMs).roundToLong(), totalMs,
+    val currentOnTiming by rememberUpdatedState(onTiming)
+
+    // Pending drags in px; shown live and committed once on release.
+    var moveDragPx by remember { mutableFloatStateOf(0f) }
+    var startDragPx by remember { mutableFloatStateOf(0f) }
+    var endDragPx by remember { mutableFloatStateOf(0f) }
+    var moving by remember { mutableStateOf(false) }
+
+    fun rangeNow(): Pair<Long, Long> = TimelineGeometry.dragTextRange(
+        startMs = currentOverlay.startMs,
+        endMs = currentOverlay.endMs,
+        moveDeltaMs = (moveDragPx / currentPxPerMs).roundToLong(),
+        startDeltaMs = (startDragPx / currentPxPerMs).roundToLong(),
+        endDeltaMs = (endDragPx / currentPxPerMs).roundToLong(),
+        totalMs = currentTotalMs,
     )
-    val start = (movedStart + startDragPx / pxPerMs).roundToLong().coerceIn(0L, movedEnd)
-    val end = (movedEnd + endDragPx / pxPerMs).roundToLong().coerceIn(start, totalMs.coerceAtLeast(start))
+
     fun commit() {
+        val (newStart, newEnd) = rangeNow()
+        moveDragPx = 0f
         startDragPx = 0f
         endDragPx = 0f
-        moveDragPx = 0f
-        onTiming(overlay.id, start, end)
+        moving = false
+        if (newStart != currentOverlay.startMs || newEnd != currentOverlay.endMs) {
+            currentOnTiming(currentOverlay.id, newStart, newEnd)
+        }
     }
-    val currentCommit by rememberUpdatedState(::commit)
 
+    val (start, end) = rangeNow()
     Box(
         Modifier
             .offset { IntOffset((start * pxPerMs).roundToInt(), 0) }
@@ -100,36 +123,26 @@ private fun TextBar(
             .fillMaxHeight()
             .clip(BarShape)
             .background(TextLaneBar)
-            .then(if (selected) Modifier.border(1.5.dp, ClipSelection, BarShape) else Modifier)
-            .pointerInput(overlay.id) { detectTapGestures(onTap = { currentOnSelect(overlay.id) }) }
-            .pointerInput(overlay.id, selected) {
-                if (selected) {
-                    // Selected: a plain horizontal drag on the body moves the bar (handles resize it).
-                    detectHorizontalDragGestures(
-                        onDragEnd = { currentCommit() },
-                        onDragCancel = { currentCommit() },
-                    ) { change, amount ->
-                        change.consume()
-                        moveDragPx += amount
-                    }
-                } else {
-                    // Not selected: long-press first, so a normal drag still scrolls the timeline.
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            currentOnSelect(overlay.id)
-                        },
-                        onDragEnd = { currentCommit() },
-                        onDragCancel = { currentCommit() },
-                    ) { change, amount ->
-                        change.consume()
-                        moveDragPx += amount.x
-                    }
+            .then(if (selected || moving) Modifier.border(1.5.dp, ClipSelection, BarShape) else Modifier)
+            .pointerInput(overlay.id) { detectTapGestures(onTap = { currentOnSelect(currentOverlay.id) }) }
+            .pointerInput(overlay.id) {
+                // Keyed on the id only: selecting the bar mid-drag must not restart the gesture.
+                detectHorizontalDragGestures(
+                    onDragStart = {
+                        moving = true
+                        haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                        if (!currentSelected) currentOnSelect(currentOverlay.id)
+                    },
+                    onDragEnd = { commit() },
+                    onDragCancel = { commit() },
+                ) { change, amount ->
+                    change.consume() // the timeline must not scroll while a tile moves
+                    moveDragPx += amount
                 }
             },
     ) {
         Text(
-            text = overlay.text.ifBlank { stringResource(R.string.text_placeholder) },
+            text = if (moving) formatPreciseMs(start) else overlay.text.ifBlank { stringResource(R.string.text_placeholder) },
             style = MaterialTheme.typography.labelSmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
