@@ -215,12 +215,19 @@ UI for Phases 3–7 follows `docs/design/DESIGN.md`.
 
 **Acceptance:** a project using speed, filter, rotation, 9:16 ratio, and a text overlay spanning two clips exports identically to the preview.
 
-### Phase 5 — Audio
-- [ ] Add music from device (`GetContent` audio/*)
-- [ ] Audio lane in timeline: drag to offset, trim handles
-- [ ] Volume sliders: per clip and per audio track; mute toggle per clip
-- [ ] Second sequence in `Composition` for music; music shorter than video simply ends; music longer is cut at video end
-- [ ] Unit tests for audio placement logic
+### Phase 5 — Audio (CapCut-style; rebuilt per user request)
+- [x] Multi-track audio: any number of clips, auto-stacked into rows when overlapping; Music / Voiceover / Extracted kinds
+- [x] Add music from device (`OpenDocument` audio/* — persistable), inserted at the playhead; Replace keeps slot and length
+- [x] Per audio clip: move, trim, split, duplicate, delete, volume (0–200%), fade in/out, speed (pitch kept), voice effects (pitch presets), beats
+- [x] Waveforms on audio clips (on-device decode, memory + disk cache)
+- [x] Voiceover recording at the playhead (RECORD_AUDIO), preview muted while recording
+- [x] Extract audio from a video clip (same timing; clip muted)
+- [x] Video clip sound: volume, mute, fade in/out; "Mute clip audio" toggle for all original sound
+- [x] Snapping of text/audio bars to beats, playhead and edges (haptic tick)
+- [x] One audio-only sequence per row in the `Composition`; audio past the video end is cut
+- [x] Unit tests: lanes, placement with speed, every audio action, spec mapping, drag/snap geometry, peak bucketing
+
+Out of scope (AI or online content): noise reduction, AI voice changers/vocal isolation, auto beat detection, sound libraries.
 
 **Acceptance:** exported video contains original audio and music mixed at the chosen levels, with correct offset.
 
@@ -299,3 +306,11 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-13 — Filters are pure `FilterEffect` specs mapped to Media3 in `EffectsFactory`;** picker thumbnails use Compose colour-matrix approximations (`FilterPreviewMatrix`). Vintage = 80% sepia matrix + slight contrast reduction.
 - **2026-10-13 — The reducer clamps text overlays after every edit** (timeline shrink, speed change, delete); with no clips, texts are dropped. A text left blank when its panel closes is deleted.
 - **2026-10-13 — Text bars move in time by dragging:** a selected bar's body drags horizontally; an unselected bar needs a long-press first so normal drags still scrub. Moves keep the length and stay inside the timeline (`TimelineGeometry.moveRange`).
+- **2026-10-13 — Music is picked with `OpenDocument`, not `GetContent`:** only OpenDocument Uris can be persisted, which Phase 6 drafts need.
+- **2026-10-13 — Phase 5 rebuilt CapCut-style (user request):** multi-track audio replaces the single music track. Rows are derived (`Project.audioLanes`, greedy stacking), not stored. Each row is an audio-only `EditedMediaItemSequence` with `addGap` before each clip; placement (`placementWithin`, speed-aware) cuts audio at the video end, so output length never depends on Media3's multi-sequence rules. Audio isn't destructively trimmed when the video shrinks. **Verify on device** that leading gaps export correctly; fallback is a silent audio item.
+- **2026-10-13 — Audio processing chain per item:** constant `GainProcessor` (volume) → separate fade `GainProcessor` (a fade's shape replaces, not scales, the provider gain) → `SonicAudioProcessor` (voice pitch). Fade positions are in timeline (post-speed) time; **verify on device** for sped-up clips.
+- **2026-10-13 — Audio actions are a sealed `EditAction.AudioEdit` subtype** handled in `AudioEdits.kt`, keeping both `when`s exhaustive. Editor audio logic lives in `EditorAudio` (via `EditorHost`) to keep the ViewModel manageable.
+- **2026-10-13 — Audio bars draw only their audible part (up to the video end)** so widths stay bounded by the video's zoom cap; the end handle trims from the audible end.
+- **2026-10-13 — Voiceovers are app-private files** (`filesDir/voiceovers`); deleting a voiceover clip doesn't delete its file yet (cleanup belongs with Phase 6 persistence). No timeline vertical scrolling: the timeline grows with the number of audio rows.
+- **2026-10-13 — Volume is a `GainProcessor` (constant `DefaultGainProvider`) per item, 0–200%;** omitted at 100%. Clips have a separate `muted` flag so unmuting restores the volume.
+- **2026-10-13 — Text and audio bars share `TimelineBar`** (drag body to move, handles to trim, commit on release, optional snapping). The audio start handle trims the source and moves the start together so the remaining audio stays in place.

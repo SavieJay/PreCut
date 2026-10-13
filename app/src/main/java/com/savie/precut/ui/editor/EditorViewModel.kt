@@ -9,6 +9,8 @@ import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.PreviewState
 import com.savie.precut.media.ThumbnailLoader
+import com.savie.precut.media.VoiceRecorder
+import com.savie.precut.media.WaveformLoader
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.FilterType
@@ -39,8 +41,11 @@ import java.time.Clock
 import java.util.UUID
 import javax.inject.Inject
 
-/** Panels that replace the toolbar while open. */
-enum class EditorTool { TRIM, SPEED, FILTER, TEXT, RATIO }
+/**
+ * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
+ * clip when there is one, otherwise on a video clip.
+ */
+enum class EditorTool { TRIM, SPEED, FILTER, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -49,7 +54,10 @@ sealed interface EditorUiState {
         val project: Project,
         val selectedClipId: String? = null,
         val selectedTextId: String? = null,
+        val selectedAudioId: String? = null,
         val activeTool: EditorTool? = null,
+        /** The Audio sub-toolbar (Music, Extract, Record) is showing. */
+        val audioMenuOpen: Boolean = false,
         val isImporting: Boolean = false,
     ) : EditorUiState
 }
@@ -58,6 +66,13 @@ sealed interface EditorEvent {
     data class SomeFilesSkipped(val count: Int) : EditorEvent
     data object NothingImported : EditorEvent
     data object SpeedNotForPhotos : EditorEvent
+    /** The screen should open the audio file picker. */
+    data object PickMusic : EditorEvent
+    data object MusicImportFailed : EditorEvent
+    /** The screen should ask for RECORD_AUDIO, then call back into the audio controller. */
+    data object RequestMicPermission : EditorEvent
+    data object RecordingFailed : EditorEvent
+    data object NothingToExtract : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -69,7 +84,10 @@ class EditorViewModel @Inject constructor(
     private val importer: MediaImporter,
     /** For the timeline's thumbnail tiles. */
     val thumbnails: ThumbnailLoader,
+    /** For audio clips' waveforms. */
+    val waveforms: WaveformLoader,
     private val clock: Clock,
+    voiceRecorder: VoiceRecorder,
 ) : ViewModel() {
 
     val projectId = savedStateHandle.requireProjectId()
@@ -89,6 +107,22 @@ class EditorViewModel @Inject constructor(
 
     /** For attaching the video surface only; control playback through the event methods. */
     val player: Player get() = previewController.player
+
+    private val host = object : EditorHost {
+        override val ready: EditorUiState.Ready? get() = _uiState.value as? EditorUiState.Ready
+        override val positionMs: Long get() = previewState.value.positionMs
+        override val scope get() = viewModelScope
+        override fun applyEdit(action: EditAction) = this@EditorViewModel.applyEdit(action)
+        override fun update(transform: (EditorUiState.Ready) -> EditorUiState.Ready) = updateReady(transform)
+        override fun send(event: EditorEvent) {
+            viewModelScope.launch { _events.send(event) }
+        }
+        override fun newId(): String = this@EditorViewModel.newId()
+        override fun targetClipId(): String? = this@EditorViewModel.targetClipId()
+    }
+
+    /** Audio lanes, extract, voiceover and audio-clip tools. */
+    val audio = EditorAudio(host, importer, previewController, voiceRecorder)
 
     /** Latest edited project; the preview rebuilds once edits pause, so rapid edits rebuild once. */
     private val pendingPreview = MutableStateFlow<Project?>(null)
@@ -119,7 +153,11 @@ class EditorViewModel @Inject constructor(
 
     fun onSeek(positionMs: Long) = previewController.seekTo(positionMs)
 
-    fun onScreenStopped() = previewController.pause()
+    /** Leaving the screen pauses playback and finishes (keeps) any voiceover in progress. */
+    fun onScreenStopped() {
+        audio.onRecordStop()
+        previewController.pause()
+    }
 
     // Selection and tools
 
@@ -130,38 +168,60 @@ class EditorViewModel @Inject constructor(
             // Keep a clip tool open when switching clips, unless it doesn't apply (speed on a photo).
             val keepTool = clip != null && it.activeTool in CLIP_TOOLS &&
                 !(it.activeTool == EditorTool.SPEED && clip.type == ClipType.IMAGE)
-            it.copy(selectedClipId = clipId, selectedTextId = null, activeTool = if (keepTool) it.activeTool else null)
+            it.copy(
+                selectedClipId = clipId,
+                selectedTextId = null,
+                selectedAudioId = null,
+                audioMenuOpen = it.audioMenuOpen && clipId == null,
+                activeTool = if (keepTool) it.activeTool else null,
+            )
         }
     }
 
     fun onTextSelected(textId: String?) {
         dropBlankSelectedText()
         updateReady {
-            it.copy(selectedTextId = textId, selectedClipId = null, activeTool = if (textId != null) EditorTool.TEXT else null)
+            it.copy(
+                selectedTextId = textId,
+                selectedClipId = null,
+                selectedAudioId = null,
+                audioMenuOpen = false,
+                activeTool = if (textId != null) EditorTool.TEXT else null,
+            )
         }
     }
 
     fun onToolSelected(tool: EditorTool) {
         val ready = _uiState.value as? EditorUiState.Ready ?: return
         if (ready.activeTool == tool) return onToolClosed()
+        if (ready.selectedAudioId != null && tool in AUDIO_TOOLS) {
+            updateReady { it.copy(activeTool = tool) }
+            return
+        }
         when (tool) {
-            EditorTool.RATIO -> updateReady { it.copy(activeTool = tool) }
+            EditorTool.RATIO, EditorTool.VOICEOVER -> updateReady { it.copy(activeTool = tool) }
             EditorTool.TEXT -> addText(ready)
-            EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER -> {
+            EditorTool.VOICE, EditorTool.BEATS -> Unit // audio-only tools
+            EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.VOLUME, EditorTool.FADE -> {
                 val clipId = targetClipId() ?: return
                 val clip = ready.project.clips.first { it.id == clipId }
                 if (tool == EditorTool.SPEED && clip.type == ClipType.IMAGE) {
                     viewModelScope.launch { _events.send(EditorEvent.SpeedNotForPhotos) }
                     return
                 }
-                updateReady { it.copy(selectedClipId = clipId, selectedTextId = null, activeTool = tool) }
+                updateReady { it.copy(selectedClipId = clipId, selectedTextId = null, selectedAudioId = null, activeTool = tool) }
             }
         }
     }
 
     fun onToolClosed() {
         dropBlankSelectedText()
+        // Audio selection stays so its toolbar comes back, like CapCut.
         updateReady { it.copy(activeTool = null, selectedTextId = null) }
+    }
+
+    fun onAudioMenu(open: Boolean) = updateReady {
+        it.copy(audioMenuOpen = open, selectedClipId = null, selectedTextId = null, selectedAudioId = null, activeTool = null)
     }
 
     // Edits
@@ -211,6 +271,27 @@ class EditorViewModel @Inject constructor(
     fun onTextTimingChanged(textId: String, startMs: Long, endMs: Long) {
         val overlay = findText(textId) ?: return
         applyEdit(EditAction.UpdateText(overlay.copy(startMs = startMs, endMs = endMs)))
+    }
+
+    fun onClipVolumeChanged(volume: Float) {
+        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
+        applyEdit(EditAction.SetClipVolume(clipId, volume))
+    }
+
+    fun onClipMutedChanged(muted: Boolean) {
+        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
+        applyEdit(EditAction.SetClipMuted(clipId, muted))
+    }
+
+    fun onClipFadesChanged(fadeInMs: Long, fadeOutMs: Long) {
+        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
+        applyEdit(EditAction.SetClipFades(clipId, fadeInMs, fadeOutMs))
+    }
+
+    /** CapCut's "Mute clip audio" switch beside the timeline. */
+    fun onToggleOriginalAudio() {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        applyEdit(EditAction.SetOriginalAudioMuted(!ready.project.originalAudioMuted))
     }
 
     fun onDeleteText() {
@@ -282,12 +363,14 @@ class EditorViewModel @Inject constructor(
     private fun newId() = UUID.randomUUID().toString()
 
     override fun onCleared() {
+        audio.release()
         previewController.release()
     }
 
     private companion object {
         const val PREVIEW_REBUILD_DEBOUNCE_MS = 150L
         const val DEFAULT_TEXT_DURATION_MS = 3_000L
-        val CLIP_TOOLS = setOf(EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER)
+        val CLIP_TOOLS = setOf(EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.VOLUME, EditorTool.FADE)
+        val AUDIO_TOOLS = setOf(EditorTool.VOLUME, EditorTool.FADE, EditorTool.SPEED, EditorTool.VOICE, EditorTool.BEATS)
     }
 }

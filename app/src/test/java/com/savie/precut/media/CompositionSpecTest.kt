@@ -1,7 +1,9 @@
 package com.savie.precut.media
 
 import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.AudioClip
 import com.savie.precut.model.FilterType
+import com.savie.precut.model.VoiceEffect
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
@@ -26,7 +28,12 @@ class CompositionSpecTest {
     fun videoClip_mapsTrimToClipping_andKeepsSourceDuration() {
         val spec = compositionSpecOf(project(videoClip("a", 10_000L, trimStartMs = 1_500L, trimEndMs = 7_000L)))
         assertEquals(
-            listOf(ItemSpec.Video("content://media/a", sourceDurationMs = 10_000L, clipStartMs = 1_500L, clipEndMs = 7_000L)),
+            listOf(
+                ItemSpec.Video(
+                    "content://media/a", sourceDurationMs = 10_000L, clipStartMs = 1_500L, clipEndMs = 7_000L,
+                    sound = SoundSpec(lengthMs = 5_500L),
+                ),
+            ),
             spec.items,
         )
     }
@@ -44,9 +51,9 @@ class CompositionSpecTest {
         val spec = compositionSpecOf(project(videoClip("a"), image, videoClip("b", trimStartMs = 2_000L)))
         assertEquals(
             listOf(
-                ItemSpec.Video("content://media/a", 10_000L, 0L, 10_000L),
+                ItemSpec.Video("content://media/a", 10_000L, 0L, 10_000L, sound = SoundSpec(lengthMs = 10_000L)),
                 ItemSpec.Image("content://i", DEFAULT_IMAGE_DURATION_MS),
-                ItemSpec.Video("content://media/b", 10_000L, 2_000L, 10_000L),
+                ItemSpec.Video("content://media/b", 10_000L, 2_000L, 10_000L, sound = SoundSpec(lengthMs = 8_000L)),
             ),
             spec.items,
         )
@@ -111,5 +118,40 @@ class CompositionSpecTest {
         assertEquals(0f to 0f, toNdc(0.5f, 0.5f))
         assertEquals(-1f to 1f, toNdc(0f, 0f)) // top-left
         assertEquals(1f to -1f, toNdc(1f, 1f)) // bottom-right
+    }
+
+    @Test
+    fun clipSound_isSilencedByClipOrOriginalMute_andCarriesFades() {
+        val loud = videoClip("a").copy(volume = 1.4f, fadeInMs = 500L, fadeOutMs = 800L)
+        val items = compositionSpecOf(project(loud, videoClip("b").copy(muted = true))).items.map { (it as ItemSpec.Video).sound }
+        assertEquals(SoundSpec(1.4f, 500L, 800L, 10_000L), items[0])
+        assertEquals(0f, items[1].volume)
+        val allMuted = compositionSpecOf(project(loud).copy(originalAudioMuted = true)).items.single() as ItemSpec.Video
+        assertEquals(0f, allMuted.sound.volume)
+    }
+
+    @Test
+    fun audioLanes_mapGapsClippingSpeedAndSound_cutAtVideoEnd() {
+        // 10 s of video. Row 1: a (0-4 s) then c (6 s, 2x, cut at 10 s). Row 2: b overlaps a.
+        val a = AudioClip("a", "content://a", 30_000L, timelineStartMs = 0L, trimEndMs = 4_000L, volume = 0.5f)
+        val b = AudioClip("b", "content://b", 30_000L, timelineStartMs = 1_000L, trimEndMs = 2_000L, voiceEffect = VoiceEffect.DEEP)
+        val c = AudioClip("c", "content://c", 30_000L, timelineStartMs = 6_000L, trimStartMs = 1_000L, trimEndMs = 30_000L, speed = 2f, fadeOutMs = 1_000L)
+        val lanes = compositionSpecOf(project(videoClip("v")).copy(audioClips = listOf(c, b, a))).audioLanes
+        assertEquals(2, lanes.size)
+        assertEquals(
+            listOf(
+                AudioItemSpec("content://a", 30_000L, gapBeforeMs = 0L, clipStartMs = 0L, clipEndMs = 4_000L, speed = 1f, sound = SoundSpec(0.5f, 0L, 0L, 4_000L)),
+                AudioItemSpec("content://c", 30_000L, gapBeforeMs = 2_000L, clipStartMs = 1_000L, clipEndMs = 9_000L, speed = 2f, sound = SoundSpec(1f, 0L, 1_000L, 4_000L)),
+            ),
+            lanes[0],
+        )
+        assertEquals(1_000L, lanes[1].single().gapBeforeMs)
+        assertEquals(VoiceEffect.DEEP.pitch, lanes[1].single().sound.pitch)
+    }
+
+    @Test
+    fun audioPastTheVideoEnd_isOmitted_andEmptyLanesDropped() {
+        val late = AudioClip("m", "content://m", 30_000L, timelineStartMs = 12_000L, trimEndMs = 30_000L)
+        assertTrue(compositionSpecOf(project(videoClip("a")).copy(audioClips = listOf(late))).audioLanes.isEmpty())
     }
 }

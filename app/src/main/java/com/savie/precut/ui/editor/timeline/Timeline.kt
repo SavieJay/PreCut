@@ -4,11 +4,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -16,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -24,11 +22,12 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.savie.precut.media.ThumbnailLoader
+import com.savie.precut.media.WaveformLoader
 import com.savie.precut.model.Project
 import com.savie.precut.model.totalDurationMs
 
 /** Everything the timeline reports back; implemented by the editor screen with ViewModel calls. */
-interface TimelineActions {
+interface TimelineActions : AudioRowActions {
     fun onScrubStart()
     fun onSeek(positionMs: Long)
     fun onSelectClip(clipId: String?)
@@ -36,28 +35,20 @@ interface TimelineActions {
     fun onMove(from: Int, to: Int)
     fun onSelectText(textId: String)
     fun onTextTiming(textId: String, startMs: Long, endMs: Long)
+    fun onToggleOriginalAudio()
 }
 
-private val VerticalPadding = 8.dp
-private val RulerHeight = 18.dp
-private val LaneGap = 6.dp
-private val ClipHeight = 56.dp
-private val TextLaneHeight = 22.dp
-
-/** Total height the timeline needs. */
-val TimelineHeight = VerticalPadding * 2 + RulerHeight + LaneGap + ClipHeight + LaneGap + TextLaneHeight
-
 /**
- * Horizontal timeline under a fixed centre playhead: ruler, clip strip and text lane. Scroll to
+ * Horizontal timeline under a fixed centre playhead: ruler, clips, text and music lanes. Scroll to
  * scrub, pinch to zoom, tap to select, long-press a clip to reorder.
  */
 @Composable
 fun Timeline(
     project: Project,
-    selectedClipId: String?,
-    selectedTextId: String?,
+    selection: TimelineSelection,
     positionMs: Long,
     loader: ThumbnailLoader,
+    waveforms: WaveformLoader,
     actions: TimelineActions,
     modifier: Modifier = Modifier,
 ) {
@@ -72,6 +63,7 @@ fun Timeline(
 
         val scrollState = rememberScrollState()
         ScrubSync(scrollState, positionMs, pxPerMs, actions::onScrubStart, actions::onSeek)
+        val playhead by rememberUpdatedState(positionMs)
 
         val reorderState = remember { mutableStateOf<ReorderState?>(null) }
         val reorder = reorderState.value
@@ -83,7 +75,7 @@ fun Timeline(
             hitTest = {
                 val stripTop = with(density) { (VerticalPadding + RulerHeight + LaneGap).toPx() }
                 TimelineHitTest(
-                    project, selectedClipId, pxPerMs, scrollState.value, widthPx,
+                    project, selection.clipId, pxPerMs, scrollState.value, widthPx,
                     handleSlopPx = with(density) { 24.dp.toPx() },
                     stripYPx = stripTop..(stripTop + with(density) { ClipHeight.toPx() }),
                 )
@@ -112,35 +104,15 @@ fun Timeline(
                     .horizontalScroll(scrollState, enabled = reorder == null)
                     .padding(horizontal = halfWidth, vertical = VerticalPadding),
             ) {
-                val contentWidthPx = TimelineGeometry.msToPx(totalMs, pxPerMs)
-                TimelineRuler(
-                    totalMs = totalMs,
-                    pxPerMs = pxPerMs,
-                    modifier = Modifier
-                        .width(with(density) { contentWidthPx.toDp() })
-                        .height(RulerHeight),
-                )
-                Spacer(Modifier.height(LaneGap))
-                ClipStrip(
-                    project = project,
-                    selectedClipId = selectedClipId,
-                    pxPerMs = pxPerMs,
-                    clipHeight = ClipHeight,
-                    visiblePx = visibleStart..visibleEnd,
-                    loader = loader,
-                    onTrim = actions::onTrim,
-                )
-                Spacer(Modifier.height(LaneGap))
-                TextLane(
-                    overlays = project.textOverlays,
-                    selectedTextId = selectedTextId,
-                    pxPerMs = pxPerMs,
-                    widthPx = contentWidthPx,
-                    height = TextLaneHeight,
-                    onSelect = actions::onSelectText,
-                    onTiming = actions::onTextTiming,
-                )
+                TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, { playhead }, actions)
             }
+            MuteOriginalButton(
+                muted = project.originalAudioMuted,
+                onClick = actions::onToggleOriginalAudio,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 6.dp, top = VerticalPadding + RulerHeight + LaneGap + (ClipHeight - MuteButtonSize) / 2),
+            )
             Playhead(Modifier.align(Alignment.TopCenter))
             reorder?.let { state ->
                 ReorderOverlay(project.clips, state, reorderLayout, loader, Modifier.matchParentSize())

@@ -19,6 +19,10 @@ from Sleek), update the tokens there and this file together.
 | `ClipSelection` | `#FFFFFF` | Selected clip border and trim handles |
 | `ClipBackground` | `#34343A` | Clip tile placeholder while thumbnails load |
 | `RulerTick` | `#6B6B74` | Ruler ticks |
+| `TextLaneBar` | `#B8860B` | Text bars (amber) |
+| `MusicBar` | `#16897A` | Music audio clips (teal) |
+| `VoiceoverBar` | `#7B5BD6` | Voiceover clips (violet) |
+| `ExtractedAudioBar` | `#2F6FB8` | Extracted audio clips (blue) |
 
 No dynamic colour: the brand look is the same on every device.
 
@@ -35,11 +39,14 @@ Material 3 defaults with semibold titles; `labelMedium` 11sp for tool labels and
 1. Top bar (Ink0): back · accent **Export** pill. Undo/redo join it in Phase 6.
 2. Preview, black, letterboxed; takes the remaining height. Empty project shows a "Tap + to add" hint.
 3. Playback row, 48dp: `current / total` time at the left, play/pause centred. The timeline is the scrubber.
-4. Timeline, 104dp: ruler (18dp) + clip strip (56dp clips, thumbnails at 3:4) under a fixed white
-   centre playhead; fixed white "+" button at the right edge. Text and audio lanes are added under the
-   clip strip in Phases 4–5.
-5. Bottom tool row (Ink1): icon + label buttons, 64dp wide each — Split, Trim, Duplicate, Delete
-   (Speed, Filters, Text, Audio, Rotate join in Phases 4–5). A tool panel replaces the row while open.
+4. Timeline: ruler (18dp) + clip strip (56dp clips, thumbnails at 3:4) + text lane (22dp) + one 24dp
+   row per audio track (at least one, showing "+ Add audio"), under a fixed white centre playhead.
+   A round "Mute clip audio" button is pinned at the strip's left; a white "+" add-media button at
+   its right. Audio bars show a translucent white waveform and yellow beat dots.
+5. Bottom tool row (Ink1): icon + label buttons, 64dp wide, scrolling. Main row: Split, Trim, Audio,
+   Speed, Volume, Fade, Extract, Filters, Rotate, Text, Ratio, Duplicate, Delete. Audio opens a
+   sub-row (Back, Music, Extract, Record); a selected audio clip gets its own row (Volume, Fade,
+   Split, Speed, Voice, Beats, Replace, Duplicate, Delete). A tool panel replaces the row while open.
 
 ## Interaction
 - Drag the timeline to scrub (pauses playback); playback auto-scrolls it.

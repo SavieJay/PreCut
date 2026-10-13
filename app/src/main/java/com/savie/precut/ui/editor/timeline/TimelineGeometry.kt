@@ -4,6 +4,7 @@ import com.savie.precut.model.Clip
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.model.edit.MIN_CLIP_DURATION_MS
 import com.savie.precut.model.timelineOffsetToSourceMs
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToLong
 
@@ -84,6 +85,54 @@ object TimelineGeometry {
         val start = (movedStart + startDeltaMs).coerceIn(0L, (movedEnd - minLength).coerceAtLeast(0L))
         val end = (movedEnd + endDeltaMs).coerceIn(start + minLength, maxOf(totalMs, start + minLength))
         return start to end
+    }
+
+    /** Audio timing after a drag: where it starts on the timeline and which source range plays. */
+    data class AudioTiming(val timelineStartMs: Long, val trimStartMs: Long, val trimEndMs: Long)
+
+    /**
+     * Applies an audio bar drag; deltas are timeline ms, converted to source ms with [speed]. A
+     * body move shifts the start (not before 0). The start handle trims the source *and* moves the
+     * start by the same timeline amount, so the remaining audio stays put. The end handle trims the
+     * end. Keeps at least [MIN_CLIP_DURATION_MS] of source.
+     */
+    fun dragAudio(
+        timing: AudioTiming,
+        sourceDurationMs: Long,
+        speed: Float,
+        moveDeltaMs: Long,
+        startDeltaMs: Long,
+        endDeltaMs: Long,
+    ): AudioTiming {
+        val movedStart = (timing.timelineStartMs + moveDeltaMs).coerceAtLeast(0L)
+        val minLength = MIN_CLIP_DURATION_MS.coerceAtMost(sourceDurationMs)
+        // Source shift limits: not before the file start, not before timeline 0, keep min length.
+        val lowest = -minOf(timing.trimStartMs, (movedStart * speed).roundToLong())
+        val highest = (timing.trimEndMs - minLength - timing.trimStartMs).coerceAtLeast(lowest)
+        val sourceShift = (startDeltaMs * speed).roundToLong().coerceIn(lowest, highest)
+        val trimStart = timing.trimStartMs + sourceShift
+        val trimEnd = (timing.trimEndMs + (endDeltaMs * speed).roundToLong())
+            .coerceIn(trimStart + minLength, sourceDurationMs.coerceAtLeast(trimStart + minLength))
+        return AudioTiming(movedStart + (sourceShift / speed).roundToLong(), trimStart, trimEnd)
+    }
+
+    /**
+     * Adjusts a move of a bar spanning [startMs, endMs) so its start or end lands on the nearest
+     * of [targetsMs] within [thresholdMs]. Returns the (possibly unchanged) move delta.
+     */
+    fun snapMove(startMs: Long, endMs: Long, moveDeltaMs: Long, targetsMs: List<Long>, thresholdMs: Long): Long {
+        var best = moveDeltaMs
+        var bestDistance = thresholdMs + 1
+        for (target in targetsMs) {
+            for (edge in longArrayOf(startMs + moveDeltaMs, endMs + moveDeltaMs)) {
+                val distance = abs(target - edge)
+                if (distance < bestDistance) {
+                    bestDistance = distance
+                    best = moveDeltaMs + (target - edge)
+                }
+            }
+        }
+        return best
     }
 
     /** Target slot when a reorder tile is dropped with its centre at [centerX] in a row of [count] tiles. */

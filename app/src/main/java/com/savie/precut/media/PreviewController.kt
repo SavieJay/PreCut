@@ -83,6 +83,13 @@ class PreviewController @Inject constructor(
 
     fun pause() = compositionPlayer.pause()
 
+    fun play() = compositionPlayer.play()
+
+    /** Silences preview playback, e.g. while recording a voiceover so the mic doesn't pick it up. */
+    fun setMuted(muted: Boolean) {
+        compositionPlayer.volume = if (muted) 0f else 1f
+    }
+
     fun seekTo(positionMs: Long) {
         compositionPlayer.seekTo(positionMs)
         publishState()

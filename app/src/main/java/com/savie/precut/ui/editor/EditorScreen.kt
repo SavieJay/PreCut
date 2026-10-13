@@ -1,10 +1,13 @@
 package com.savie.precut.ui.editor
 
+import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,28 +60,34 @@ fun EditorScreen(
     val picker = rememberLauncherForActivityResult(PickMultipleVisualMedia()) { uris ->
         viewModel.onMediaPicked(uris.map(Uri::toString))
     }
+    // OpenDocument (not GetContent) so the music Uri can be kept across restarts.
+    val musicPicker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
+        viewModel.audio.onMusicPicked(uri?.toString())
+    }
+    val micPermission = rememberLauncherForActivityResult(RequestPermission()) { granted ->
+        if (granted) viewModel.audio.onRecordStart(hasPermission = true)
+    }
     ObserveAsEvents(viewModel.events) { event ->
         val message = when (event) {
             is EditorEvent.SomeFilesSkipped ->
                 resources.getQuantityString(R.plurals.home_import_skipped, event.count, event.count)
             EditorEvent.NothingImported -> resources.getString(R.string.home_import_nothing)
             EditorEvent.SpeedNotForPhotos -> resources.getString(R.string.speed_not_for_photos)
+            EditorEvent.MusicImportFailed -> resources.getString(R.string.audio_import_failed)
+            EditorEvent.RecordingFailed -> resources.getString(R.string.voiceover_failed)
+            EditorEvent.NothingToExtract -> resources.getString(R.string.audio_nothing_to_extract)
+            EditorEvent.RequestMicPermission -> {
+                micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                return@ObserveAsEvents
+            }
+            EditorEvent.PickMusic -> {
+                musicPicker.launch(arrayOf("audio/*"))
+                return@ObserveAsEvents
+            }
         }
         scope.launch { snackbarHostState.showSnackbar(message) }
     }
-    val timelineActions = remember(viewModel) {
-        object : TimelineActions {
-            override fun onScrubStart() = viewModel.onScrubStart()
-            override fun onSeek(positionMs: Long) = viewModel.onSeek(positionMs)
-            override fun onSelectClip(clipId: String?) = viewModel.onClipSelected(clipId)
-            override fun onTrim(clipId: String, trimStartMs: Long, trimEndMs: Long) =
-                viewModel.onTrim(clipId, trimStartMs, trimEndMs)
-            override fun onMove(from: Int, to: Int) = viewModel.onMove(from, to)
-            override fun onSelectText(textId: String) = viewModel.onTextSelected(textId)
-            override fun onTextTiming(textId: String, startMs: Long, endMs: Long) =
-                viewModel.onTextTimingChanged(textId, startMs, endMs)
-        }
-    }
+    val timelineActions = rememberTimelineActions(viewModel)
 
     Scaffold(
         topBar = {
@@ -121,10 +130,11 @@ fun EditorScreen(
                     state = state,
                     positionMs = previewState.positionMs,
                     loader = viewModel.thumbnails,
+                    waveforms = viewModel.waveforms,
                     actions = timelineActions,
                     onAddMedia = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
                 )
-                EditorBottomPanel(state, canSplit, viewModel)
+                EditorBottomPanel(state, canSplit, previewState.positionMs, viewModel)
             }
         }
     }

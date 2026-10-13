@@ -1,9 +1,11 @@
 package com.savie.precut.model.edit
 
 import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.AudioClip
 import com.savie.precut.model.Clip
 import com.savie.precut.model.FilterType
 import com.savie.precut.model.TextOverlay
+import com.savie.precut.model.VoiceEffect
 
 /**
  * Every change a user can make to a project. Applied by [EditReducer]. New ids are passed in so
@@ -44,4 +46,51 @@ sealed interface EditAction {
     data class UpdateText(val overlay: TextOverlay) : EditAction
 
     data class DeleteText(val overlayId: String) : EditAction
+
+    /** Clip audio gain, clamped to 0..MAX_VOLUME. */
+    data class SetClipVolume(val clipId: String, val volume: Float) : EditAction
+
+    data class SetClipMuted(val clipId: String, val muted: Boolean) : EditAction
+
+    /** Audio edits, applied by `applyAudioEdit` (AudioEdits.kt). */
+    sealed interface AudioEdit : EditAction
+
+    data class SetClipFades(val clipId: String, val fadeInMs: Long, val fadeOutMs: Long) : AudioEdit
+
+    /** CapCut's "Mute clip audio": silences every video clip's own sound. */
+    data class SetOriginalAudioMuted(val muted: Boolean) : AudioEdit
+
+    /** Moves a video clip's sound onto an audio lane (same timing) and mutes the clip. */
+    data class ExtractAudio(val clipId: String, val newAudioId: String) : AudioEdit
+
+    // Audio clips (multi-track; lanes are derived, see Project.audioLanes)
+
+    data class AddAudio(val audio: AudioClip) : AudioEdit
+
+    data class DeleteAudio(val audioId: String) : AudioEdit
+
+    /** Splits at timeline time [atTimelineMs]; the second half gets [newAudioId]. */
+    data class SplitAudio(val audioId: String, val atTimelineMs: Long, val newAudioId: String) : AudioEdit
+
+    /** Inserts a copy right after the original. */
+    data class DuplicateAudio(val audioId: String, val newAudioId: String) : AudioEdit
+
+    /** Swaps the file, keeping the clip's start and length (as far as the new file allows). */
+    data class ReplaceAudio(val audioId: String, val uri: String, val sourceDurationMs: Long, val displayName: String) : AudioEdit
+
+    /** Moves and/or trims in one step; all values are clamped. */
+    data class SetAudioTiming(val audioId: String, val timelineStartMs: Long, val trimStartMs: Long, val trimEndMs: Long) : AudioEdit
+
+    data class SetAudioVolume(val audioId: String, val volume: Float) : AudioEdit
+
+    data class SetAudioFades(val audioId: String, val fadeInMs: Long, val fadeOutMs: Long) : AudioEdit
+
+    data class SetAudioSpeed(val audioId: String, val speed: Float) : AudioEdit
+
+    data class SetVoiceEffect(val audioId: String, val effect: VoiceEffect) : AudioEdit
+
+    /** Adds a beat at timeline time [atTimelineMs], or removes one already there. */
+    data class ToggleBeat(val audioId: String, val atTimelineMs: Long) : AudioEdit
+
+    data class ClearBeats(val audioId: String) : AudioEdit
 }

@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor.timeline
 
+import com.savie.precut.model.edit.MIN_CLIP_DURATION_MS
 import com.savie.precut.model.videoClip
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -108,5 +109,48 @@ class TimelineGeometryTest {
         assertEquals(2_000L to 2_100L, drag(endDelta = -9_000L))
         // Move then extend the end: 3..6 s, end +1 s.
         assertEquals(3_000L to 7_000L, drag(move = 1_000L, endDelta = 1_000L))
+    }
+
+    private val song = TimelineGeometry.AudioTiming(timelineStartMs = 2_000L, trimStartMs = 1_000L, trimEndMs = 9_000L)
+
+    private fun dragSong(move: Long = 0L, start: Long = 0L, end: Long = 0L, speed: Float = 1f) = TimelineGeometry.dragAudio(
+        song, sourceDurationMs = 10_000L, speed = speed, moveDeltaMs = move, startDeltaMs = start, endDeltaMs = end,
+    )
+
+    @Test
+    fun dragAudio_moveShiftsStart_notBeforeZero() {
+        assertEquals(song.copy(timelineStartMs = 5_000L), dragSong(move = 3_000L))
+        assertEquals(song.copy(timelineStartMs = 0L), dragSong(move = -9_000L))
+    }
+
+    @Test
+    fun dragAudio_startHandleTrimsAndMovesTogether() {
+        assertEquals(TimelineGeometry.AudioTiming(4_000L, 3_000L, 9_000L), dragSong(start = 2_000L))
+        // Limited by the file start (1 s of trim) -> -1 s.
+        assertEquals(TimelineGeometry.AudioTiming(1_000L, 0L, 9_000L), dragSong(start = -5_000L))
+        assertEquals(9_000L - MIN_CLIP_DURATION_MS, dragSong(start = 50_000L).trimStartMs)
+    }
+
+    @Test
+    fun dragAudio_endHandleTrimsWithinSource() {
+        assertEquals(10_000L, dragSong(end = 5_000L).trimEndMs)
+        assertEquals(1_000L + MIN_CLIP_DURATION_MS, dragSong(end = -50_000L).trimEndMs)
+    }
+
+    @Test
+    fun dragAudio_convertsTimelineDeltasWithSpeed() {
+        // At 2x, 1 s of timeline is 2 s of source.
+        assertEquals(TimelineGeometry.AudioTiming(3_000L, 3_000L, 9_000L), dragSong(start = 1_000L, speed = 2f))
+        assertEquals(8_000L, dragSong(end = -500L, speed = 2f).trimEndMs)
+    }
+
+    @Test
+    fun snapMove_snapsEitherEdgeToNearestTargetWithinThreshold() {
+        // Bar 1..3 s moved +1.95 s: start 2.95 s is 50 ms from the 3 s target -> +2 s.
+        assertEquals(2_000L, TimelineGeometry.snapMove(1_000L, 3_000L, 1_950L, listOf(3_000L, 9_000L), thresholdMs = 100L))
+        // End edge: 3 s + 5.9 s = 8.9 s, 100 ms from 9 s -> +6 s.
+        assertEquals(6_000L, TimelineGeometry.snapMove(1_000L, 3_000L, 5_900L, listOf(9_000L), thresholdMs = 100L))
+        // Nothing near: unchanged.
+        assertEquals(500L, TimelineGeometry.snapMove(1_000L, 3_000L, 500L, listOf(9_000L), thresholdMs = 100L))
     }
 }

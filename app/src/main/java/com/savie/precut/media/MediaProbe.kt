@@ -22,6 +22,9 @@ sealed interface ProbeResult {
 
 interface MediaProbe {
     suspend fun probe(uri: String): ProbeResult
+
+    /** Duration of an audio file in ms, or null if it can't be read. */
+    suspend fun probeAudioDurationMs(uri: String): Long?
 }
 
 class AndroidMediaProbe @Inject constructor(
@@ -44,6 +47,18 @@ class AndroidMediaProbe @Inject constructor(
             // SecurityException for revoked access; MediaMetadataRetriever throws
             // IllegalArgumentException/RuntimeException on unreadable input.
             ProbeResult.Failed(e)
+        }
+    }
+
+    override suspend fun probeAudioDurationMs(uri: String): Long? = withContext(ioDispatcher) {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(context, Uri.parse(uri))
+            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()?.takeIf { it > 0 }
+        } catch (_: RuntimeException) {
+            null // unreadable or revoked
+        } finally {
+            retriever.release()
         }
     }
 

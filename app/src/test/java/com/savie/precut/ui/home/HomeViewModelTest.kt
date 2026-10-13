@@ -3,6 +3,7 @@ package com.savie.precut.ui.home
 import app.cash.turbine.test
 import com.savie.precut.data.InMemoryProjectRepository
 import com.savie.precut.media.ImportResult
+import com.savie.precut.media.ImportedAudio
 import com.savie.precut.media.ImportedMedia
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.model.ClipType
@@ -104,5 +105,6 @@ class HomeViewModelTest {
 
     private class FakeImporter(private val result: ImportResult) : MediaImporter {
         override suspend fun import(uris: List<String>) = result
+        override suspend fun importAudio(uri: String): ImportedAudio? = null
     }
 }

@@ -2,6 +2,10 @@ package com.savie.precut.media
 
 import androidx.annotation.OptIn
 import androidx.media3.common.Effect
+import androidx.media3.common.audio.AudioProcessor
+import androidx.media3.common.audio.DefaultGainProvider
+import androidx.media3.common.audio.GainProcessor
+import androidx.media3.common.audio.SonicAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Brightness
 import androidx.media3.effect.Contrast
@@ -27,6 +31,24 @@ class EffectsFactory @Inject constructor(private val textRenderer: TextOverlayRe
             add(ScaleAndRotateTransformation.Builder().setRotationDegrees(-visual.rotationDegrees.toFloat()).build())
         }
         add(Presentation.createForWidthAndHeight(outputSize.width, outputSize.height, Presentation.LAYOUT_SCALE_TO_FIT))
+    }
+
+    /**
+     * Volume, then fades, then pitch; each stage only when it does something. Volume and fades
+     * are separate processors because a fade's shape replaces (not scales) the provider's gain.
+     */
+    fun audioProcessors(sound: SoundSpec): List<AudioProcessor> = buildList {
+        if (sound.volume != 1f) add(GainProcessor(DefaultGainProvider.Builder(sound.volume).build()))
+        if (sound.fadeInMs > 1 || sound.fadeOutMs > 1) {
+            val fades = DefaultGainProvider.Builder(/* defaultGain= */ 1f)
+            if (sound.fadeInMs > 1) fades.addFadeAt(0L, sound.fadeInMs * 1_000, DefaultGainProvider.FADE_IN_LINEAR)
+            if (sound.fadeOutMs > 1) {
+                val start = (sound.lengthMs - sound.fadeOutMs).coerceAtLeast(0L)
+                fades.addFadeAt(start * 1_000, sound.fadeOutMs * 1_000, DefaultGainProvider.FADE_OUT_LINEAR)
+            }
+            add(GainProcessor(fades.build()))
+        }
+        if (sound.pitch != 1f) add(SonicAudioProcessor().apply { setPitch(sound.pitch) })
     }
 
     /** One overlay effect for all texts, applied to the whole composition in timeline time. */

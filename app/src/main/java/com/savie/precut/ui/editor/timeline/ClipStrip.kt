@@ -30,6 +30,7 @@ fun ClipStrip(
                     pxPerMs = pxPerMs,
                     height = clipHeight,
                     selected = clip.id == selectedClipId,
+                    soundOff = clip.muted || clip.volume == 0f || project.originalAudioMuted,
                     visiblePx = (visiblePx.start - clipStartPx)..(visiblePx.endInclusive - clipStartPx),
                     loader = loader,
                     onTrim = { start, end -> onTrim(clip.id, start, end) },

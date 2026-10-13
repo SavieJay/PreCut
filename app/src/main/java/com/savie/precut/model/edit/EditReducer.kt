@@ -2,6 +2,7 @@ package com.savie.precut.model.edit
 
 import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
+import com.savie.precut.model.MAX_VOLUME
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.clipAt
@@ -35,6 +36,9 @@ object EditReducer {
             is EditAction.UpdateText -> project.updateText(action.overlay)
             is EditAction.DeleteText -> project.textOverlays.filterNot { it.id == action.overlayId }
                 .let { if (it.size == project.textOverlays.size) project else project.copy(textOverlays = it) }
+            is EditAction.SetClipVolume -> project.updateClip(action.clipId) { it.copy(volume = action.volume.coerceIn(0f, MAX_VOLUME)) }
+            is EditAction.SetClipMuted -> project.updateClip(action.clipId) { it.copy(muted = action.muted) }
+            is EditAction.AudioEdit -> project.applyAudioEdit(action)
         }
         return if (edited === project) project else edited.withClampedTexts()
     }

@@ -23,15 +23,41 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
         val sequence = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
             .addItems(spec.items.map { toEditedMediaItem(it, spec.outputSize) })
             .build()
-        val builder = Composition.Builder(sequence)
+        val builder = Composition.Builder(listOf(sequence) + spec.audioLanes.map(::audioSequence))
         effectsFactory.textOverlayEffect(spec.texts, spec.outputSize)?.let { overlay ->
             builder.setEffects(Effects(/* audioProcessors= */ emptyList(), /* videoEffects= */ listOf(overlay)))
         }
         return builder.build()
     }
 
+    /** One audio row: for each clip, a silent gap up to its start, then the clip. */
+    private fun audioSequence(lane: List<AudioItemSpec>): EditedMediaItemSequence {
+        val builder = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
+        lane.forEach { audio ->
+            if (audio.gapBeforeMs > 0) builder.addGap(audio.gapBeforeMs * 1_000)
+            val mediaItem = MediaItem.Builder()
+                .setUri(audio.uri)
+                .setClippingConfiguration(
+                    MediaItem.ClippingConfiguration.Builder()
+                        .setStartPositionMs(audio.clipStartMs)
+                        .setEndPositionMs(audio.clipEndMs)
+                        .build(),
+                )
+                .build()
+            builder.addItem(
+                EditedMediaItem.Builder(mediaItem)
+                    .setDurationUs(audio.sourceDurationMs * 1_000)
+                    .setEffects(Effects(effectsFactory.audioProcessors(audio.sound), emptyList()))
+                    .apply { if (audio.speed != 1f) applySpeed(audio.speed, capFrameRate = false) }
+                    .build(),
+            )
+        }
+        return builder.build()
+    }
+
     private fun toEditedMediaItem(item: ItemSpec, outputSize: OutputSize): EditedMediaItem {
-        val effects = Effects(emptyList(), effectsFactory.videoEffects(item.visual, outputSize))
+        val audio = if (item is ItemSpec.Video) effectsFactory.audioProcessors(item.sound) else emptyList()
+        val effects = Effects(audio, effectsFactory.videoEffects(item.visual, outputSize))
         return when (item) {
             is ItemSpec.Video -> {
                 val mediaItem = MediaItem.Builder()
@@ -69,9 +95,9 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
      * frame-rate cap so 4x footage doesn't produce a 120+ fps output.
      */
     @OptIn(ExperimentalApi::class) // SpeedParameters (pitch control) is experimental in Media3 1.11.
-    private fun EditedMediaItem.Builder.applySpeed(speed: Float) {
+    private fun EditedMediaItem.Builder.applySpeed(speed: Float, capFrameRate: Boolean = true) {
         setSpeed(SpeedParameters(ConstantSpeedProvider(speed), /* shouldMaintainPitch= */ true))
-        if (speed > 1f) setFrameRate(MAX_FRAME_RATE)
+        if (capFrameRate && speed > 1f) setFrameRate(MAX_FRAME_RATE)
     }
 
     private companion object {

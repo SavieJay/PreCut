@@ -4,6 +4,9 @@ import kotlinx.serialization.Serializable
 
 const val DEFAULT_IMAGE_DURATION_MS = 3_000L
 
+/** Highest volume for clips and music (200%). */
+const val MAX_VOLUME = 2f
+
 /** Photos have no intrinsic length; this is how far their trim range can be extended. */
 const val MAX_IMAGE_DURATION_MS = 60_000L
 
@@ -18,8 +21,13 @@ data class Clip(
     /** Exclusive. */
     val trimEndMs: Long,
     val speed: Float = 1f,
-    /** 0f = muted. */
+    /** Gain for the clip's own audio, 0..[MAX_VOLUME]. */
     val volume: Float = 1f,
+    /** Silences the clip without losing [volume]. */
+    val muted: Boolean = false,
+    /** Fades of the clip's own sound, in timeline time. */
+    val fadeInMs: Long = 0,
+    val fadeOutMs: Long = 0,
     val filter: FilterType = FilterType.NONE,
     /** User-applied rotation: 0, 90, 180 or 270. */
     val rotationDegrees: Int = 0,

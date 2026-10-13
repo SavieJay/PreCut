@@ -19,9 +19,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.media.ThumbnailLoader
+import com.savie.precut.media.WaveformLoader
 import com.savie.precut.ui.editor.timeline.Timeline
 import com.savie.precut.ui.editor.timeline.TimelineActions
-import com.savie.precut.ui.editor.timeline.TimelineHeight
+import com.savie.precut.ui.editor.timeline.timelineHeight
+import com.savie.precut.ui.editor.timeline.TimelineSelection
 import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.TextPrimary
 
@@ -31,17 +33,18 @@ fun TimelineSection(
     state: EditorUiState.Ready,
     positionMs: Long,
     loader: ThumbnailLoader,
+    waveforms: WaveformLoader,
     actions: TimelineActions,
     onAddMedia: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier.fillMaxWidth().height(TimelineHeight)) {
+    Box(modifier.fillMaxWidth().height(timelineHeight(state.project))) {
         Timeline(
             project = state.project,
-            selectedClipId = state.selectedClipId,
-            selectedTextId = state.selectedTextId,
+            selection = TimelineSelection(state.selectedClipId, state.selectedTextId, state.selectedAudioId),
             positionMs = positionMs,
             loader = loader,
+            waveforms = waveforms,
             actions = actions,
         )
         FilledIconButton(

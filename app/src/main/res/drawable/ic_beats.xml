@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Beats: bars with dots. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:autoMirrored="false"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M4,18h2V8H4v10zM9,18h2V4H9v14zM14,18h2v-8h-2v8zM19,18h2V6h-2v12zM5,22a1,1 0,1 0,0.01 0zM10,22a1,1 0,1 0,0.01 0zM15,22a1,1 0,1 0,0.01 0zM20,22a1,1 0,1 0,0.01 0z" />
+</vector>

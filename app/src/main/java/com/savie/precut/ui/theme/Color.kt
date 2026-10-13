@@ -20,3 +20,6 @@ val ClipSelection = Color(0xFFFFFFFF)
 val ClipBackground = Color(0xFF34343A)
 val RulerTick = Color(0xFF6B6B74)
 val TextLaneBar = Color(0xFFB8860B) // amber, distinct from clips and the accent
+val MusicBar = Color(0xFF16897A) // teal
+val VoiceoverBar = Color(0xFF7B5BD6) // violet
+val ExtractedAudioBar = Color(0xFF2F6FB8) // blue

@@ -1,6 +1,7 @@
 package com.savie.precut.model.edit
 
 import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.MAX_VOLUME
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.FilterType
 import com.savie.precut.model.MediaInfo
@@ -231,5 +232,16 @@ class EditReducerTest {
     fun deletingAllClips_dropsTexts() {
         val withText = EditReducer.reduce(project(videoClip("a")), EditAction.AddText(text()))
         assertTrue(EditReducer.reduce(withText, EditAction.DeleteClip("a")).textOverlays.isEmpty())
+    }
+
+    @Test
+    fun clipVolume_isClamped_andMuteKeepsVolume() {
+        assertEquals(1.5f, EditReducer.reduce(base, EditAction.SetClipVolume("a", 1.5f)).clips[0].volume)
+        assertEquals(MAX_VOLUME, EditReducer.reduce(base, EditAction.SetClipVolume("a", 9f)).clips[0].volume)
+        assertEquals(0f, EditReducer.reduce(base, EditAction.SetClipVolume("a", -1f)).clips[0].volume)
+        val loud = EditReducer.reduce(base, EditAction.SetClipVolume("a", 1.5f))
+        val muted = EditReducer.reduce(loud, EditAction.SetClipMuted("a", true)).clips[0]
+        assertTrue(muted.muted)
+        assertEquals(1.5f, muted.volume)
     }
 }

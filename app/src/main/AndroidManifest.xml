@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Voiceover recording; requested when the user first taps Record. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <!-- Only Android 8–9 need this to save exports to Movies/PreCut. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"

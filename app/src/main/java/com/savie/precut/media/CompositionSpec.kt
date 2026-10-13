@@ -7,6 +7,11 @@ import com.savie.precut.model.OutputSize
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.outputSizeFor
+import com.savie.precut.model.audioLanes
+import com.savie.precut.model.edit.clampFades
+import com.savie.precut.model.placementWithin
+import com.savie.precut.model.timelineDurationMs
+import com.savie.precut.model.totalDurationMs
 
 /**
  * Pure description of the Media3 composition for a project. Kept free of Media3/Android types so
@@ -17,6 +22,28 @@ data class CompositionSpec(
     val outputSize: OutputSize,
     /** Applied once to the whole composition, in timeline time. */
     val texts: List<TextSpec> = emptyList(),
+    /** Audio rows, each mixed in as its own audio-only sequence. */
+    val audioLanes: List<List<AudioItemSpec>> = emptyList(),
+)
+
+/** One audio clip after placement: silence for [gapBeforeMs], then its (already cut) range. */
+data class AudioItemSpec(
+    val uri: String,
+    val sourceDurationMs: Long,
+    val gapBeforeMs: Long,
+    val clipStartMs: Long,
+    val clipEndMs: Long,
+    val speed: Float,
+    val sound: SoundSpec,
+)
+
+/** How an item's audio is shaped, in its timeline length [lengthMs]. */
+data class SoundSpec(
+    val volume: Float = 1f,
+    val fadeInMs: Long = 0L,
+    val fadeOutMs: Long = 0L,
+    val lengthMs: Long = 0L,
+    val pitch: Float = 1f,
 )
 
 /** Look shared by every item: colour effects, then user rotation, then fit into the frame. */
@@ -35,6 +62,8 @@ sealed interface ItemSpec {
         val clipStartMs: Long,
         val clipEndMs: Long,
         val speed: Float = 1f,
+        /** The clip's own sound; volume 0 when muted or when all original audio is muted. */
+        val sound: SoundSpec = SoundSpec(),
         override val visual: VisualSpec = VisualSpec(),
     ) : ItemSpec
 
@@ -74,13 +103,34 @@ fun toNdc(xNorm: Float, yNorm: Float): Pair<Float, Float> = (xNorm * 2f - 1f) to
 fun compositionSpecOf(project: Project): CompositionSpec {
     val outputSize = outputSizeFor(project.aspectRatio)
     return CompositionSpec(
-        items = project.clips.map(::itemSpecOf),
+        items = project.clips.map { itemSpecOf(it, project.originalAudioMuted) },
         outputSize = outputSize,
         texts = project.textOverlays.filter { it.text.isNotBlank() }.map { textSpecOf(it, outputSize) },
+        audioLanes = audioLanesOf(project),
     )
 }
 
-private fun itemSpecOf(clip: Clip): ItemSpec {
+private fun audioLanesOf(project: Project): List<List<AudioItemSpec>> {
+    val videoDuration = project.totalDurationMs()
+    return project.audioLanes().map { lane ->
+        var cursor = 0L
+        lane.mapNotNull { audio ->
+            val placement = audio.placementWithin(videoDuration) ?: return@mapNotNull null
+            val (fadeIn, fadeOut) = clampFades(audio.fadeInMs, audio.fadeOutMs, placement.timelineDurationMs)
+            AudioItemSpec(
+                uri = audio.uri,
+                sourceDurationMs = audio.sourceDurationMs,
+                gapBeforeMs = placement.timelineStartMs - cursor,
+                clipStartMs = placement.sourceStartMs,
+                clipEndMs = placement.sourceEndMs,
+                speed = audio.speed,
+                sound = SoundSpec(audio.volume, fadeIn, fadeOut, placement.timelineDurationMs, audio.voiceEffect.pitch),
+            ).also { cursor = placement.timelineStartMs + placement.timelineDurationMs }
+        }
+    }.filter { it.isNotEmpty() }
+}
+
+private fun itemSpecOf(clip: Clip, originalAudioMuted: Boolean): ItemSpec {
     val visual = VisualSpec(filterEffectsFor(clip.filter), clip.rotationDegrees)
     return when (clip.type) {
         ClipType.VIDEO -> ItemSpec.Video(
@@ -89,6 +139,10 @@ private fun itemSpecOf(clip: Clip): ItemSpec {
             clipStartMs = clip.trimStartMs,
             clipEndMs = clip.trimEndMs,
             speed = clip.speed,
+            sound = clip.timelineDurationMs().let { length ->
+                val (fadeIn, fadeOut) = clampFades(clip.fadeInMs, clip.fadeOutMs, length)
+                SoundSpec(if (clip.muted || originalAudioMuted) 0f else clip.volume, fadeIn, fadeOut, length)
+            },
             visual = visual,
         )
         ClipType.IMAGE -> ItemSpec.Image(uri = clip.uri, durationMs = clip.trimEndMs - clip.trimStartMs, visual = visual)
