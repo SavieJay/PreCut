@@ -13,7 +13,7 @@ object TimelineGeometry {
 
     /** Zoom bounds and default, as screen dp per second of timeline. */
     const val MIN_DP_PER_SECOND = 6f
-    const val DEFAULT_DP_PER_SECOND = 56f
+    const val DEFAULT_DP_PER_SECOND = 32f
     const val MAX_DP_PER_SECOND = 1_500f
 
     /** Ruler tick spacings to choose from, in ms. */
@@ -203,8 +203,8 @@ object TimelineGeometry {
     private val FRAME_STEPS = intArrayOf(1, 2, 3, 5, 10, 15)
 
     /**
-     * Ruler marks up to [totalMs], at least [minSpacingPx] apart. Zoomed out: a labelled tick per
-     * interval on whole seconds plus a minor tick halfway. Zoomed in far enough that half a second
+     * Ruler marks up to [totalMs], labels at least [minSpacingPx] apart. Zoomed out: a labelled
+     * tick per interval (whole seconds) and unlabelled ticks every quarter interval. Zoomed in far enough that half a second
      * fits, ticks fall on frames and every tick is labelled (seconds as times, others as "Nf").
      */
     fun rulerTicks(pxPerMs: Float, minSpacingPx: Float, totalMs: Long): List<Tick> {
@@ -224,12 +224,12 @@ object TimelineGeometry {
             }
         }
         val interval = tickIntervalMs(pxPerMs, minSpacingPx).coerceAtLeast(1_000L)
+        val quarter = interval / 4
         return buildList {
             var ms = 0L
             while (ms <= totalMs) {
-                add(Tick(ms, TickLabel.Time(ms)))
-                if (ms + interval / 2 <= totalMs) add(Tick(ms + interval / 2, null))
-                ms += interval
+                add(Tick(ms, if (ms % interval == 0L) TickLabel.Time(ms) else null))
+                ms += quarter
             }
         }
     }

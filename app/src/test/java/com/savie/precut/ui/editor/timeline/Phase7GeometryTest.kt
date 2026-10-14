@@ -11,11 +11,12 @@ import org.junit.Test
 class Phase7GeometryTest {
 
     @Test
-    fun rulerTicks_zoomedOut_labelSecondsWithMinorTicks() {
-        // 0.1 px/ms: 1 s = 100 px, minimum spacing 150 px -> 2 s interval.
+    fun rulerTicks_zoomedOut_labelIntervalsWithQuarterTicks() {
+        // 0.1 px/ms: 1 s = 100 px, minimum spacing 150 px -> 2 s labels, ticks every 0.5 s.
         val ticks = TimelineGeometry.rulerTicks(pxPerMs = 0.1f, minSpacingPx = 150f, totalMs = 4_000L)
-        assertEquals(listOf(0L, 1_000L, 2_000L, 3_000L, 4_000L), ticks.map { it.ms })
-        assertEquals(listOf(TickLabel.Time(0L), null, TickLabel.Time(2_000L), null, TickLabel.Time(4_000L)), ticks.map { it.label })
+        assertEquals((0L..4_000L step 500L).toList(), ticks.map { it.ms })
+        assertEquals(listOf(0L, 2_000L, 4_000L), ticks.filter { it.label != null }.map { it.ms })
+        assertEquals(TickLabel.Time(2_000L), ticks[4].label)
     }
 
     @Test

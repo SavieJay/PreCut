@@ -15,7 +15,7 @@ fun AudioMenuBar(
 ) {
     ToolRow(modifier) {
         ToolButton(R.drawable.ic_back, R.string.action_back, onClick = onBack)
-        ToolButton(R.drawable.ic_music, R.string.audio_menu_music, onClick = onMusic)
+        ToolButton(R.drawable.ic_queue_music, R.string.audio_menu_music, onClick = onMusic)
         ToolButton(R.drawable.ic_extract, R.string.tool_extract, onClick = onExtract)
         ToolButton(R.drawable.ic_mic, R.string.audio_menu_record, onClick = onRecord)
     }

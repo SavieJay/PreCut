@@ -34,6 +34,7 @@ object EditReducer {
             is EditAction.SetClipLook -> project.updateClip(action.clipId) { it.copy(look = action.look.normalized()) }
             is EditAction.LayerEdit -> project.applyLayerEdit(action)
             is EditAction.RotateClip -> project.updateClip(action.clipId) { it.copy(rotationDegrees = (it.rotationDegrees + 90) % 360) }
+            is EditAction.SetName -> action.name.trim().let { if (it == project.name) project else project.copy(name = it) }
             is EditAction.SetAspectRatio ->
                 if (project.aspectRatio == action.aspectRatio) project else project.copy(aspectRatio = action.aspectRatio)
             is EditAction.AddText -> project.copy(textOverlays = project.textOverlays + action.overlay)

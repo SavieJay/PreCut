@@ -20,7 +20,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import com.savie.precut.ui.components.projectDisplayName
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -110,22 +118,50 @@ fun EditorScreen(
         scope.launch { snackbarHostState.showSnackbar(message) }
     }
     val timelineActions = rememberTimelineActions(viewModel)
+    var renaming by rememberSaveable { mutableStateOf(false) }
+    val topBarActions = remember(viewModel) {
+        object : EditorTopBarActions {
+            override fun onBack() = onBack()
+            override fun onStartRename() {
+                renaming = true
+            }
+            override fun onRename(name: String) {
+                viewModel.onRename(name)
+                renaming = false
+            }
+            override fun onCancelRename() {
+                renaming = false
+            }
+            override fun onUndo() {
+                viewModel.onUndo()
+            }
+            override fun onRedo() {
+                viewModel.onRedo()
+            }
+            override fun onExport() = onExport(viewModel.projectId)
+        }
+    }
+    BackHandler(enabled = renaming) { renaming = false }
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
                 val ready = uiState as? EditorUiState.Ready
                 EditorTopBar(
+                    title = ready?.project?.let { projectDisplayName(it.name, it.createdAt) }.orEmpty(),
                     canExport = ready != null && ready.project.clips.isNotEmpty() && ready.missingIds.isEmpty(),
                     canUndo = ready?.canUndo == true,
                     canRedo = ready?.canRedo == true,
-                    onBack = onBack,
-                    onUndo = viewModel::onUndo,
-                    onRedo = viewModel::onRedo,
-                    onExport = { onExport(viewModel.projectId) },
+                    renaming = renaming && ready != null,
+                    actions = topBarActions,
                 )
             },
-            snackbarHost = { SnackbarHost(snackbarHostState) },
+            snackbarHost = {
+                // Above the toolbar, which reaches down behind the navigation bar.
+                SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding().padding(bottom = 72.dp))
+            },
+            // The top bar pads for the status bar and the bottom panel for the navigation bar.
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
         ) { innerPadding ->
             val modifier = Modifier
                 .fillMaxSize()
@@ -139,6 +175,7 @@ fun EditorScreen(
                 }
                 is EditorUiState.Ready -> EditorContent(
                     state = state,
+                    dimmed = renaming,
                     previewState = previewState,
                     canSplit = canSplit,
                     viewModel = viewModel,

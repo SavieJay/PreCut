@@ -1,5 +1,6 @@
 package com.savie.precut.ui.home
 
+import com.savie.precut.ui.components.projectDisplayName
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,8 +39,6 @@ import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.theme.Ink2
 import com.savie.precut.ui.theme.TextSecondary
 import java.io.File
-import java.text.DateFormat
-import java.util.Date
 
 /** A draft: cover with duration badge, name, last edited, and a menu (rename/duplicate/delete). */
 @Composable
@@ -97,6 +96,4 @@ fun ProjectCard(
 
 /** The project's name, or "Project <date>" for unnamed drafts. */
 @Composable
-fun displayName(project: ProjectSummary): String = project.name.ifBlank {
-    stringResource(R.string.home_untitled, DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(project.createdAt)))
-}
+fun displayName(project: ProjectSummary): String = projectDisplayName(project.name, project.createdAt)

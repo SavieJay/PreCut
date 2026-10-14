@@ -319,12 +319,12 @@ Split into three stops, each ending with a device check (see Decisions log).
 Apply the Claude Design system (`docs/design/DESIGN.md`, `docs/design/claude-design/`) to everything already built. Two stops, each with a device check:
 
 **8.5a — Theme, components, editor**
-- [ ] Tokens: new colours (AccentFill, Ink4, Outline, error/inverse/scrim, SnapGuide, BeatDot, lane colours, MusicBar `#137D6F`, Ink0 labels on light bars) in `ui/theme`; Material colour scheme mapped so filled buttons/switches use AccentFill and sliders/selection use Accent
-- [ ] Type: Roboto Flex (OFL, bundled variable font) with the design's scale, including `labelChip` 13 sp and `timecode` 13 sp tnum
-- [ ] Icons: Material Symbols Rounded as vector drawables for every tool, replacing the current mixed set
-- [ ] Shared components: tool button/row (72 dp, 64 × 64 tiles, right fade), tool panel shell (52 dp header, Done pill, 16 dp top radius), chips, pill and segmented tabs, sliders (value, bipolar with zero mark, bubble, double-tap reset, preset snapping), switch rows, tiles, badges, snackbar/menu/dialog/sheet styling
-- [ ] Editor: top bar (title with rename, E-10), playback row, timeline (32 dp/s default, pinned fade zones, playhead knob, bar glyphs and sticky labels, handle sizes, multi-select outline and check badges, BeatDot), tall panels collapse the timeline to the main strip, system Back = Done
-- [ ] Missing-media banner, Optimizing chip, full-screen preview, reorder tiles per E-05–E-09
+- [x] Tokens: new colours (AccentFill, Ink4, Outline, error/inverse/scrim, SnapGuide, BeatDot, lane colours, MusicBar `#137D6F`, Ink0 labels on light bars) in `ui/theme`; Material colour scheme mapped so filled buttons/switches use AccentFill and sliders/selection use Accent
+- [x] Type: Roboto Flex (OFL, bundled variable font) with the design's scale, including `labelChip` 13 sp and `timecode` 13 sp tnum
+- [x] Icons: Material Symbols Rounded as vector drawables for every tool, replacing the current mixed set
+- [x] Shared components: tool button/row (72 dp, 64 × 64 tiles, right fade), tool panel shell (52 dp header, Done pill, 16 dp top radius), chips, pill and segmented tabs, sliders (value, bipolar with zero mark, bubble, double-tap reset, preset snapping), switch rows, tiles, badges, snackbar/menu/dialog/sheet styling
+- [x] Editor: top bar (title with rename, E-10), playback row, timeline (32 dp/s default, pinned fade zones, playhead knob, bar glyphs and sticky labels, handle sizes, multi-select outline and check badges, BeatDot), tall panels collapse the timeline to the main strip, system Back = Done
+- [x] Missing-media banner, Optimizing chip, full-screen preview, reorder tiles per E-05–E-09
 
 **8.5b — Panels, Projects, Export, icon**
 - [ ] Every built panel per its frame: Trim, Speed, Volume, Fade, Filters (+ before/after peek), Adjust (icon chips, bipolar slider), HSL, Curves, Ratio, Cover, Text, colour picker, audio panels, voiceover, layers (T-01–T-11, X-01–X-03, U-01–U-07, L-01–L-02)
@@ -568,3 +568,4 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-10-13 — Look layers grade the composed frame** (composition-level `LookEffect`s gated by time, before the text/cover overlay so text stays ungraded). With nothing selected, Filters/Adjust add a 3 s layer at the playhead, like CapCut.
 - **2026-10-13 — Imported `.cube` LUTs** are validated (`CubeParser`: 3D only, 0..1 domain, ≤ 65³) and copied to `files/luts`; they show under "My LUTs" for every project. Grading sliders apply on release (preview rebuild), not live.
 - **2026-10-13 — Claude Design screens adopted as the design source** (all 118 frames, tokens, component sheets, redlines and interaction notes; a copy is in `docs/design/claude-design/`). Key changes: filled buttons use **AccentFill `#D92B50`** (white on `#FF4D6D` fails contrast); **Roboto Flex** bundled; **Material Symbols Rounded** icons; new lane colours (overlay, sticker, effect, transition, keyframe, beat); text bars get Ink0 labels; MusicBar darkened to `#137D6F`. A Phase 8.5 design refresh applies this to the built screens before 8B.
+- **2026-10-14 — Design refresh 8.5a:** Material `primary` stays the bright Accent (text buttons, sliders, progress); filled surfaces with white labels use `AccentFill` through PreCut components (`AccentPill`, `FilledButton`, `PreCutSwitch`). Roboto Flex is bundled as a 148 KB weight-axis cut (400–700) of the OFL variable font; Material Symbols Rounded are vector drawables (existing `ic_*` names kept). Clip trim handles now sit outside the clip as in the design, with the selected clip drawn on top of its neighbours. **Verify on device** that handles outside the clip still receive touches.

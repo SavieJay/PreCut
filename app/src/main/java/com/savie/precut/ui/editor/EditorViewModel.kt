@@ -489,6 +489,9 @@ class EditorViewModel @Inject constructor(
 
     fun onAspectRatioSelected(aspectRatio: AspectRatio) = applyEdit(EditAction.SetAspectRatio(aspectRatio))
 
+    /** Renames from the top bar (E-10); undoable like any edit. */
+    fun onRename(name: String) = applyEdit(EditAction.SetName(name))
+
     fun onClipVolumeChanged(volume: Float) {
         val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
         applyEdit(EditAction.SetClipVolume(clipId, volume))

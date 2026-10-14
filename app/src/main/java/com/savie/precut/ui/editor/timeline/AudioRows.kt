@@ -2,14 +2,18 @@ package com.savie.precut.ui.editor.timeline
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -27,13 +32,14 @@ import com.savie.precut.R
 import com.savie.precut.media.WaveformLoader
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.AudioKind
+import com.savie.precut.model.Project
 import com.savie.precut.model.audioLanes
 import com.savie.precut.model.sourceAt
 import com.savie.precut.model.timelineEndMs
-import com.savie.precut.model.Project
 import com.savie.precut.ui.theme.ExtractedAudioBar
 import com.savie.precut.ui.theme.Ink2
 import com.savie.precut.ui.theme.MusicBar
+import com.savie.precut.ui.theme.TextSecondary
 import com.savie.precut.ui.theme.VoiceoverBar
 import kotlin.math.roundToLong
 
@@ -67,16 +73,18 @@ fun AudioRows(
     Column {
         if (lanes.isEmpty()) {
             Spacer(Modifier.height(rowGap))
-            Box(
+            Row(
                 Modifier
                     .height(rowHeight)
                     .clip(RoundedCornerShape(4.dp))
                     .background(Ink2)
                     .clickable(onClick = actions::onAddAudio)
                     .padding(horizontal = 10.dp),
-                contentAlignment = Alignment.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text(stringResource(R.string.audio_add_audio), style = MaterialTheme.typography.labelSmall)
+                Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = TextSecondary, modifier = Modifier.size(14.dp))
+                Text(stringResource(R.string.audio_add_audio), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
             }
         }
         lanes.forEach { lane ->
@@ -133,8 +141,13 @@ private fun AudioBar(
             AudioKind.VOICEOVER -> VoiceoverBar
             AudioKind.EXTRACTED -> ExtractedAudioBar
         },
-        selected = selected || multiSelected,
-        showHandles = selected,
+        selected = selected,
+        multiSelected = multiSelected,
+        glyph = when (audio.kind) {
+            AudioKind.MUSIC -> R.drawable.ic_music
+            AudioKind.VOICEOVER -> R.drawable.ic_mic
+            AudioKind.EXTRACTED -> R.drawable.ic_extract
+        },
         pxPerMs = pxPerMs,
         rangeFor = ::range,
         onSelect = { actions.onSelectAudio(audio.id) },

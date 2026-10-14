@@ -56,6 +56,7 @@ fun LookLayerRows(
                             label = filterName ?: if (layer.look.filterId != null) filterLabel else adjustLabel,
                             color = LookLayerBar,
                             selected = layer.id == selectedLayerId,
+                            glyph = if (layer.look.filterId != null) R.drawable.ic_filter else R.drawable.ic_adjust,
                             pxPerMs = pxPerMs,
                             rangeFor = ::range,
                             onSelect = { actions.onSelectLayer(layer.id) },

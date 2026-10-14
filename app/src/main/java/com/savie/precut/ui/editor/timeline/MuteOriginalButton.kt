@@ -19,7 +19,7 @@ import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.Ink2
 import com.savie.precut.ui.theme.TextPrimary
 
-internal val MuteButtonSize = 36.dp
+internal val MuteButtonSize = 40.dp
 
 /** CapCut's "Mute clip audio" switch, pinned at the left of the clip strip. */
 @Composable
@@ -28,7 +28,7 @@ fun MuteOriginalButton(muted: Boolean, onClick: () -> Unit, modifier: Modifier =
         modifier
             .size(MuteButtonSize)
             .clip(CircleShape)
-            .background(Ink2.copy(alpha = 0.9f))
+            .background(Ink2)
             .clickable(role = Role.Switch, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

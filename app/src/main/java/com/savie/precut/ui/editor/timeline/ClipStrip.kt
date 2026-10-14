@@ -3,6 +3,8 @@ package com.savie.precut.ui.editor.timeline
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.model.Project
@@ -14,6 +16,7 @@ fun ClipStrip(
     project: Project,
     selectedClipId: String?,
     multiIds: Set<String>,
+    multiSelectMode: Boolean,
     missingIds: Set<String>,
     pxPerMs: Float,
     clipHeight: Dp,
@@ -29,6 +32,7 @@ fun ClipStrip(
             val clipStartPx = TimelineGeometry.msToPx(starts[index], pxPerMs)
             // key(): after a reorder each clip keeps its own state (drag offsets, tiles).
             key(clip.id) {
+                // The selected clip's handles reach over its neighbours, so it's drawn on top.
                 ClipView(
                     clip = clip,
                     clipStartMs = starts[index],
@@ -37,6 +41,7 @@ fun ClipStrip(
                     look = ClipLook(
                         selected = clip.id == selectedClipId,
                         multiSelected = clip.id in multiIds,
+                        multiSelectMode = multiSelectMode,
                         soundOff = clip.muted || clip.volume == 0f || project.originalAudioMuted,
                         missing = clip.id in missingIds,
                     ),
@@ -45,6 +50,7 @@ fun ClipStrip(
                     snapTargets = snapTargets,
                     snapThresholdMs = snapThresholdMs,
                     onTrim = { start, end -> onTrim(clip.id, start, end) },
+                    modifier = Modifier.zIndex(if (clip.id == selectedClipId) 1f else 0f),
                 )
             }
         }

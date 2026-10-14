@@ -61,6 +61,9 @@ sealed interface EditAction {
 
     data class SetAspectRatio(val aspectRatio: AspectRatio) : EditAction
 
+    /** Renames the project (trimmed; blank shows the date fallback). */
+    data class SetName(val name: String) : EditAction
+
     /** Adds a text overlay; its time range is clamped to the timeline. */
     data class AddText(val overlay: TextOverlay) : EditAction
 

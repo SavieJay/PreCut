@@ -1,17 +1,19 @@
 package com.savie.precut.ui.editor.timeline
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,9 @@ data class ReorderLayout(val tilePx: Float, val startPx: Float) {
 
 private val TileShape = RoundedCornerShape(6.dp)
 
+/** Reorder tiles are equal squares (E-05). */
+internal val ReorderTileSize = 48.dp
+
 @Composable
 fun ReorderOverlay(
     clips: List<Clip>,
@@ -57,17 +62,29 @@ fun ReorderOverlay(
 
     Box(modifier.background(Ink0.copy(alpha = 0.94f)), contentAlignment = Alignment.CenterStart) {
         order.forEachIndexed { slot, clipIndex ->
-            val isLifted = clipIndex == state.fromIndex
-            ReorderTile(
-                clip = clips[clipIndex],
-                loader = loader,
-                heightPx = tileHeightPx,
-                modifier = Modifier
-                    .offset { IntOffset((layout.startPx + slot * layout.tilePx).roundToInt(), 0) }
-                    .size(tileSize)
-                    .alpha(if (isLifted) 0.25f else 1f),
-            )
+            val slotX = layout.startPx + slot * layout.tilePx
+            if (clipIndex == state.fromIndex) {
+                // Where the lifted clip will land: a 3 dp white bar in its slot.
+                Box(
+                    Modifier
+                        .offset { IntOffset((slotX + layout.tilePx / 2).roundToInt() - 3.dp.roundToPx() / 2, 0) }
+                        .width(3.dp)
+                        .height(tileSize)
+                        .background(ClipSelection, RoundedCornerShape(2.dp)),
+                )
+            } else {
+                ReorderTile(
+                    clip = clips[clipIndex],
+                    loader = loader,
+                    heightPx = tileHeightPx,
+                    modifier = Modifier
+                        .offset { IntOffset(slotX.roundToInt(), 0) }
+                        .size(tileSize)
+                        .padding(2.dp),
+                )
+            }
         }
+        // The lifted tile follows the finger, scaled ×1.1 with a shadow.
         ReorderTile(
             clip = clips[state.fromIndex],
             loader = loader,
@@ -75,8 +92,8 @@ fun ReorderOverlay(
             modifier = Modifier
                 .offset { IntOffset((state.fingerX - layout.tilePx / 2).roundToInt(), 0) }
                 .size(tileSize)
-                .scale(1.15f)
-                .border(2.dp, ClipSelection, TileShape),
+                .scale(1.1f)
+                .shadow(8.dp, TileShape),
         )
     }
 }

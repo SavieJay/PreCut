@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.savie.precut.R
 import com.savie.precut.model.TextOverlay
+import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.TextLaneBar
 import kotlin.math.roundToLong
 
@@ -52,8 +53,10 @@ fun TextRows(
                             id = overlay.id,
                             label = overlay.text.ifBlank { placeholder },
                             color = TextLaneBar,
-                            selected = overlay.id == selectedTextId || overlay.id in multiIds,
-                            showHandles = overlay.id == selectedTextId,
+                            selected = overlay.id == selectedTextId,
+                            multiSelected = overlay.id in multiIds,
+                            glyph = R.drawable.ic_text,
+                            labelColor = Ink0,
                             pxPerMs = pxPerMs,
                             rangeFor = ::range,
                             onSelect = { onSelect(overlay.id) },

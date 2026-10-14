@@ -1,23 +1,30 @@
 package com.savie.precut.ui.editor.timeline
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.savie.precut.ui.theme.Playhead as PlayheadColor
 
-/** Fixed centre line marking the current time. */
+/** Fixed centre line marking the current time: 2 dp white with a dark halo, a 10 × 12 knob on top. */
 @Composable
 fun Playhead(modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(8.dp).background(PlayheadColor, CircleShape))
-        Box(Modifier.width(2.dp).fillMaxHeight().background(PlayheadColor))
+    Canvas(modifier.width(12.dp).fillMaxHeight()) {
+        val line = 2.dp.toPx()
+        val halo = 1.dp.toPx()
+        val cx = size.width / 2
+        drawRect(Halo, Offset(cx - line / 2 - halo, 0f), Size(line + 2 * halo, size.height))
+        drawRoundRect(PlayheadColor, Offset(cx - line / 2, 0f), Size(line, size.height), CornerRadius(line / 2))
+        val knobW = 10.dp.toPx()
+        val knobH = 12.dp.toPx()
+        drawRoundRect(PlayheadColor, Offset(cx - knobW / 2, 0f), Size(knobW, knobH), CornerRadius(3.dp.toPx()))
     }
 }
+
+private val Halo = Color(0x590E0E10)

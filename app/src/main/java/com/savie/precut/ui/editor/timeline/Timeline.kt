@@ -15,7 +15,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,6 +56,10 @@ fun Timeline(
     waveforms: WaveformLoader,
     actions: TimelineActions,
     modifier: Modifier = Modifier,
+    /** Only the ruler and main strip (a tall panel is open). */
+    compact: Boolean = false,
+    /** The pinned "+" add-media button, shown at the right of the main strip. */
+    addButton: @Composable () -> Unit = {},
 ) {
     BoxWithConstraints(modifier) {
         val density = LocalDensity.current
@@ -82,12 +85,12 @@ fun Timeline(
         val reorderState = remember { mutableStateOf<ReorderState?>(null) }
         val reorder = reorderState.value
         val reorderLayout = ReorderLayout.of(
-            widthPx, project.clips.size, maxTilePx = with(density) { ClipHeight.toPx() }, marginPx = with(density) { 16.dp.toPx() },
+            widthPx, project.clips.size, maxTilePx = with(density) { ReorderTileSize.toPx() }, marginPx = with(density) { 16.dp.toPx() },
         )
         val gestures = TimelineGestureHandler(
             clips = project.clips,
             hitTest = {
-                val stripTop = with(density) { (VerticalPadding + RulerHeight + LaneGap).toPx() }
+                val stripTop = with(density) { StripTop.toPx() }
                 TimelineHitTest(
                     project, selection.clipId, pxPerMs, scrollState.value, widthPx,
                     handleSlopPx = with(density) { 24.dp.toPx() },
@@ -120,19 +123,19 @@ fun Timeline(
                 Modifier
                     .fillMaxSize()
                     .horizontalScroll(scrollState, enabled = reorder == null)
-                    .padding(horizontal = halfWidth, vertical = VerticalPadding),
+                    .padding(start = halfWidth, end = halfWidth, top = TopPadding, bottom = BottomPadding),
             ) {
                 CompositionLocalProvider(LocalEdgeAutoScroller provides autoScroller) {
-                    TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, positionMs, actions)
+                    CompositionLocalProvider(LocalTimelineViewport provides TimelineViewport(scrollState, widthPx / 2)) {
+                        TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, positionMs, actions, compact)
+                    }
                 }
             }
-            MuteOriginalButton(
-                muted = project.originalAudioMuted,
-                onClick = actions::onToggleOriginalAudio,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 6.dp, top = VerticalPadding + RulerHeight + LaneGap + (ClipHeight - MuteButtonSize) / 2),
-            )
+            // Mute and "+" stay pinned at the strip's ends; clips slide under 64 dp fades.
+            PinnedZone(start = true, Modifier.align(Alignment.TopStart).padding(top = StripTop)) {
+                MuteOriginalButton(muted = project.originalAudioMuted, onClick = actions::onToggleOriginalAudio)
+            }
+            PinnedZone(start = false, Modifier.align(Alignment.TopEnd).padding(top = StripTop)) { addButton() }
             Playhead(Modifier.align(Alignment.TopCenter))
             reorder?.let { state ->
                 ReorderOverlay(project.clips, state, reorderLayout, loader, Modifier.matchParentSize())

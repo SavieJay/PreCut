@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
+import com.savie.precut.ui.theme.Ink1
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -29,6 +33,8 @@ import com.savie.precut.ui.theme.TextSecondary
 @Composable
 fun EditorContent(
     state: EditorUiState.Ready,
+    /** While the project is being renamed in the top bar, the editor dims (E-10). */
+    dimmed: Boolean,
     previewState: State<PreviewState>,
     canSplit: Boolean,
     viewModel: EditorViewModel,
@@ -36,8 +42,16 @@ fun EditorContent(
     onAddMedia: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // System Back acts as Done: it closes an open panel, multi-select or the Audio menu first.
+    BackHandler(enabled = state.activeTool != null || state.multiSelect != null || state.audioMenuOpen) {
+        when {
+            state.activeTool != null -> viewModel.onToolClosed()
+            state.multiSelect != null -> viewModel.selection.onDone()
+            else -> viewModel.onAudioMenu(false)
+        }
+    }
     // imePadding: the text tool's keyboard pushes the panel up and shrinks the preview.
-    Column(modifier.imePadding()) {
+    Column(modifier.imePadding().alpha(if (dimmed) 0.5f else 1f)) {
         if (state.missingIds.isNotEmpty()) {
             MissingMediaBanner(state.missingIds.size, onRemoveAll = viewModel::onRemoveMissing)
         }
@@ -48,7 +62,7 @@ fun EditorContent(
             }
         } else {
             Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black)) {
-                ProxyStatusChip(viewModel.proxyProgress, Modifier.align(Alignment.TopStart).padding(8.dp))
+                ProxyStatusChip(viewModel.proxyProgress, Modifier.align(Alignment.TopStart).padding(12.dp))
                 // While full screen shows the video, this surface steps aside: one player can
                 // only render to one surface, and re-attaching on return is reliable.
                 if (!state.fullScreen) PreviewSurface(player = viewModel.player, modifier = Modifier.fillMaxSize())
@@ -67,7 +81,10 @@ fun EditorContent(
             onAddMedia = onAddMedia,
             onCamera = viewModel::onCameraRequested,
         )
-        EditorBottomPanel(state, canSplit, { previewState.value.positionMs }, viewModel)
+        // The panel's surface continues behind the navigation bar.
+        Column(Modifier.background(Ink1).navigationBarsPadding()) {
+            EditorBottomPanel(state, canSplit, { previewState.value.positionMs }, viewModel)
+        }
     }
 }
 

@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.savie.precut.ui.theme.ClipSelection
 import com.savie.precut.ui.theme.Ink0
@@ -25,7 +27,15 @@ import com.savie.precut.ui.theme.Ink0
  * timeline's auto-scroll when held near the screen edge.
  */
 @Composable
-fun TrimHandle(onDrag: (Float) -> Unit, onDragEnd: () -> Unit, modifier: Modifier = Modifier) {
+fun TrimHandle(
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** 14 dp for clips, 10 dp for bars. */
+    width: Dp = 14.dp,
+    gripHeight: Dp = 20.dp,
+    shape: Shape = RoundedCornerShape(4.dp),
+) {
     val currentOnDrag by rememberUpdatedState(onDrag)
     val currentOnDragEnd by rememberUpdatedState(onDragEnd)
     val autoScroller = LocalEdgeAutoScroller.current
@@ -36,9 +46,9 @@ fun TrimHandle(onDrag: (Float) -> Unit, onDragEnd: () -> Unit, modifier: Modifie
     }
     Box(
         modifier
-            .width(14.dp)
+            .width(width)
             .fillMaxHeight()
-            .background(ClipSelection, RoundedCornerShape(4.dp))
+            .background(ClipSelection, shape)
             .onGloballyPositioned { coordinates[0] = it }
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(onDragEnd = ::end, onDragCancel = ::end) { change, dragAmount ->
@@ -54,7 +64,7 @@ fun TrimHandle(onDrag: (Float) -> Unit, onDragEnd: () -> Unit, modifier: Modifie
         Box(
             Modifier
                 .width(2.dp)
-                .height(16.dp)
+                .height(gripHeight)
                 .background(Ink0, RoundedCornerShape(1.dp)),
         )
     }

@@ -1,16 +1,22 @@
 package com.savie.precut.ui.editor.timeline
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,13 +33,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.savie.precut.R
 import com.savie.precut.ui.components.formatPreciseMs
+import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.ClipSelection
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -56,6 +66,12 @@ fun TimelineBar(
     color: Color,
     selected: Boolean,
     pxPerMs: Float,
+    /** The lane's 14 dp glyph, so lanes never rely on colour alone. */
+    @DrawableRes glyph: Int? = null,
+    /** White on the dark lane colours, Ink0 on the light ones (DESIGN.md "Timeline lanes"). */
+    labelColor: Color = Color.White,
+    /** Picked in multi-select: Accent outline and a check. */
+    multiSelected: Boolean = false,
     /** Start/end handles; off for multi-select highlights. */
     showHandles: Boolean = selected,
     /** Timeline start/end to draw for the given pending drag. */
@@ -109,7 +125,13 @@ fun TimelineBar(
             .fillMaxHeight()
             .clip(BarShape)
             .background(color)
-            .then(if (selected || moving) Modifier.border(1.5.dp, ClipSelection, BarShape) else Modifier)
+            .then(
+                when {
+                    multiSelected -> Modifier.border(2.dp, Accent, BarShape)
+                    selected || moving -> Modifier.border(2.dp, ClipSelection, BarShape)
+                    else -> Modifier
+                },
+            )
             .onGloballyPositioned { coordinates[0] = it }
             .pointerInput(id) { detectTapGestures(onTap = { currentOnSelect() }) }
             .pointerInput(id) {
@@ -135,18 +157,60 @@ fun TimelineBar(
             },
     ) {
         decoration(start, end)
-        Text(
+        BarLabel(
             text = if (moving) formatPreciseMs(start) else label,
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            glyph = glyph,
+            color = labelColor,
+            barStartPx = start * pxPerMs,
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(horizontal = if (showHandles) 16.dp else 6.dp),
+                .padding(horizontal = if (showHandles) 14.dp else 6.dp),
         )
-        if (showHandles) {
-            TrimHandle(onDrag = { startDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterStart))
-            TrimHandle(onDrag = { endDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterEnd))
+        if (multiSelected) {
+            Box(
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 4.dp)
+                    .size(16.dp)
+                    .background(Accent, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+            }
         }
+        if (showHandles) {
+            TrimHandle(
+                onDrag = { startDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterStart),
+                width = 10.dp, gripHeight = 10.dp, shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp),
+            )
+            TrimHandle(
+                onDrag = { endDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterEnd),
+                width = 10.dp, gripHeight = 10.dp, shape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Glyph and label, kept at the visible left edge while the bar's start is scrolled off-screen
+ * (read at placement, so scrolling never recomposes the bar).
+ */
+@Composable
+private fun BarLabel(text: String, @DrawableRes glyph: Int?, color: Color, barStartPx: Float, modifier: Modifier = Modifier) {
+    val viewport = LocalTimelineViewport.current
+    Row(
+        modifier.layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints.copy(minWidth = 0))
+            layout(placeable.width, placeable.height) {
+                val hidden = viewport?.let { (it.visibleLeftPx() - barStartPx).coerceAtLeast(0f) } ?: 0f
+                val room = (constraints.maxWidth - placeable.width).coerceAtLeast(0)
+                placeable.place(hidden.roundToInt().coerceIn(0, room), 0)
+            }
+        },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        glyph?.let { Icon(painterResource(it), contentDescription = null, tint = color, modifier = Modifier.size(14.dp)) }
+        Text(text, style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

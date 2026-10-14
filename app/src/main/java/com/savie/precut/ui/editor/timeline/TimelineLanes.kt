@@ -19,21 +19,30 @@ import com.savie.precut.model.timelineAt
 import com.savie.precut.model.timelineEndMs
 import com.savie.precut.model.totalDurationMs
 
-internal val VerticalPadding = 8.dp
+// DESIGN.md "Timeline": 2 top padding, 18 ruler, 6 around the 56 main strip, 22/24 rows 4 apart.
+internal val TopPadding = 2.dp
+internal val BottomPadding = 10.dp
 internal val RulerHeight = 18.dp
-internal val LaneGap = 6.dp
+internal val StripGap = 6.dp
+internal val RowGap = 4.dp
 internal val ClipHeight = 56.dp
+/** Distance from the timeline's top to the main strip. */
+internal val StripTop = TopPadding + RulerHeight + StripGap
 private val TextLaneHeight = 22.dp
 private val AudioRowHeight = 24.dp
 
-/** Height the timeline needs for its text and audio rows (at least one of each). */
-fun timelineHeight(project: Project): Dp {
+/**
+ * Height the timeline needs: its look, text and audio rows (at least one text and one audio row),
+ * or only the ruler and main strip when [compact] (a tall panel is open).
+ */
+fun timelineHeight(project: Project, compact: Boolean = false): Dp {
+    if (compact) return StripTop + ClipHeight + BottomPadding
     val layerRows = project.lookLayerLanes().size
     val textRows = project.textLanes().size.coerceAtLeast(1)
     val audioRows = project.audioLanes().size.coerceAtLeast(1)
-    return VerticalPadding * 2 + RulerHeight + LaneGap + ClipHeight + LaneGap +
-        (TextLaneHeight + LaneGap) * layerRows +
-        TextLaneHeight * textRows + LaneGap * (textRows - 1) + (LaneGap + AudioRowHeight) * audioRows
+    return StripTop + ClipHeight + StripGap +
+        (TextLaneHeight + RowGap) * layerRows +
+        TextLaneHeight * textRows + RowGap * (textRows - 1) + (RowGap + AudioRowHeight) * audioRows + BottomPadding
 }
 
 /** What's selected on the timeline; at most one of the single selections is set. */
@@ -46,6 +55,8 @@ data class TimelineSelection(
     val missingIds: Set<String> = emptySet(),
     /** Items picked in multi-select mode (highlighted, no handles). */
     val multiIds: Set<String> = emptySet(),
+    /** Multi-select is on: unpicked clips show an empty check circle. */
+    val multiSelectMode: Boolean = false,
 )
 
 /** Ruler, clip strip, text rows and audio rows, stacked; laid out in timeline px. */
@@ -59,6 +70,8 @@ fun TimelineLanes(
     waveforms: WaveformLoader,
     playheadMs: () -> Long,
     actions: TimelineActions,
+    /** Only the ruler and main strip (a tall panel is open). */
+    compact: Boolean = false,
 ) {
     val density = LocalDensity.current
     val totalMs = project.totalDurationMs()
@@ -78,11 +91,12 @@ fun TimelineLanes(
             .width(with(density) { contentWidthPx.toDp() })
             .height(RulerHeight),
     )
-    Spacer(Modifier.height(LaneGap))
+    Spacer(Modifier.height(StripGap))
     ClipStrip(
         project = project,
         selectedClipId = selection.clipId,
         multiIds = selection.multiIds,
+        multiSelectMode = selection.multiSelectMode,
         missingIds = selection.missingIds,
         pxPerMs = pxPerMs,
         clipHeight = ClipHeight,
@@ -92,14 +106,15 @@ fun TimelineLanes(
         snapThresholdMs = snapThresholdMs,
         onTrim = actions::onTrim,
     )
-    Spacer(Modifier.height(LaneGap))
+    if (compact) return
+    Spacer(Modifier.height(StripGap))
     LookLayerRows(
         lanes = project.lookLayerLanes(),
         selectedLayerId = selection.layerId,
         pxPerMs = pxPerMs,
         widthPx = contentWidthPx,
         rowHeight = TextLaneHeight,
-        rowGap = LaneGap,
+        rowGap = RowGap,
         snap = snap,
         actions = actions,
     )
@@ -110,7 +125,7 @@ fun TimelineLanes(
         pxPerMs = pxPerMs,
         widthPx = contentWidthPx,
         rowHeight = TextLaneHeight,
-        rowGap = LaneGap,
+        rowGap = RowGap,
         snap = snap,
         onSelect = actions::onSelectText,
         onTiming = actions::onTextTiming,
@@ -122,7 +137,7 @@ fun TimelineLanes(
         videoDurationMs = totalMs,
         pxPerMs = pxPerMs,
         rowHeight = AudioRowHeight,
-        rowGap = LaneGap,
+        rowGap = RowGap,
         waveforms = waveforms,
         snap = snap,
         actions = actions,

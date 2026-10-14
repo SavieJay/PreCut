@@ -2,12 +2,12 @@ package com.savie.precut.ui.editor.preview
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.savie.precut.model.OutputSize
+import com.savie.precut.ui.theme.SnapGuide
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min
@@ -51,17 +51,16 @@ fun Modifier.centredAt(center: Offset, maxWidthPx: Float, onSize: (Offset) -> Un
     }
 }
 
-private val GuideColor = Color(0xFF38D9A9)
 
 /** Centre guide lines across the frame for the snaps that are active. */
 fun DrawScope.drawGuides(frame: FrameRect, snaps: TextTransform.Snaps) {
     val stroke = 1.dp.toPx()
     if (snaps.centreX) {
         val x = frame.left + frame.width / 2
-        drawLine(GuideColor, Offset(x, frame.top), Offset(x, frame.top + frame.height), stroke)
+        drawLine(SnapGuide, Offset(x, frame.top), Offset(x, frame.top + frame.height), stroke)
     }
     if (snaps.centreY) {
         val y = frame.top + frame.height / 2
-        drawLine(GuideColor, Offset(frame.left, y), Offset(frame.left + frame.width, y), stroke)
+        drawLine(SnapGuide, Offset(frame.left, y), Offset(frame.left + frame.width, y), stroke)
     }
 }

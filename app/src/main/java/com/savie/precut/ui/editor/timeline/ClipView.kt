@@ -3,11 +3,18 @@ package com.savie.precut.ui.editor.timeline
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,15 +30,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.savie.precut.R
 import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.model.Clip
 import com.savie.precut.model.timelineDurationMs
+import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.ClipBackground
 import com.savie.precut.ui.theme.ClipSelection
+import com.savie.precut.ui.theme.ErrorRed
+import com.savie.precut.ui.theme.Ink0
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
@@ -41,8 +53,10 @@ private val ClipShape = RoundedCornerShape(6.dp)
 data class ClipLook(
     /** Single selection: border, trim handles and duration badge. */
     val selected: Boolean,
-    /** Picked in multi-select: border only. */
+    /** Picked in multi-select: Accent outline and check badge. */
     val multiSelected: Boolean,
+    /** Multi-select is on: unpicked clips show an empty check circle. */
+    val multiSelectMode: Boolean = false,
     /** Shows the muted badge (clip muted, at 0%, or all original audio muted). */
     val soundOff: Boolean,
     /** The media can't be opened: tinted red with a warning mark. */
@@ -116,30 +130,65 @@ fun ClipView(
                     )
                 }
             }
-            if (look.missing) {
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.55f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("!", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                }
-            }
+            if (look.missing) MissingMark()
             ClipBadges(
                 speed = clip.speed,
                 durationMs = if (look.selected) shown.timelineDurationMs() else null,
                 soundOff = look.soundOff,
-                modifier = Modifier.align(Alignment.TopStart),
+                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
             )
-            if (look.selected || look.multiSelected) {
-                Box(Modifier.matchParentSize().border(2.dp, ClipSelection, ClipShape))
-            }
-            if (look.selected) {
-                TrimHandle(onDrag = { startDragPx += it }, onDragEnd = ::commitTrim, modifier = Modifier.align(Alignment.CenterStart))
-                TrimHandle(onDrag = { endDragPx += it }, onDragEnd = ::commitTrim, modifier = Modifier.align(Alignment.CenterEnd))
-            }
+            if (look.multiSelected) Box(Modifier.matchParentSize().border(2.dp, Accent, ClipShape))
+            if (look.multiSelectMode) CheckBadge(look.multiSelected, Modifier.align(Alignment.TopEnd).padding(4.dp))
         }
+        if (look.selected) {
+            // A 2 dp ring 2 dp outside the clip, and 14 × 60 handles outside its ends (E-04).
+            val ring = with(density) { 2.dp.roundToPx() }
+            val handle = with(density) { 14.dp.roundToPx() }
+            Box(
+                Modifier
+                    .offset { IntOffset(leftShiftPx.roundToInt() - ring, -ring) }
+                    .requiredSize(with(density) { widthPx.toDp() } + 4.dp, height + 4.dp)
+                    .border(2.dp, ClipSelection, RoundedCornerShape(7.dp)),
+            )
+            TrimHandle(
+                onDrag = { startDragPx += it }, onDragEnd = ::commitTrim,
+                modifier = Modifier
+                    .offset { IntOffset(leftShiftPx.roundToInt() - handle, -ring) }
+                    .requiredHeight(height + 4.dp),
+                shape = RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp),
+            )
+            TrimHandle(
+                onDrag = { endDragPx += it }, onDragEnd = ::commitTrim,
+                modifier = Modifier
+                    .offset { IntOffset((leftShiftPx + widthPx).roundToInt(), -ring) }
+                    .requiredHeight(height + 4.dp),
+                shape = RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp),
+            )
+        }
+    }
+}
+
+/** Missing media: the clip tinted ErrorRed with a round "!" (E-06). */
+@Composable
+private fun BoxScope.MissingMark() {
+    Box(Modifier.matchParentSize().background(ErrorRed.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(22.dp).background(ErrorRed, CircleShape), contentAlignment = Alignment.Center) {
+            Text("!", style = MaterialTheme.typography.titleSmall, color = Ink0)
+        }
+    }
+}
+
+/** Multi-select check: an Accent disc with a check when picked, an empty white ring otherwise (E-07). */
+@Composable
+private fun CheckBadge(checked: Boolean, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .size(18.dp)
+            .background(if (checked) Accent else Ink0.copy(alpha = 0.6f), CircleShape)
+            .then(if (checked) Modifier else Modifier.border(1.5.dp, Color.White, CircleShape)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (checked) Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
     }
 }
 
