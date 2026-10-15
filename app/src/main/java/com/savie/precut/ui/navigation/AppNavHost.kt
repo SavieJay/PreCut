@@ -28,7 +28,10 @@ fun AppNavHost(shareInbox: ShareInbox) {
             )
         }
         composable<ExportRoute> {
-            ExportScreen(onClose = { navController.popBackStack() })
+            ExportScreen(
+                onClose = { navController.popBackStack() },
+                onHome = { navController.popBackStack(HomeRoute, inclusive = false) },
+            )
         }
     }
 }

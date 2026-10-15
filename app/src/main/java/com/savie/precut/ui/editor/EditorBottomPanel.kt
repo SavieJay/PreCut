@@ -13,7 +13,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.edit.MIN_CLIP_DURATION_MS
+import com.savie.precut.model.clipById
+import com.savie.precut.model.coverSource
+import com.savie.precut.model.overlayById
 import com.savie.precut.model.frameRatio
+import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.ui.editor.tools.AudioMenuBar
 import com.savie.precut.ui.editor.tools.ClipVolumeTool
@@ -36,7 +40,7 @@ import com.savie.precut.ui.editor.tools.VolumeSlider
 fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs: () -> Long, viewModel: EditorViewModel) {
     val context = LocalContext.current
     val recording by viewModel.audio.recording.collectAsStateWithLifecycle()
-    val clip = state.project.clips.firstOrNull { it.id == state.selectedClipId }
+    val clip = state.project.clipById(state.selectedClipId)
     val text = state.project.textOverlays.firstOrNull { it.id == state.selectedTextId }
     val audio = state.project.audioClips.firstOrNull { it.id == state.selectedAudioId }
     val close = viewModel::onToolClosed
@@ -62,13 +66,19 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         return
     }
     when {
+        state.activeTool == EditorTool.TRANSITION && state.selectedTransitionId != null ->
+            TransitionPanel(state, state.selectedTransitionId, viewModel)
+        state.activeTool == EditorTool.ANIMATION && clip != null -> AnimationPanel(clip, viewModel)
         state.activeTool == EditorTool.TRIM && clip != null ->
-            TrimTool(clip, onTrim = { start, end -> viewModel.onTrim(clip.id, start, end) }, onDone = close)
+            TrimTool(clip, viewModel.thumbnails, onTrim = { start, end -> viewModel.onTrim(clip.id, start, end) }, onDone = close)
         state.activeTool == EditorTool.SPEED && clip != null ->
             SpeedTool(
                 clip.speed, onSpeedChanged = viewModel::onSpeedChanged, onDone = close,
                 sourceLengthMs = clip.trimEndMs - clip.trimStartMs,
                 keepPitch = clip.keepPitch, onKeepPitchChanged = viewModel::onKeepPitchChanged,
+                showCurveTab = true,
+                curve = clip.speedCurve,
+                onCurve = viewModel::onSpeedCurveChanged,
             )
         state.activeTool in LOOK_TOOLS && clip != null && state.activeTool != null ->
             LookPanels(state, clip.look, state.activeTool, viewModel)
@@ -76,6 +86,8 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
             clip, viewModel::onClipVolumeChanged, viewModel::onClipMutedChanged, onDone = close,
             onApplyAll = viewModel::onVolumeApplyAll,
         )
+        state.activeTool in EditorFrame.FRAME_TOOLS && clip != null && state.activeTool != null ->
+            FramePanels(clip, state.activeTool, viewModel)
         state.activeTool == EditorTool.FADE && clip != null ->
             FadeTool(clip.fadeInMs, clip.fadeOutMs, clip.timelineDurationMs(), viewModel::onClipFadesChanged, onDone = close)
         state.activeTool == EditorTool.TEXT && text != null ->
@@ -94,6 +106,8 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
             cover = state.project.cover,
             inExport = state.project.coverInExport,
             playheadMs = positionMs(),
+            coverKey = state.project.coverSource()?.let { ThumbnailKey(it.uri, it.type, it.sourceMs, 256, it.rotationDegrees, exact = true) },
+            loader = viewModel.thumbnails,
             actions = rememberCoverActions(viewModel),
             onDone = close,
         )
@@ -114,6 +128,7 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
             onExtract = viewModel.audio::onExtract,
             onRecord = { viewModel.onToolSelected(EditorTool.VOICEOVER) },
         )
+        state.project.overlayById(state.selectedClipId) != null -> OverlayToolbarFor(viewModel)
         else -> MainToolbar(state, canSplit, viewModel)
     }
 }

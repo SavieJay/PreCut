@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.savie.precut.model.clipById
 import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.model.Project
 import com.savie.precut.model.clipAt
@@ -40,14 +41,15 @@ fun LookPanels(state: EditorUiState.Ready, look: ClipLook, tool: EditorTool, vie
                         override fun onFilter(filterId: String?) = controller.onFilter(filterId)
                         override fun onIntensity(intensity: Float) = controller.onIntensity(intensity)
                         override fun onImportLut() = viewModel.onPickLut()
+                        override fun onPeek() = controller.onPeek()
                     }
                 },
                 onDone = close,
                 onApplyAll = if (forClip) ({ controller.onApplyAll(filterOnly = true) }) else null,
             )
         }
-        EditorTool.HSL -> HslPanel(look.hsl, controller::onHsl, onDone = close)
-        EditorTool.CURVES -> CurvesPanel(look.curves, controller::onCurve, onDone = close)
+        EditorTool.HSL -> HslPanel(look.hsl, controller::onHsl, onBack = { viewModel.onToolSelected(EditorTool.ADJUST) }, onDone = close)
+        EditorTool.CURVES -> CurvesPanel(look.curves, controller::onCurve, onBack = { viewModel.onToolSelected(EditorTool.ADJUST) }, onDone = close)
         else -> AdjustTool(
             look = look,
             actions = remember(viewModel) {
@@ -72,7 +74,7 @@ private fun previewFrameKey(state: EditorUiState.Ready): ThumbnailKey? {
         val position = project.clipAt(layer.startMs) ?: return null
         project.clips[position.index].let { it to it.timelineOffsetToSourceMs(position.offsetMs) }
     } else {
-        val clip = project.clips.firstOrNull { it.id == state.selectedClipId } ?: return null
+        val clip = project.clipById(state.selectedClipId) ?: return null
         clip to clip.trimStartMs
     }
     return ThumbnailKey(clip.uri, clip.type, sourceMs, TILE_THUMBNAIL_PX, clip.sourceRotationDegrees)

@@ -8,9 +8,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import com.savie.precut.ui.components.PreCutChip
+import com.savie.precut.ui.theme.OnAccentContainer
+import com.savie.precut.ui.theme.TextPrimary
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,11 +33,11 @@ fun RatioTool(
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AspectRatio.entries.forEach { ratio ->
                 val shape = if (ratio == AspectRatio.ORIGINAL) originalRatio else ratio.widthRatio to ratio.heightRatio
-                FilterChip(
+                PreCutChip(
+                    label = ratio.label(),
                     selected = ratio == selected,
                     onClick = { onSelected(ratio) },
-                    label = { Text(ratio.label()) },
-                    leadingIcon = { RatioGlyph(shape.first, shape.second) },
+                    leading = { RatioGlyph(shape.first, shape.second, if (ratio == selected) OnAccentContainer else TextPrimary) },
                 )
             }
         }
@@ -53,12 +54,12 @@ private fun AspectRatio.label(): String = when (this) {
 }
 
 @Composable
-private fun RatioGlyph(width: Int, height: Int) {
+internal fun RatioGlyph(width: Int, height: Int, color: Color) {
     val longSide = 16f
     val scale = longSide / maxOf(width, height, 1)
     Box(
         Modifier
             .size((width * scale).dp, (height * scale).dp)
-            .border(1.5.dp, LocalContentColor.current, RoundedCornerShape(2.dp)),
+            .border(1.5.dp, color, RoundedCornerShape(2.dp)),
     )
 }

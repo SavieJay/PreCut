@@ -9,6 +9,7 @@ import com.savie.precut.model.look.CurvePoint
 import com.savie.precut.model.look.HslBand
 import com.savie.precut.model.look.HslColor
 import com.savie.precut.model.look.LookLayer
+import com.savie.precut.model.clipById
 import com.savie.precut.model.edit.BatchEdits
 import com.savie.precut.model.edit.EditAction
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,7 @@ class EditorLook(private val host: EditorHost, private val luts: LutCache) {
 
     /** The look being edited, if any. */
     fun current(ready: EditorUiState.Ready): ClipLook? =
-        ready.selectedLayer()?.look ?: ready.project.clips.firstOrNull { it.id == ready.selectedClipId }?.look
+        ready.selectedLayer()?.look ?: ready.project.clipById(ready.selectedClipId)?.look
 
     /** Opens a look tool (FILTER, ADJUST, HSL, CURVES) on the layer or clip, or adds a layer. */
     fun open(tool: EditorTool) {
@@ -119,13 +120,20 @@ class EditorLook(private val host: EditorHost, private val luts: LutCache) {
         host.update { it.copy(selectedLayerId = null, activeTool = null) }
     }
 
+    /** Before/after peek: toggles showing the original in the preview (tap the selected filter again). */
+    fun onPeek() {
+        host.update { it.copy(peekOriginal = !it.peekOriginal) }
+        host.refreshPreview()
+    }
+
     private fun change(transform: (ClipLook) -> ClipLook) {
+        if (host.ready?.peekOriginal == true) host.update { it.copy(peekOriginal = false) }
         val ready = host.ready ?: return
         val layer = ready.selectedLayer()
         when {
             layer != null -> host.applyEdit(EditAction.UpdateLookLayer(layer.copy(look = transform(layer.look))))
             ready.selectedClipId != null -> {
-                val clip = ready.project.clips.firstOrNull { it.id == ready.selectedClipId } ?: return
+                val clip = ready.project.clipById(ready.selectedClipId) ?: return
                 host.applyEdit(EditAction.SetClipLook(clip.id, transform(clip.look)))
             }
         }

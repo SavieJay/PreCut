@@ -11,6 +11,11 @@ import com.savie.precut.media.CaptureStore
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.MediaProbe
 import com.savie.precut.media.PreviewController
+import com.savie.precut.media.FreezeFrames
+import com.savie.precut.media.reverse.ClipReverser
+import com.savie.precut.model.speed.SpeedCurve
+import com.savie.precut.model.clipById
+import com.savie.precut.media.frame.LiveFrames
 import com.savie.precut.media.ProxyManager
 import com.savie.precut.media.look.LookThumbnailer
 import com.savie.precut.media.look.LutCache
@@ -28,6 +33,7 @@ import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.insertIndexAt
 import com.savie.precut.model.withMediaSubstitutes
 import com.savie.precut.model.edit.BatchEdits
+import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.edit.EditAction
 import com.savie.precut.model.edit.EditReducer
 import com.savie.precut.model.totalDurationMs
@@ -60,7 +66,7 @@ import javax.inject.Inject
  * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
  * clip when there is one, otherwise on a video clip.
  */
-enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER }
+enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -83,6 +89,14 @@ sealed interface EditorUiState {
         /** Ids picked in multi-select mode; null when the mode is off. */
         val multiSelect: Set<String>? = null,
         val fullScreen: Boolean = false,
+        /** Filters' before/after peek: the preview shows the edited clip or layer ungraded (not saved). */
+        val peekOriginal: Boolean = false,
+        /** Crop mode (T-12b) is open on this working copy. */
+        val cropDraft: CropDraft? = null,
+        /** The junction marker whose transition is being edited: the id of the clip before it. */
+        val selectedTransitionId: String? = null,
+        /** A reversed copy is being made (T-19). */
+        val reversing: ReverseProgress? = null,
     ) : EditorUiState
 }
 
@@ -106,6 +120,21 @@ sealed interface EditorEvent {
     /** The screen should open the file picker for a `.cube` LUT. */
     data object PickLut : EditorEvent
     data object LutImportFailed : EditorEvent
+    /** The screen should open the photo picker for a canvas picture. */
+    data object PickCanvasImage : EditorEvent
+    /** Shown with Undo. */
+    data object FrozeFrame : EditorEvent
+    data object FreezeFailed : EditorEvent
+    data object FreezeNotForPhotos : EditorEvent
+    /** Shown with Undo. */
+    data object ClipReversed : EditorEvent
+    data object ClipUnreversed : EditorEvent
+    data object ReverseFailed : EditorEvent
+    data object ReverseUnsupported : EditorEvent
+    data object ReverseNotForPhotos : EditorEvent
+    /** The screen should open the photo picker for an overlay. */
+    data object PickOverlay : EditorEvent
+    data object KeepOneMainClip : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -128,6 +157,9 @@ class EditorViewModel @Inject constructor(
     luts: LutCache,
     /** Filter picker tiles graded with the real LUTs. */
     val lookThumbnails: LookThumbnailer,
+    private val liveFrames: LiveFrames,
+    freezeFrames: FreezeFrames,
+    reverser: ClipReverser,
 ) : ViewModel() {
 
     val projectId = savedStateHandle.requireProjectId()
@@ -173,6 +205,10 @@ class EditorViewModel @Inject constructor(
         override fun newId(): String = this@EditorViewModel.newId()
         override fun targetClipId(): String? = this@EditorViewModel.targetClipId()
         override fun seekTo(positionMs: Long) = previewController.seekTo(positionMs)
+        override fun refreshPreview() {
+            val ready = _uiState.value as? EditorUiState.Ready ?: return
+            showInPreview(playable(ready.project, ready.missingIds), previewState.value.positionMs)
+        }
     }
 
     /** Audio lanes, extract, voiceover and audio-clip tools. */
@@ -189,6 +225,18 @@ class EditorViewModel @Inject constructor(
 
     /** Filters, Adjust, HSL, Curves and look layers. */
     val look = EditorLook(host, luts)
+
+    /** Edit (crop, mirror, rotate), Transform, Opacity and Canvas. */
+    val frame = EditorFrame(host, liveFrames, previewController, importer)
+
+    /** Transitions, Animation and Freeze frame. */
+    val motion = EditorMotion(host, previewController, freezeFrames)
+
+    /** Reverse. */
+    val reverse = EditorReverse(host, previewController, reverser, probe)
+
+    /** Overlays (picture-in-picture). */
+    val overlay = EditorOverlay(host, importer)
 
     /** The camera capture in progress, until the camera app returns. */
     private var pendingCapture: Capture? = null
@@ -282,6 +330,7 @@ class EditorViewModel @Inject constructor(
                 selectedLayerId = ready.selectedLayerId?.takeIf { id -> project.lookLayers.any { it.id == id } },
                 multiSelect = ready.multiSelect?.filter { id -> project.containsItem(id) }?.toSet(),
                 activeTool = null,
+                cropDraft = null,
             )
         }
         previewController.pause()
@@ -321,7 +370,7 @@ class EditorViewModel @Inject constructor(
     }
 
     private suspend fun findMissing(project: Project): Set<String> =
-        (project.clips.map { it.id to it.uri } + project.audioClips.map { it.id to it.uri })
+        (project.clips.map { it.id to it.uri } + project.overlays.map { it.id to it.clip.uri } + project.audioClips.map { it.id to it.uri })
             .filterNot { (_, uri) -> probe.isReadable(uri) }
             .map { it.first }
             .toSet()
@@ -331,23 +380,41 @@ class EditorViewModel @Inject constructor(
         val present = if (missing.isEmpty()) {
             project
         } else {
-            project.copy(clips = project.clips.filterNot { it.id in missing }, audioClips = project.audioClips.filterNot { it.id in missing })
+            project.copy(
+                clips = project.clips.filterNot { it.id in missing },
+                overlays = project.overlays.filterNot { it.id in missing },
+                audioClips = project.audioClips.filterNot { it.id in missing },
+            )
         }
-        return present.withMediaSubstitutes(readyProxies.value)
+        return present.withMediaSubstitutes(readyProxies.value).withPeek()
+    }
+
+    /** During a before/after peek, the edited clip's or layer's look is left out of the preview. */
+    private fun Project.withPeek(): Project {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return this
+        if (!ready.peekOriginal) return this
+        return copy(
+            clips = clips.map { if (it.id == ready.selectedClipId) it.copy(look = ClipLook()) else it },
+            lookLayers = lookLayers.filterNot { it.id == ready.selectedLayerId },
+        )
     }
 
     private fun showInPreview(playable: Project, positionMs: Long) {
+        val ready = _uiState.value as? EditorUiState.Ready
+        val liveClipId = ready?.selectedClipId?.takeIf { ready.activeTool in EditorFrame.LIVE_TOOLS }
         previewed = playable
-        previewController.setProject(playable, positionMs)
+        // The new composition has the committed frame; a gesture's live value is no longer needed.
+        liveFrames.clear()
+        previewController.setProject(playable, positionMs, liveClipId)
     }
 
     private fun proxiedUris(project: Project): List<String> =
-        project.clips.filter(ProxyRules::needsProxy).map { it.uri }.distinct()
+        (project.clips + project.overlays.map { it.clip }).filter(ProxyRules::needsProxy).map { it.uri }.distinct()
 
     /** Queues preview proxies for the project's videos (cheap when they already exist). */
     private fun requestProxies(project: Project) {
         val missing = (_uiState.value as? EditorUiState.Ready)?.missingIds.orEmpty()
-        proxies.request(project.clips.filter { ProxyRules.needsProxy(it) && it.id !in missing }.map { it.uri })
+        proxies.request((project.clips + project.overlays.map { it.clip }).filter { ProxyRules.needsProxy(it) && it.id !in missing }.map { it.uri })
     }
 
     // Selection and tools
@@ -359,7 +426,7 @@ class EditorViewModel @Inject constructor(
         }
         text.dropBlankSelected()
         updateReady {
-            val clip = it.project.clips.firstOrNull { c -> c.id == clipId }
+            val clip = it.project.clipById(clipId)
             // Keep a clip tool open when switching clips, unless it doesn't apply (speed on a photo).
             val keepTool = clip != null && it.activeTool in CLIP_TOOLS &&
                 !(it.activeTool == EditorTool.SPEED && clip.type == ClipType.IMAGE)
@@ -368,10 +435,13 @@ class EditorViewModel @Inject constructor(
                 selectedTextId = null,
                 selectedAudioId = null,
                 selectedLayerId = null,
+                selectedTransitionId = null,
                 audioMenuOpen = it.audioMenuOpen && clipId == null,
                 activeTool = if (keepTool) it.activeTool else null,
             )
         }
+        // A transform or opacity panel follows the newly selected clip, so mark that one live.
+        (_uiState.value as? EditorUiState.Ready)?.takeIf { it.activeTool in EditorFrame.LIVE_TOOLS }?.let { host.refreshPreview() }
     }
 
     fun onTextSelected(textId: String?) {
@@ -386,6 +456,7 @@ class EditorViewModel @Inject constructor(
                 selectedClipId = null,
                 selectedAudioId = null,
                 selectedLayerId = null,
+                selectedTransitionId = null,
                 audioMenuOpen = false,
                 activeTool = if (textId != null) EditorTool.TEXT else null,
             )
@@ -419,9 +490,11 @@ class EditorViewModel @Inject constructor(
             EditorTool.TEXT -> text.onAdd()
             EditorTool.FILTER, EditorTool.ADJUST, EditorTool.HSL, EditorTool.CURVES -> look.open(tool)
             EditorTool.VOICE, EditorTool.BEATS -> Unit // audio-only tools
+            EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.ANIMATION -> frame.open(tool)
+            EditorTool.TRANSITION -> Unit // opened from a junction marker
             EditorTool.TRIM, EditorTool.SPEED, EditorTool.VOLUME, EditorTool.FADE -> {
                 val clipId = targetClipId() ?: return
-                val clip = ready.project.clips.first { it.id == clipId }
+                val clip = ready.project.clipById(clipId) ?: return
                 if (tool == EditorTool.SPEED && clip.type == ClipType.IMAGE) {
                     viewModelScope.launch { _events.send(EditorEvent.SpeedNotForPhotos) }
                     return
@@ -435,10 +508,12 @@ class EditorViewModel @Inject constructor(
         text.dropBlankSelected()
         // Audio and layer selections stay so their toolbars come back, like CapCut. HSL and
         // Curves are opened from Adjust, so closing them returns there.
+        val peeking = (_uiState.value as? EditorUiState.Ready)?.peekOriginal == true
         updateReady {
             val back = if (it.activeTool == EditorTool.HSL || it.activeTool == EditorTool.CURVES) EditorTool.ADJUST else null
-            it.copy(activeTool = back, selectedTextId = null)
+            it.copy(activeTool = back, selectedTextId = null, selectedTransitionId = null, peekOriginal = false)
         }
+        if (peeking) host.refreshPreview()
     }
 
     fun onAudioMenu(open: Boolean) = updateReady {
@@ -465,14 +540,14 @@ class EditorViewModel @Inject constructor(
 
     fun onMove(from: Int, to: Int) = applyEdit(EditAction.MoveClip(from, to))
 
-    fun onRotate() {
-        val clipId = targetClipId() ?: return
-        applyEdit(EditAction.RotateClip(clipId))
-    }
-
     fun onSpeedChanged(speed: Float) {
         val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
         applyEdit(EditAction.SetSpeed(clipId, speed))
+    }
+
+    fun onSpeedCurveChanged(curve: SpeedCurve) {
+        val clipId = (_uiState.value as? EditorUiState.Ready)?.selectedClipId ?: return
+        applyEdit(EditAction.SetSpeedCurve(clipId, curve))
     }
 
     fun onKeepPitchChanged(keepPitch: Boolean) {
@@ -483,7 +558,7 @@ class EditorViewModel @Inject constructor(
     /** "Apply to all": the selected clip's volume on every clip. */
     fun onVolumeApplyAll() {
         val ready = _uiState.value as? EditorUiState.Ready ?: return
-        val volume = ready.project.clips.firstOrNull { it.id == ready.selectedClipId }?.volume ?: return
+        val volume = ready.project.clipById(ready.selectedClipId)?.volume ?: return
         applyEdit(BatchEdits.volume(ready.project, BatchEdits.allClipIds(ready.project), volume))
     }
 
@@ -562,7 +637,7 @@ class EditorViewModel @Inject constructor(
         _uiState.value = ready.copy(project = edited, canUndo = currentSession.history.canUndo, canRedo = false)
         previewController.pause()
         pendingPreview.value = edited
-        if (edited.clips !== ready.project.clips) requestProxies(edited)
+        if (edited.clips !== ready.project.clips || edited.overlays !== ready.project.overlays) requestProxies(edited)
     }
 
     private fun Project.containsItem(id: String) =
@@ -583,7 +658,8 @@ class EditorViewModel @Inject constructor(
         const val PREVIEW_REBUILD_DEBOUNCE_MS = 150L
         val CLIP_TOOLS = setOf(
             EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.ADJUST, EditorTool.HSL, EditorTool.CURVES,
-            EditorTool.VOLUME, EditorTool.FADE,
+            EditorTool.VOLUME, EditorTool.FADE, EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS,
+            EditorTool.ANIMATION,
         )
         val AUDIO_TOOLS = setOf(EditorTool.VOLUME, EditorTool.FADE, EditorTool.SPEED, EditorTool.VOICE, EditorTool.BEATS)
     }

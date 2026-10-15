@@ -13,7 +13,19 @@ import com.savie.precut.model.CoverSource
 import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.clipFromMedia
+import com.savie.precut.model.frame.CanvasKind
+import com.savie.precut.model.frame.ClipCanvas
+import com.savie.precut.model.frame.ClipTransform
+import com.savie.precut.model.frame.CropRect
+import com.savie.precut.model.frame.FrameFit
+import com.savie.precut.model.motion.AnimationType
+import com.savie.precut.model.motion.ClipAnimation
+import com.savie.precut.model.motion.ClipTransition
+import com.savie.precut.model.motion.TransitionType
+import com.savie.precut.model.OverlayClip
 import com.savie.precut.model.project
+import com.savie.precut.model.speed.SpeedCurve
+import com.savie.precut.model.speed.SpeedPreset
 import com.savie.precut.model.videoClip
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -197,5 +209,106 @@ class CompositionSpecTest {
         assertEquals(export.audioLanes, preview.audioLanes)
         assertEquals(export.texts.single().textSizePx * 720 / 1080, preview.texts.single().textSizePx, 0.01f)
         assertEquals(export.texts.single().copy(textSizePx = 0f), preview.texts.single().copy(textSizePx = 0f))
+    }
+
+    @Test
+    fun plainClip_usesTheCheapPath() {
+        val visual = compositionSpecOf(project(videoClip("a"))).items.single().visual
+        assertEquals(VisualSpec(), visual)
+    }
+
+    @Test
+    fun frameEdits_mapToVisualSpec() {
+        val crop = CropRect(0.1f, 0.2f, 0.9f, 0.8f)
+        val clip = videoClip("a").copy(
+            mirrored = true, rotationDegrees = 90, crop = crop, opacity = 0.5f,
+            transform = ClipTransform(scale = 2f), canvas = ClipCanvas(kind = CanvasKind.BLUR, blur = 3),
+        )
+        val visual = compositionSpecOf(project(clip)).items.single().visual
+        assertTrue(visual.mirrored)
+        assertEquals(90, visual.rotationDegrees)
+        assertEquals(crop, visual.crop)
+        assertEquals(FrameSpec(FrameFit.FIT, ClipTransform(scale = 2f), 0.5f, ClipCanvas(kind = CanvasKind.BLUR, blur = 3)), visual.frame)
+        // A crop of everything is no crop.
+        assertEquals(null, compositionSpecOf(project(videoClip("b").copy(crop = CropRect.FULL))).items.single().visual.crop)
+    }
+
+    @Test
+    fun liveClip_getsAFrameSpecKeyedByItsId_onlyInPreview() {
+        val p = project(videoClip("a"), videoClip("b").copy(fit = FrameFit.FILL))
+        val preview = compositionSpecOf(p, liveClipId = "a").items.map { it.visual.frame }
+        assertEquals(FrameSpec(liveKey = "a"), preview[0])
+        assertEquals(FrameSpec(fit = FrameFit.FILL), preview[1])
+        val export = compositionSpecOf(p).items.map { it.visual.frame }
+        assertEquals(listOf(null, FrameSpec(fit = FrameFit.FILL)), export)
+    }
+
+    @Test
+    fun transitions_mapToBothSidesOfTheJunction() {
+        val p = project(
+            videoClip("a", 10_000L).copy(transitionOut = ClipTransition(TransitionType.SPIN, 1_000L)),
+            videoClip("b", 600L),
+            videoClip("c", 10_000L).copy(transitionOut = ClipTransition(TransitionType.FLASH)),
+        )
+        val visuals = compositionSpecOf(p).items.map { it.visual }
+        assertEquals(TransitionSpec(ClipTime(0L, 10_000L), tail = TransitionType.SPIN, tailMs = 600L), visuals[0].transition)
+        assertEquals(TransitionSpec(ClipTime(10_000_000L, 600L), head = TransitionType.SPIN, headMs = 600L), visuals[1].transition)
+        // The last clip's transition has nothing to go to.
+        assertEquals(null, visuals[2].transition)
+    }
+
+    @Test
+    fun animations_needTheCanvasPath() {
+        val fade = ClipAnimation(AnimationType.FADE)
+        val p = project(videoClip("a"), videoClip("b").copy(animationIn = fade))
+        val frames = compositionSpecOf(p).items.map { it.visual.frame }
+        assertEquals(null, frames[0])
+        assertEquals(AnimationSpec(ClipTime(10_000_000L, 10_000L), animationIn = fade), frames[1]?.animation)
+    }
+
+    @Test
+    fun speedCurve_isPassedToTheVideoItem() {
+        val curve = SpeedCurve.preset(SpeedPreset.MONTAGE)
+        val item = compositionSpecOf(project(videoClip("a").copy(speedCurve = curve))).items.single() as ItemSpec.Video
+        assertEquals(curve, item.speedCurve)
+    }
+
+    @Test
+    fun overlays_mapToPaddedRows_onTransparentFrames() {
+        val p = project(videoClip("a", 10_000L)).copy(
+            overlays = listOf(
+                OverlayClip(videoClip("o", 3_000L), timelineStartMs = 2_000L),
+                OverlayClip(videoClip("late", 6_000L), timelineStartMs = 8_000L),
+                OverlayClip(videoClip("after"), timelineStartMs = 10_000L),
+            ),
+        )
+        val spec = compositionSpecOf(p, liveClipId = "o")
+        assertEquals(10_000_000L, spec.durationUs)
+        val row = spec.overlayLanes.single()
+        assertEquals(listOf(2_000_000L, 3_000_000L), row.items.map { it.gapBeforeUs })
+        assertEquals(listOf(2_000_000L until 5_000_000L, 8_000_000L until 10_000_000L), row.items.map { it.startUs until it.endUs })
+        assertEquals(0L, row.trailingGapUs)
+        val first = row.items[0].item.visual.frame
+        assertTrue(first?.transparent == true)
+        assertEquals("o", first?.liveKey)
+        // Cut at the video's end.
+        assertEquals(2_000L, (row.items[1].item as ItemSpec.Video).clipEndMs)
+    }
+
+    @Test
+    fun animatedOverlay_timesFromItsStart() {
+        val fade = ClipAnimation(AnimationType.FADE)
+        val p = project(videoClip("a")).copy(overlays = listOf(OverlayClip(videoClip("o", 3_000L).copy(animationIn = fade), 4_000L)))
+        val frame = compositionSpecOf(p).overlayLanes.single().items.single().item.visual.frame
+        assertEquals(AnimationSpec(ClipTime(4_000_000L, 3_000L), animationIn = fade), frame?.animation)
+    }
+
+    @Test
+    fun layerCompositor_hidesRowsOutsideTheirOverlays() {
+        val settings = LayerCompositorSettings(OutputSize(1080, 1920), listOf(emptyList(), listOf(2_000_000L until 5_000_000L), null))
+        assertEquals(false, settings.isVisible(0, 3_000_000L))
+        assertEquals(true, settings.isVisible(1, 3_000_000L))
+        assertEquals(false, settings.isVisible(1, 6_000_000L))
+        assertEquals(true, settings.isVisible(2, 6_000_000L))
     }
 }

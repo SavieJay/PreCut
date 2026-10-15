@@ -30,7 +30,7 @@ import com.savie.precut.model.Project
 import com.savie.precut.model.totalDurationMs
 
 /** Everything the timeline reports back; implemented by the editor screen with ViewModel calls. */
-interface TimelineActions : AudioRowActions, LookLayerActions {
+interface TimelineActions : AudioRowActions, LookLayerActions, OverlayRowActions {
     fun onScrubStart()
     fun onScrubEnd()
     fun onSeek(positionMs: Long)
@@ -40,6 +40,8 @@ interface TimelineActions : AudioRowActions, LookLayerActions {
     fun onSelectText(textId: String)
     fun onTextTiming(textId: String, startMs: Long, endMs: Long)
     fun onToggleOriginalAudio()
+    /** A junction marker: [clipId] is the clip before it. */
+    fun onSelectTransition(clipId: String)
 }
 
 /**
@@ -90,10 +92,11 @@ fun Timeline(
         val gestures = TimelineGestureHandler(
             clips = project.clips,
             hitTest = {
-                val stripTop = with(density) { StripTop.toPx() }
+                val stripTop = with(density) { stripTop(project, compact).toPx() }
                 TimelineHitTest(
                     project, selection.clipId, pxPerMs, scrollState.value, widthPx,
-                    handleSlopPx = with(density) { 24.dp.toPx() },
+                    // Covers each handle and its widened grab area, so a long press there never starts a reorder.
+                    handleSlopPx = with(density) { 32.dp.toPx() },
                     stripYPx = stripTop..(stripTop + with(density) { ClipHeight.toPx() }),
                 )
             },
@@ -132,10 +135,11 @@ fun Timeline(
                 }
             }
             // Mute and "+" stay pinned at the strip's ends; clips slide under 64 dp fades.
-            PinnedZone(start = true, Modifier.align(Alignment.TopStart).padding(top = StripTop)) {
+            val stripTop = stripTop(project, compact)
+            PinnedZone(start = true, Modifier.align(Alignment.TopStart).padding(top = stripTop)) {
                 MuteOriginalButton(muted = project.originalAudioMuted, onClick = actions::onToggleOriginalAudio)
             }
-            PinnedZone(start = false, Modifier.align(Alignment.TopEnd).padding(top = StripTop)) { addButton() }
+            PinnedZone(start = false, Modifier.align(Alignment.TopEnd).padding(top = stripTop)) { addButton() }
             Playhead(Modifier.align(Alignment.TopCenter))
             reorder?.let { state ->
                 ReorderOverlay(project.clips, state, reorderLayout, loader, Modifier.matchParentSize())

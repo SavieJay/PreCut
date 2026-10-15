@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PreCut logo for the app bar; tinted by the Icon that draws it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.12"
+        android:scaleY="1.12">
+        <!-- The P (frame) with the play-triangle cutout (video). -->
+        <path
+            android:fillType="evenOdd"
+            android:pathData="M33,22 H60 C73,22 84,32 84,45 C84,58 73,67 60,67 H54 V82 C54,85 52,87 49,87 H35 C32,87 30,85 30,82 V25 C30,23 31,22 33,22 Z M41,31 C39.5,30.5 38.6,31.6 39,33 L45,60 C45.4,61.6 46.8,62 48,61 L70,44 C71.3,43 71,41.5 69.4,41 Z"
+            android:fillColor="#FFFFFFFF" />
+        <!-- The film reel, its holes cut out. -->
+        <path
+            android:fillType="evenOdd"
+            android:pathData="M43,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z M46.2,42.5 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z M50.6,43.6 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z M47.6,48 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z"
+            android:fillColor="#FFFFFFFF" />
+        <!-- The scissors (the cut). -->
+        <path
+            android:pathData="M66,78 L57,70 M66,78 L56,75 M66,78 L69.6,77.4 M66,78 L67.4,81.6 M69.60000000000001,77 a2.8,2.8 0 1,0 5.6,0 a2.8,2.8 0 1,0 -5.6,0 Z M65.60000000000001,84.2 a2.8,2.8 0 1,0 5.6,0 a2.8,2.8 0 1,0 -5.6,0 Z"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="1.7" />
+    </group>
+</vector>

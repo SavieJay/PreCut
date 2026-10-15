@@ -12,25 +12,59 @@ import androidx.media3.transformer.Effects
 import com.savie.precut.model.DEFAULT_SHORT_SIDE_PX
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.Project
+import com.savie.precut.model.speed.SpeedSteps
 import javax.inject.Inject
 
 /** The single Project → Composition path shared by preview and export. */
 class CompositionBuilder @Inject constructor(private val effectsFactory: EffectsFactory) {
 
-    /** Returns null when the project has nothing to play. [shortSidePx] sets the output size. */
-    fun build(project: Project, shortSidePx: Int = DEFAULT_SHORT_SIDE_PX): Composition? {
-        val spec = compositionSpecOf(project, shortSidePx)
+    /**
+     * Returns null when the project has nothing to play. [shortSidePx] sets the output size;
+     * [liveClipId] is for the preview only (see [compositionSpecOf]).
+     */
+    fun build(project: Project, shortSidePx: Int = DEFAULT_SHORT_SIDE_PX, liveClipId: String? = null): Composition? {
+        val spec = compositionSpecOf(project, shortSidePx, liveClipId)
         if (spec.items.isEmpty()) return null
-        val sequence = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
+        val main = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
             .addItems(spec.items.map { toEditedMediaItem(it, spec.outputSize) })
             .build()
-        val builder = Composition.Builder(listOf(sequence) + spec.audioLanes.map(::audioSequence))
+        val layers = videoLayers(spec, main)
+        val builder = Composition.Builder(layers.sequences + spec.audioLanes.map(::audioSequence))
             // The look shader works in SDR; HDR sources are tone-mapped (HDR export: Phase 12).
             .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL)
+        layers.compositor?.let(builder::setVideoCompositorSettings)
         // Layers grade the composed frame; text and the cover go on top, ungraded.
         val videoEffects = effectsFactory.lookLayerEffects(spec.lookLayers) +
             listOfNotNull(effectsFactory.overlayEffect(spec.texts, spec.cover, spec.outputSize))
         if (videoEffects.isNotEmpty()) builder.setEffects(Effects(/* audioProcessors= */ emptyList(), videoEffects))
+        return builder.build()
+    }
+
+    private class VideoLayers(val sequences: List<EditedMediaItemSequence>, val compositor: LayerCompositorSettings?)
+
+    /**
+     * The video sequences, top first. Without overlays, just [main]. With them, Media3's compositor
+     * draws the first sequence on top and takes its frame timing from it, so the order is: a
+     * gap-only timing track (invisible, steady 30 fps, the video's full length), the overlay rows
+     * (top row first), then the main track.
+     */
+    private fun videoLayers(spec: CompositionSpec, main: EditedMediaItemSequence): VideoLayers {
+        if (spec.overlayLanes.isEmpty()) return VideoLayers(listOf(main), null)
+        val timing = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_VIDEO)).addGap(spec.durationUs).build()
+        val rows = spec.overlayLanes.asReversed()
+        val sequences = listOf(timing) + rows.map { overlaySequence(it, spec.outputSize) } + main
+        val visible = listOf(emptyList<LongRange>()) + rows.map { row -> row.items.map { it.startUs until it.endUs } } + listOf(null)
+        return VideoLayers(sequences, LayerCompositorSettings(spec.outputSize, visible))
+    }
+
+    /** One overlay row: a gap up to each overlay, the overlay, then a gap to the video's end. */
+    private fun overlaySequence(lane: OverlayLaneSpec, outputSize: OutputSize): EditedMediaItemSequence {
+        val builder = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
+        lane.items.forEach { overlay ->
+            if (overlay.gapBeforeUs > 0) builder.addGap(overlay.gapBeforeUs)
+            builder.addItem(toEditedMediaItem(overlay.item, outputSize))
+        }
+        if (lane.trailingGapUs > 0) builder.addGap(lane.trailingGapUs)
         return builder.build()
     }
 
@@ -77,7 +111,14 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
                     // CompositionPlayer requires the pre-clipping, pre-speed source duration.
                     .setDurationUs(item.sourceDurationMs * 1_000)
                     .setEffects(effects)
-                    .apply { if (item.speed != 1f) applySpeed(item.speed, keepPitch = item.keepPitch) }
+                    .apply {
+                        val curve = item.speedCurve
+                        if (curve != null) {
+                            applyCurve(SpeedSteps.of(curve, (item.clipEndMs - item.clipStartMs) * 1_000), item.keepPitch)
+                        } else if (item.speed != 1f) {
+                            applySpeed(item.speed, keepPitch = item.keepPitch)
+                        }
+                    }
                     .build()
             }
             is ItemSpec.Image -> {
@@ -102,6 +143,13 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
     private fun EditedMediaItem.Builder.applySpeed(speed: Float, capFrameRate: Boolean = true, keepPitch: Boolean = true) {
         setSpeed(SpeedParameters(ConstantSpeedProvider(speed), /* shouldMaintainPitch= */ keepPitch))
         if (capFrameRate && speed > 1f) setFrameRate(MAX_FRAME_RATE)
+    }
+
+    /** A speed curve's steps, with the same frame-rate cap as a sped-up clip where it goes above 1x. */
+    @OptIn(ExperimentalApi::class) // SpeedParameters (pitch control) is experimental in Media3 1.11.
+    private fun EditedMediaItem.Builder.applyCurve(steps: SpeedSteps, keepPitch: Boolean) {
+        setSpeed(SpeedParameters(CurveSpeedProvider(steps), /* shouldMaintainPitch= */ keepPitch))
+        if (steps.maxSpeed() > 1f) setFrameRate(MAX_FRAME_RATE)
     }
 
     private companion object {

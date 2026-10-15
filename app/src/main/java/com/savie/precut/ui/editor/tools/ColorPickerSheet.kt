@@ -1,19 +1,24 @@
 package com.savie.precut.ui.editor.tools
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -22,19 +27,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
+import com.savie.precut.ui.components.ColorDot
+import com.savie.precut.ui.components.DonePill
 import com.savie.precut.ui.components.formatHexColor
 import com.savie.precut.ui.components.parseHexColor
+import com.savie.precut.ui.theme.Accent
+import com.savie.precut.ui.theme.Ink1
+import com.savie.precut.ui.theme.Outline
+import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.tabular
 
-/** Full colour picker: saturation/brightness square, hue bar, hex field and the project's recent colours. */
+/**
+ * X-03: saturation/brightness square, hue bar, a preview swatch with a hex field, and the
+ * colours already used in the project. Done applies.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) -> Unit, onDismiss: () -> Unit) {
@@ -50,18 +69,26 @@ fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) 
         hue = hsv[0]; saturation = hsv[1]; value = hsv[2]
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Ink1,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+    ) {
+        Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.color_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                DonePill(onClick = { onPicked(color.toArgb()) })
+            }
             Canvas(
                 Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .pointerInput(Unit) {
-                        fun pick(at: Offset) {
+                        detectTapGestures { at ->
                             saturation = (at.x / size.width).coerceIn(0f, 1f)
                             value = 1f - (at.y / size.height).coerceIn(0f, 1f)
                         }
-                        detectTapGestures { pick(it) }
                     }
                     .pointerInput(Unit) {
                         detectDragGestures { change, _ ->
@@ -72,7 +99,7 @@ fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) 
             ) {
                 drawRect(Brush.horizontalGradient(listOf(Color.White, Color.hsv(hue, 1f, 1f))))
                 drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black)))
-                drawCircle(Color.White, 10.dp.toPx(), Offset(saturation * size.width, (1 - value) * size.height), style = Stroke(2.dp.toPx()))
+                drawThumb(Offset(saturation * size.width, (1 - value) * size.height), color)
             }
             Canvas(
                 Modifier
@@ -83,11 +110,18 @@ fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) 
                         detectDragGestures { change, _ -> hue = (change.position.x / size.width).coerceIn(0f, 1f) * 360f }
                     },
             ) {
-                drawRect(Brush.horizontalGradient((0..6).map { Color.hsv(it * 60f % 360f, 1f, 1f) }))
-                drawCircle(Color.White, size.height / 2, Offset(hue / 360f * size.width, size.height / 2), style = Stroke(2.dp.toPx()))
+                val barHeight = 16.dp.toPx()
+                val top = (size.height - barHeight) / 2
+                drawRoundRect(
+                    Brush.horizontalGradient((0..6).map { Color.hsv(it * 60f % 360f, 1f, 1f) }),
+                    Offset(0f, top),
+                    Size(size.width, barHeight),
+                    CornerRadius(barHeight / 2),
+                )
+                drawThumb(Offset(hue / 360f * size.width, size.height / 2), Color.hsv(hue, 1f, 1f))
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ColorSwatch(color, selected = true) {}
+                Box(Modifier.size(48.dp).background(color, RoundedCornerShape(12.dp)))
                 OutlinedTextField(
                     value = hex,
                     onValueChange = { text ->
@@ -96,16 +130,29 @@ fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) 
                     },
                     singleLine = true,
                     label = { Text(stringResource(R.string.color_hex)) },
+                    textStyle = MaterialTheme.typography.bodyLarge.tabular(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = Outline, cursorColor = Accent),
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = { onPicked(color.toArgb()) }) { Text(stringResource(R.string.action_done)) }
             }
             if (recentColors.isNotEmpty()) {
-                Text(stringResource(R.string.color_recent))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    recentColors.take(8).forEach { argb -> ColorSwatch(Color(argb), selected = false) { setArgb(argb) } }
+                Text(stringResource(R.string.color_recent), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    recentColors.take(8).forEach { argb ->
+                        ColorDot(Color(argb), selected = argb == color.toArgb(), description = formatHexColor(argb), onClick = { setArgb(argb) })
+                    }
                 }
             }
         }
     }
+}
+
+/** A 24 dp thumb: the colour inside a 3 dp white ring with a faint dark edge. */
+private fun DrawScope.drawThumb(center: Offset, fill: Color) {
+    val radius = 12.dp.toPx()
+    drawCircle(Color.Black.copy(alpha = 0.4f), radius + 1.dp.toPx(), center)
+    drawCircle(Color.White, radius, center)
+    drawCircle(fill, radius - 3.dp.toPx(), center)
+    drawCircle(Color.White, radius, center, style = Stroke(0.5.dp.toPx()))
 }

@@ -1,11 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Placeholder play-triangle mark; final icon comes in Phase 7. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- PreCut logo (Claude Design A-01): flat silver trace for the adaptive icon foreground, inside the 66 dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFB4A8"
-        android:pathData="M44,36 L74,54 L44,72 Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.82"
+        android:scaleY="0.82">
+        <!-- The P (frame) with the play-triangle cutout (video). -->
+        <path
+            android:fillType="evenOdd"
+            android:pathData="M33,22 H60 C73,22 84,32 84,45 C84,58 73,67 60,67 H54 V82 C54,85 52,87 49,87 H35 C32,87 30,85 30,82 V25 C30,23 31,22 33,22 Z M41,31 C39.5,30.5 38.6,31.6 39,33 L45,60 C45.4,61.6 46.8,62 48,61 L70,44 C71.3,43 71,41.5 69.4,41 Z" >
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:endX="84"
+                    android:endY="87"
+                    android:startX="30"
+                    android:startY="22"
+                    android:type="linear">
+                    <item android:color="#FFF4F4F6" android:offset="0" />
+                    <item android:color="#FFC9CACF" android:offset="0.55" />
+                    <item android:color="#FF9C9DA3" android:offset="1" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <!-- The film reel, its holes cut out. -->
+        <path
+            android:fillType="evenOdd"
+            android:pathData="M43,45 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z M46.2,42.5 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z M50.6,43.6 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z M47.6,48 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z" >
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:endX="84"
+                    android:endY="87"
+                    android:startX="30"
+                    android:startY="22"
+                    android:type="linear">
+                    <item android:color="#FFF4F4F6" android:offset="0" />
+                    <item android:color="#FFC9CACF" android:offset="0.55" />
+                    <item android:color="#FF9C9DA3" android:offset="1" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <!-- The scissors (the cut). -->
+        <path
+            android:pathData="M66,78 L57,70 M66,78 L56,75 M66,78 L69.6,77.4 M66,78 L67.4,81.6 M69.60000000000001,77 a2.8,2.8 0 1,0 5.6,0 a2.8,2.8 0 1,0 -5.6,0 Z M65.60000000000001,84.2 a2.8,2.8 0 1,0 5.6,0 a2.8,2.8 0 1,0 -5.6,0 Z"
+            android:strokeColor="#FFCFD0D4"
+            android:strokeLineCap="round"
+            android:strokeWidth="1.7" />
+    </group>
 </vector>

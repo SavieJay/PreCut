@@ -83,12 +83,12 @@ data class Adjustments(
     }
 }
 
-/** Each Adjust slider and its range, in CapCut's order. */
+/** Each Adjust slider and its range, in the design's order (T-07). */
 enum class Adjustment(val min: Float, val max: Float) {
     BRIGHTNESS(-100f, 100f),
     CONTRAST(-100f, 100f),
-    SATURATION(-100f, 100f),
     EXPOSURE(-100f, 100f),
+    SATURATION(-100f, 100f),
     SHARPEN(0f, 100f),
     HIGHLIGHTS(-100f, 100f),
     SHADOWS(-100f, 100f),

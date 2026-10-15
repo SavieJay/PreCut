@@ -21,8 +21,8 @@ interface UnusedMediaCleaner {
     suspend fun sweep()
 }
 
-/** App-private media folders: recorded voiceovers, camera captures and copies of shared files. */
-val APP_MEDIA_DIRS = listOf("voiceovers", "captures", "imports")
+/** App-private media folders: recorded voiceovers, camera captures, copies of picked or shared files, freeze frames, reversed clips. */
+val APP_MEDIA_DIRS = listOf("voiceovers", "captures", "imports", "freezes", "reversed")
 
 class AppMediaJanitor @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -42,9 +42,14 @@ class AppMediaJanitor @Inject constructor(
 
     companion object {
         /** Every media Uri a project points at. */
-        fun mediaUris(project: Project): List<String> =
-            project.clips.map { it.uri } + project.audioClips.map { it.uri } +
-                listOfNotNull((project.cover as? ProjectCover.Image)?.uri)
+        fun mediaUris(project: Project): List<String> {
+            val clips = project.clips + project.overlays.map { it.clip }
+            return clips.map { it.uri } + project.audioClips.map { it.uri } +
+                listOfNotNull((project.cover as? ProjectCover.Image)?.uri) +
+                clips.mapNotNull { it.canvas.imageUri } +
+                // A reversed clip's original is restored when it's reversed back.
+                clips.mapNotNull { it.reversedFrom?.uri }
+        }
 
         /** Files in [dirs] whose Uri (per [uriOf]) isn't in [referenced]. */
         fun unusedFiles(dirs: List<File>, referenced: Set<String>, uriOf: (File) -> String): List<File> =

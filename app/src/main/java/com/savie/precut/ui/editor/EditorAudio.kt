@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor
 
+import com.savie.precut.model.clipById
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.VoiceRecorder
@@ -94,7 +95,7 @@ class EditorAudio(
     /** Pulls the target video clip's sound onto an audio lane and mutes the clip. */
     fun onExtract() {
         val ready = host.ready ?: return
-        val clip = host.targetClipId()?.let { id -> ready.project.clips.first { it.id == id } }
+        val clip = ready.project.clipById(host.targetClipId())
         if (clip == null || clip.type != ClipType.VIDEO) {
             host.send(EditorEvent.NothingToExtract)
             return

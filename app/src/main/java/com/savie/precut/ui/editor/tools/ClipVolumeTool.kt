@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
+import com.savie.precut.ui.components.SwitchRow
 import com.savie.precut.model.Clip
 
 /** Volume of a clip's own sound, plus mute (which keeps the volume for unmuting). */
@@ -26,12 +27,7 @@ fun ClipVolumeTool(
     onApplyAll: (() -> Unit)? = null,
 ) {
     ToolPanel(stringResource(R.string.volume_title), onDone, modifier, actions = { onApplyAll?.let { ApplyToAllButton(it) } }) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            VolumeSlider(clip.volume, enabled = !clip.muted, onVolumeChanged = onVolumeChanged, modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(12.dp))
-            Text(stringResource(R.string.volume_mute), style = MaterialTheme.typography.labelMedium)
-            Spacer(Modifier.width(8.dp))
-            Switch(checked = clip.muted, onCheckedChange = onMutedChanged)
-        }
+        VolumeSlider(clip.volume, enabled = !clip.muted, onVolumeChanged = onVolumeChanged)
+        SwitchRow(stringResource(R.string.volume_mute), checked = clip.muted, onCheckedChange = onMutedChanged)
     }
 }

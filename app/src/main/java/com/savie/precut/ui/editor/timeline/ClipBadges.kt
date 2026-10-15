@@ -12,12 +12,16 @@ import com.savie.precut.ui.components.MediaBadge
 import com.savie.precut.ui.components.formatSeconds
 import com.savie.precut.ui.components.formatSpeed
 
-/** Badges at a clip's top-left: duration (when selected), speed (when not 1x), muted. */
+/** Badges at a clip's top-left: duration (when selected), speed (when not 1x) or a curve mark, muted. */
 @Composable
-fun ClipBadges(speed: Float, durationMs: Long?, soundOff: Boolean, modifier: Modifier = Modifier) {
+fun ClipBadges(speed: Float, durationMs: Long?, soundOff: Boolean, modifier: Modifier = Modifier, curved: Boolean = false) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
         durationMs?.let { MediaBadge(formatSeconds(it)) }
-        if (speed != 1f) MediaBadge(stringResource(R.string.speed_value, formatSpeed(speed)))
+        if (curved) {
+            MediaBadge(icon = R.drawable.ic_curve, contentDescription = stringResource(R.string.speed_curve))
+        } else if (speed != 1f) {
+            MediaBadge(stringResource(R.string.speed_value, formatSpeed(speed)))
+        }
         if (soundOff) MediaBadge(icon = R.drawable.ic_volume_off, contentDescription = stringResource(R.string.volume_muted))
     }
 }

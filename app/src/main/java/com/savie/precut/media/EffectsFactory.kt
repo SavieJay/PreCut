@@ -1,5 +1,6 @@
 package com.savie.precut.media
 
+import android.graphics.Bitmap
 import androidx.annotation.OptIn
 import androidx.media3.common.Effect
 import androidx.media3.common.audio.AudioProcessor
@@ -7,12 +8,20 @@ import androidx.media3.common.audio.DefaultGainProvider
 import androidx.media3.common.audio.GainProcessor
 import androidx.media3.common.audio.SonicAudioProcessor
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Crop
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
 import androidx.media3.effect.ScaleAndRotateTransformation
 import com.savie.precut.media.look.LookEffect
 import com.savie.precut.media.look.LutCache
+import com.savie.precut.media.frame.CanvasEffect
+import com.savie.precut.media.frame.CanvasPatterns
+import com.savie.precut.media.frame.LiveFrames
+import com.savie.precut.media.motion.TransitionEffect
+import com.savie.precut.model.ClipType
 import com.savie.precut.model.OutputSize
+import com.savie.precut.model.frame.ClipCanvas
+import com.savie.precut.model.frame.FrameGeometry
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
@@ -22,16 +31,47 @@ class EffectsFactory @Inject constructor(
     private val textRenderer: TextOverlayRenderer,
     private val thumbnails: ThumbnailLoader,
     private val luts: LutCache,
+    private val liveFrames: LiveFrames,
 ) {
 
-    /** Grading (at source resolution), then user rotation, then fit into the output frame. */
+    /**
+     * Grading (at source resolution), then mirror and user rotation, then crop, then placement in
+     * the output frame: plainly fitted on black, or over the clip's canvas.
+     */
     fun videoEffects(visual: VisualSpec, outputSize: OutputSize): List<Effect> = buildList {
         visual.look?.let { add(LookEffect(it, luts)) }
-        if (visual.rotationDegrees % 360 != 0) {
-            // Media3 rotates counter-clockwise for positive angles; the model is clockwise.
-            add(ScaleAndRotateTransformation.Builder().setRotationDegrees(-visual.rotationDegrees.toFloat()).build())
+        if (visual.mirrored || visual.rotationDegrees % 360 != 0) {
+            // Media3 scales before rotating, and rotates counter-clockwise for positive angles; the model is clockwise.
+            add(
+                ScaleAndRotateTransformation.Builder()
+                    .setScale(if (visual.mirrored) -1f else 1f, 1f)
+                    .setRotationDegrees(-visual.rotationDegrees.toFloat())
+                    .build(),
+            )
         }
-        add(Presentation.createForWidthAndHeight(outputSize.width, outputSize.height, Presentation.LAYOUT_SCALE_TO_FIT))
+        visual.crop?.let { crop ->
+            val (left, right, bottom, top) = FrameGeometry.cropNdc(crop).toList()
+            add(Crop(left, right, bottom, top))
+        }
+        val frame = visual.frame
+        if (frame == null) {
+            add(Presentation.createForWidthAndHeight(outputSize.width, outputSize.height, Presentation.LAYOUT_SCALE_TO_FIT))
+        } else {
+            add(CanvasEffect(frame, outputSize, liveFrames) { canvasPicture(frame.canvas, outputSize) })
+        }
+        // On the placed frame, so the canvas zooms, spins and fades with the clip.
+        visual.transition?.let { add(TransitionEffect(it)) }
+    }
+
+    /** The picture of an image canvas, sized to cover the frame; runs on the effects thread. */
+    private fun canvasPicture(canvas: ClipCanvas, outputSize: OutputSize): Bitmap? {
+        canvas.imageUri?.let { uri ->
+            return runBlocking {
+                val key = ThumbnailKey(uri, ClipType.IMAGE, 0L, maxOf(outputSize.width, outputSize.height), canvas.imageRotationDegrees, exact = true)
+                thumbnails.load(key, cache = false)
+            }
+        }
+        return canvas.pattern?.let { CanvasPatterns.draw(it, outputSize.width, outputSize.height) }
     }
 
     /**

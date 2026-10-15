@@ -30,7 +30,10 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.look.LookThumbnailer
+import androidx.compose.ui.text.style.TextAlign
 import com.savie.precut.ui.theme.ClipBackground
+import com.savie.precut.ui.theme.TextPrimary
+import com.savie.precut.ui.theme.TextSecondary
 
 private val TileShape = RoundedCornerShape(8.dp)
 private val TileSize = 60.dp
@@ -57,14 +60,14 @@ fun FilterTile(
 
 /** A tile with an icon instead of a picture (e.g. "Import .cube"). */
 @Composable
-fun IconTile(label: String, icon: Int, onClick: () -> Unit) {
-    TileFrame(label, selected = false, onClick) {
+fun IconTile(label: String, icon: Int, onClick: () -> Unit, selected: Boolean = false) {
+    TileFrame(label, selected, onClick) {
         Icon(painterResource(icon), contentDescription = null, modifier = Modifier.align(Alignment.Center))
     }
 }
 
 @Composable
-private fun TileFrame(label: String, selected: Boolean, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+internal fun TileFrame(label: String, selected: Boolean, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -82,8 +85,9 @@ private fun TileFrame(label: String, selected: Boolean, onClick: () -> Unit, con
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (selected) accent else MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
+            color = if (selected) TextPrimary else TextSecondary,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
     }

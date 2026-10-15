@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +36,7 @@ import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.AccentFill
 import com.savie.precut.ui.theme.AccentFillPressed
 import com.savie.precut.ui.theme.Ink3
+import com.savie.precut.ui.theme.Outline
 import com.savie.precut.ui.theme.OnAccent
 import com.savie.precut.ui.theme.TextDisabled
 import com.savie.precut.ui.theme.TextPrimary
@@ -88,6 +91,20 @@ fun TonalButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(containerColor = Ink3, contentColor = TextPrimary),
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        modifier = modifier.height(40.dp),
+    ) {
+        ButtonContent(text, icon, 18, large = false)
+    }
+}
+
+/** Outlined button: 40 dp, 1 dp Outline edge. */
+@Composable
+fun OutlinedPreCutButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, @DrawableRes icon: Int? = null) {
+    OutlinedButton(
+        onClick = onClick,
+        border = BorderStroke(1.dp, Outline),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
         contentPadding = PaddingValues(horizontal = 20.dp),
         modifier = modifier.height(40.dp),
     ) {

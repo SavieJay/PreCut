@@ -13,6 +13,8 @@ data class Project(
     val audioClips: List<AudioClip> = emptyList(),
     /** Time-ranged filter/adjust layers over everything (CapCut's filter/adjust tracks). */
     val lookLayers: List<LookLayer> = emptyList(),
+    /** Picture-in-picture clips above the main track (Phase 9). */
+    val overlays: List<OverlayClip> = emptyList(),
     /** CapCut's "Mute clip audio": silences every video clip's own sound. */
     val originalAudioMuted: Boolean = false,
     /** Chosen cover; null means the first frame. */

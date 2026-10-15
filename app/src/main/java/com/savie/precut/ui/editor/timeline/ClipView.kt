@@ -38,6 +38,7 @@ import com.savie.precut.R
 import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.model.Clip
+import com.savie.precut.model.averageSpeed
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.ClipBackground
@@ -102,7 +103,7 @@ fun ClipView(
     val shown = clip.copy(trimStartMs = trim.trimStartMs, trimEndMs = trim.trimEndMs)
     val widthPx = TimelineGeometry.msToPx(shown.timelineDurationMs(), pxPerMs)
     // The start handle moves the clip's left edge; its slot (and the following clips) stay put.
-    val leftShiftPx = TimelineGeometry.msToPx(((trim.trimStartMs - clip.trimStartMs) / clip.speed).roundToLong(), pxPerMs)
+    val leftShiftPx = TimelineGeometry.msToPx(((trim.trimStartMs - clip.trimStartMs) / clip.averageSpeed()).roundToLong(), pxPerMs)
     val slotWidthPx = (widthPx + leftShiftPx).coerceAtLeast(0f)
     val heightPx = with(density) { height.roundToPx() }
     val tileWidthPx = heightPx * TILE_ASPECT
@@ -133,6 +134,7 @@ fun ClipView(
             if (look.missing) MissingMark()
             ClipBadges(
                 speed = clip.speed,
+                curved = clip.speedCurve != null,
                 durationMs = if (look.selected) shown.timelineDurationMs() else null,
                 soundOff = look.soundOff,
                 modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
@@ -151,6 +153,7 @@ fun ClipView(
                     .border(2.dp, ClipSelection, RoundedCornerShape(7.dp)),
             )
             TrimHandle(
+                TrimSide.START,
                 onDrag = { startDragPx += it }, onDragEnd = ::commitTrim,
                 modifier = Modifier
                     .offset { IntOffset(leftShiftPx.roundToInt() - handle, -ring) }
@@ -158,6 +161,7 @@ fun ClipView(
                 shape = RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp),
             )
             TrimHandle(
+                TrimSide.END,
                 onDrag = { endDragPx += it }, onDragEnd = ::commitTrim,
                 modifier = Modifier
                     .offset { IntOffset((leftShiftPx + widthPx).roundToInt(), -ring) }

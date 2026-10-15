@@ -180,10 +180,12 @@ fun TimelineBar(
         }
         if (showHandles) {
             TrimHandle(
+                TrimSide.START,
                 onDrag = { startDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterStart),
                 width = 10.dp, gripHeight = 10.dp, shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp),
             )
             TrimHandle(
+                TrimSide.END,
                 onDrag = { endDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterEnd),
                 width = 10.dp, gripHeight = 10.dp, shape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp),
             )

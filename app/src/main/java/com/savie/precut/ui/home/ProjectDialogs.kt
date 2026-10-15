@@ -1,6 +1,9 @@
 package com.savie.precut.ui.home
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -10,7 +13,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.savie.precut.R
+import com.savie.precut.ui.theme.Accent
+import com.savie.precut.ui.theme.ErrorRed
+import com.savie.precut.ui.theme.Outline
 
 @Composable
 fun RenameDialog(initialName: String, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
@@ -18,7 +25,15 @@ fun RenameDialog(initialName: String, onConfirm: (String) -> Unit, onDismiss: ()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.action_rename)) },
-        text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                singleLine = true,
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = Outline, cursorColor = Accent),
+            )
+        },
         confirmButton = {
             TextButton(onClick = { onConfirm(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.action_done)) }
         },
@@ -32,7 +47,9 @@ fun DeleteDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.home_delete_title)) },
         text = { Text(stringResource(R.string.home_delete_message, name)) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_delete)) } },
+        confirmButton = {
+            TextButton(onClick = onConfirm, colors = ButtonDefaults.textButtonColors(contentColor = ErrorRed)) { Text(stringResource(R.string.action_delete)) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

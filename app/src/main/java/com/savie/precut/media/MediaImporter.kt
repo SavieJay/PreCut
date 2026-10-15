@@ -25,25 +25,37 @@ interface MediaImporter {
 class AndroidMediaImporter @Inject constructor(
     @ApplicationContext private val context: Context,
     private val probe: MediaProbe,
+    private val copies: SharedMediaStore,
 ) : MediaImporter {
 
     override suspend fun import(uris: List<String>): ImportResult {
         val imported = mutableListOf<ImportedMedia>()
         var failed = 0
         for (uri in uris) {
-            takePersistableReadPermission(uri)
-            when (val result = probe.probe(uri)) {
-                is ProbeResult.Success -> imported += ImportedMedia(uri, result.info)
-                ProbeResult.Unsupported, is ProbeResult.Failed -> failed++
-            }
+            val kept = keepReadable(uri)
+            val result = kept?.let { probe.probe(it) }
+            if (kept != null && result is ProbeResult.Success) imported += ImportedMedia(kept, result.info) else failed++
         }
         return ImportResult(imported, failed)
     }
 
     override suspend fun importAudio(uri: String): ImportedAudio? {
-        takePersistableReadPermission(uri)
-        val duration = probe.probeAudioDurationMs(uri) ?: return null
-        return ImportedAudio(uri, duration, displayName(uri))
+        val kept = keepReadable(uri) ?: return null
+        val duration = probe.probeAudioDurationMs(kept) ?: return null
+        // The name comes from the original: a private copy is named by a random id.
+        return ImportedAudio(kept, duration, displayName(uri))
+    }
+
+    /**
+     * A Uri the app can still read after it's closed: the picked one when its read grant can be
+     * made persistent, otherwise a private copy (some pickers only grant access until the app
+     * process ends, after which the clip would show as missing). Null when it can't be read.
+     */
+    private suspend fun keepReadable(uri: String): String? {
+        // App-owned files (camera captures, copies of shared media) need no grant.
+        if (Uri.parse(uri).scheme != "content") return uri
+        if (takePersistableReadPermission(uri)) return uri
+        return copies.copyIn(listOf(uri)).firstOrNull()
     }
 
     private fun displayName(uri: String): String = try {
@@ -55,16 +67,17 @@ class AndroidMediaImporter @Inject constructor(
         ""
     }
 
-    private fun takePersistableReadPermission(uri: String) {
-        // App-owned files (camera captures, copies of shared media) need no grant.
-        if (Uri.parse(uri).scheme != "content") return
+    /** Whether the app now holds a read grant for [uri] that survives restarts. */
+    private fun takePersistableReadPermission(uri: String): Boolean {
+        val parsed = Uri.parse(uri)
+        val resolver = context.contentResolver
         try {
-            context.contentResolver.takePersistableUriPermission(
-                Uri.parse(uri),
-                Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            )
+            resolver.takePersistableUriPermission(parsed, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         } catch (_: SecurityException) {
-            // Some picker fallbacks hand out non-persistable grants; access lasts for this session.
+            // Some pickers hand out grants that can't be made persistent.
+            return false
         }
+        // Some providers accept the call without keeping anything, so check the grant is really held.
+        return resolver.persistedUriPermissions.any { it.uri == parsed && it.isReadPermission }
     }
 }

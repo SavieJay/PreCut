@@ -12,14 +12,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.savie.precut.R
 import com.savie.precut.ui.components.DonePill
 import com.savie.precut.ui.theme.Ink1
 
@@ -34,6 +39,8 @@ fun ToolPanel(
     modifier: Modifier = Modifier,
     /** Extra header buttons, before Done (e.g. "Apply to all"). */
     actions: @Composable RowScope.() -> Unit = {},
+    /** A back arrow before the title (HSL and Curves return to Adjust). */
+    onBack: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -43,10 +50,15 @@ fun ToolPanel(
             .background(Ink1),
     ) {
         Row(
-            Modifier.fillMaxWidth().height(52.dp).padding(start = 16.dp, end = 8.dp),
+            Modifier.fillMaxWidth().height(52.dp).padding(start = if (onBack != null) 4.dp else 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
+            onBack?.let { back ->
+                IconButton(onClick = back) {
+                    Icon(painterResource(R.drawable.ic_back), contentDescription = stringResource(R.string.adjust_back))
+                }
+            }
             Text(
                 title,
                 style = MaterialTheme.typography.titleMedium,

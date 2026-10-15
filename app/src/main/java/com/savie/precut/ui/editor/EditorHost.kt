@@ -14,4 +14,7 @@ interface EditorHost {
     fun newId(): String
     fun targetClipId(): String?
     fun seekTo(positionMs: Long)
+
+    /** Rebuilds the preview from the current state now (e.g. a before/after peek). */
+    fun refreshPreview()
 }

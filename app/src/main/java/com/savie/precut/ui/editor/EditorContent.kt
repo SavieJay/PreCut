@@ -43,12 +43,17 @@ fun EditorContent(
     modifier: Modifier = Modifier,
 ) {
     // System Back acts as Done: it closes an open panel, multi-select or the Audio menu first.
-    BackHandler(enabled = state.activeTool != null || state.multiSelect != null || state.audioMenuOpen) {
+    BackHandler(enabled = state.cropDraft != null || state.activeTool != null || state.multiSelect != null || state.audioMenuOpen) {
         when {
+            state.cropDraft != null -> viewModel.frame.onCropCancel()
             state.activeTool != null -> viewModel.onToolClosed()
             state.multiSelect != null -> viewModel.selection.onDone()
             else -> viewModel.onAudioMenu(false)
         }
+    }
+    state.cropDraft?.let { draft ->
+        EditorCropMode(state, draft, { previewState.value.positionMs }, viewModel, modifier)
+        return
     }
     // imePadding: the text tool's keyboard pushes the panel up and shrinks the preview.
     Column(modifier.imePadding().alpha(if (dimmed) 0.5f else 1f)) {
@@ -67,8 +72,9 @@ fun EditorContent(
                 // only render to one surface, and re-attaching on return is reliable.
                 if (!state.fullScreen) PreviewSurface(player = viewModel.player, modifier = Modifier.fillMaxSize())
                 state.project.textOverlays.firstOrNull { it.id == state.selectedTextId }?.let { text ->
-                    TextTransformOverlay(text, state.project.outputSize(), onTransformed = { viewModel.text.onTransformed(text.id, it) })
+                    TextTransformOverlay(text, state.project.outputSize(), onTransformed = { viewModel.text.onTransformed(text.id, it) }, onDelete = viewModel.text::onDelete)
                 }
+                ClipFrameOverlay(state, previewState, viewModel)
             }
         }
         LivePlaybackControls(previewState, onPlayPause = viewModel::onPlayPause, onFullScreen = { viewModel.onFullScreen(true) })
@@ -81,6 +87,7 @@ fun EditorContent(
             onAddMedia = onAddMedia,
             onCamera = viewModel::onCameraRequested,
         )
+        state.reversing?.let { ReverseDialog(it, onCancel = viewModel.reverse::onCancel) }
         // The panel's surface continues behind the navigation bar.
         Column(Modifier.background(Ink1).navigationBarsPadding()) {
             EditorBottomPanel(state, canSplit, { previewState.value.positionMs }, viewModel)

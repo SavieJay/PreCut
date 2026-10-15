@@ -193,7 +193,7 @@ Roboto Flex is variable and SIL OFL-licensed; it's bundled. Timecodes use tabula
 | T-06 / T-06b | Filters, My LUTs | `tools/FilterTool.kt`, `FilterTiles.kt` |
 | T-07 – T-09 | Adjust, HSL, Curves | `tools/AdjustTool.kt`, `HslPanel.kt`, `CurvesPanel.kt`, `CurveEditor.kt` |
 | T-10 / T-11 | Ratio, Cover | `tools/RatioTool.kt`, `CoverTool.kt` |
-| T-12 – T-15 | Edit/crop, Canvas, Opacity, Transform | Phase 8B |
+| T-12 – T-15 | Edit/crop, Canvas, Opacity, Transform | `ui/editor/tools/{EditTool,CanvasTool,OpacityTool,TransformTool}.kt`, `ui/editor/crop/`, `ui/editor/preview/ClipTransformOverlay.kt` |
 | T-03, T-16 – T-19 | Speed curves, transitions, animations, freeze, reverse | Phase 8C |
 | T-20 | Rotate (toast) | `EditorViewModel.onRotate` |
 | X-01 – X-03 | Text panel, text on preview, colour picker | `tools/TextTool.kt`, `TextStyleRow.kt`, `preview/TextTransformOverlay.kt`, `tools/ColorPickerSheet.kt` |

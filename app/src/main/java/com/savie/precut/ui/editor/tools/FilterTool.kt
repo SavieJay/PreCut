@@ -3,21 +3,15 @@ package com.savie.precut.ui.editor.tools
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,6 +23,9 @@ import com.savie.precut.media.look.LookThumbnailer
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.look.FilterCatalog
 import com.savie.precut.model.look.FilterCategory
+import com.savie.precut.ui.components.PreCutChip
+import com.savie.precut.ui.components.PreCutSlider
+import com.savie.precut.ui.components.SliderRow
 import kotlin.math.roundToInt
 
 /** What the Filter panel can do. */
@@ -36,6 +33,9 @@ interface FilterActions {
     fun onFilter(filterId: String?)
     fun onIntensity(intensity: Float)
     fun onImportLut()
+
+    /** Tapping the selected tile again: before/after peek in the preview (not saved). */
+    fun onPeek()
 }
 
 /**
@@ -63,36 +63,37 @@ fun FilterTool(
     ToolPanel(stringResource(R.string.filter_title), onDone, modifier, actions = { onApplyAll?.let { ApplyToAllButton(it) } }) {
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterCategory.entries.forEach { c ->
-                FilterChip(selected = category == c, onClick = { category = c }, label = { Text(stringResource(c.labelRes())) })
+                PreCutChip(stringResource(c.labelRes()), selected = category == c, onClick = { category = c })
             }
-            FilterChip(selected = category == null, onClick = { category = null }, label = { Text(stringResource(R.string.filter_category_custom)) })
+            PreCutChip(stringResource(R.string.filter_category_custom), selected = category == null, onClick = { category = null })
         }
+        fun tap(id: String?) = if (id != null && id == current) actions.onPeek() else actions.onFilter(id)
         val none = stringResource(R.string.filter_none)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            item(key = "none") { FilterTile(none, null, baseKey, loader, thumbnailer, current == null) { actions.onFilter(null) } }
+            item(key = "none") { IconTile(none, R.drawable.ic_block, { tap(null) }, selected = current == null) }
             val selectedCategory = category
             if (selectedCategory == null) {
                 item(key = "import") { IconTile(stringResource(R.string.filter_import_lut), R.drawable.ic_add_box, actions::onImportLut) }
                 items(customLuts, key = { it.id }) { lut ->
-                    FilterTile(lut.name, lut.id, baseKey, loader, thumbnailer, lut.id == current) { actions.onFilter(lut.id) }
+                    FilterTile(lut.name, lut.id, baseKey, loader, thumbnailer, lut.id == current) { tap(lut.id) }
                 }
             } else {
                 items(FilterCatalog.inCategory(selectedCategory), key = { it.id }) { preset ->
                     val name = filterNameRes(preset.id)?.let { stringResource(it) } ?: preset.id
-                    FilterTile(name, preset.id, baseKey, loader, thumbnailer, preset.id == current) { actions.onFilter(preset.id) }
+                    FilterTile(name, preset.id, baseKey, loader, thumbnailer, preset.id == current) { tap(preset.id) }
                 }
             }
         }
         if (current != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.filter_intensity), style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(72.dp))
-                Slider(
+            SliderRow(value = "${(intensity * 100).roundToInt()}", label = stringResource(R.string.filter_intensity), labelWidth = 64.dp) { sliderModifier ->
+                PreCutSlider(
                     value = intensity,
                     onValueChange = { intensity = it },
                     onValueChangeFinished = { actions.onIntensity(intensity) },
-                    modifier = Modifier.weight(1f),
+                    bubble = { "${(it * 100).roundToInt()}" },
+                    onReset = { actions.onIntensity(1f) },
+                    modifier = sliderModifier,
                 )
-                Text("${(intensity * 100).roundToInt()}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(32.dp))
             }
         }
     }

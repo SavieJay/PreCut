@@ -1,6 +1,23 @@
 package com.savie.precut.data
 
+import com.savie.precut.model.frame.CanvasKind
+import com.savie.precut.model.frame.CanvasPattern
+import com.savie.precut.model.frame.ClipCanvas
+import com.savie.precut.model.frame.ClipTransform
+import com.savie.precut.model.frame.CropRatio
+import com.savie.precut.model.frame.CropRect
+import com.savie.precut.model.frame.FrameFit
+import com.savie.precut.model.OverlayClip
 import com.savie.precut.model.ProjectCover
+import com.savie.precut.model.ReverseSource
+import com.savie.precut.model.speed.SpeedCurve
+import com.savie.precut.model.speed.SpeedPreset
+import com.savie.precut.model.motion.AnimationType
+import com.savie.precut.model.motion.ClipAnimation
+import com.savie.precut.model.motion.ClipTransition
+import com.savie.precut.model.motion.ComboAnimation
+import com.savie.precut.model.motion.ComboType
+import com.savie.precut.model.motion.TransitionType
 import com.savie.precut.model.project
 import com.savie.precut.model.videoClip
 import org.junit.Assert.assertEquals
@@ -33,6 +50,40 @@ class ProjectSerializerTest {
         assertEquals(0f, project?.textOverlays?.single()?.rotationDegrees)
         assertEquals(1f, project?.textOverlays?.single()?.opacity)
         assertNull(project?.cover)
+    }
+
+    @Test
+    fun phase8ADraft_loadsWithPlainFrame_andFrameRoundTrips() {
+        val json = """{"id":"p","name":"Old","createdAt":1,"updatedAt":2,""" +
+            """"clips":[{"id":"a","uri":"content://a","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000,"rotationDegrees":90}]}"""
+        val clip = ProjectSerializer.decode(json)?.clips?.single()
+        assertEquals(90, clip?.rotationDegrees)
+        assertEquals(false, clip?.mirrored)
+        assertNull(clip?.crop)
+        assertEquals(FrameFit.FIT, clip?.fit)
+        assertEquals(ClipTransform.IDENTITY, clip?.transform)
+        assertEquals(1f, clip?.opacity)
+        assertEquals(ClipCanvas(), clip?.canvas)
+        assertNull(clip?.transitionOut)
+        assertNull(clip?.animationCombo)
+        assertNull(clip?.speedCurve)
+        assertNull(clip?.reversedFrom)
+        assertEquals(emptyList<Any>(), ProjectSerializer.decode(json)?.overlays)
+
+        val framed = project(
+            videoClip("b").copy(
+                mirrored = true, crop = CropRect(0.1f, 0.2f, 0.9f, 0.8f), cropRatio = CropRatio.RATIO_1_1, fit = FrameFit.FILL,
+                transform = ClipTransform(1.5f, -30f, 0.1f, -0.2f), opacity = 0.4f,
+                canvas = ClipCanvas(kind = CanvasKind.IMAGE, pattern = CanvasPattern.DUSK),
+                transitionOut = ClipTransition(TransitionType.GLITCH, 800L), animationIn = ClipAnimation(AnimationType.BOUNCE),
+                animationCombo = ComboAnimation(ComboType.SHAKE, 1.5f),
+                speedCurve = SpeedCurve.preset(SpeedPreset.HERO),
+                reversedFrom = ReverseSource("content://orig", 9_000L, 1_000L, 5_000L, 1920, 1080, 90),
+            ),
+        )
+        assertEquals(framed, ProjectSerializer.decode(ProjectSerializer.encode(framed)))
+        val withOverlay = framed.copy(overlays = listOf(OverlayClip(videoClip("pip").copy(opacity = 0.5f), 1_500L)))
+        assertEquals(withOverlay, ProjectSerializer.decode(ProjectSerializer.encode(withOverlay)))
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor.timeline
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -18,6 +19,7 @@ import com.savie.precut.model.clipStartTimesMs
 import com.savie.precut.model.timelineAt
 import com.savie.precut.model.timelineEndMs
 import com.savie.precut.model.totalDurationMs
+import com.savie.precut.model.overlayLanes
 
 // DESIGN.md "Timeline": 2 top padding, 18 ruler, 6 around the 56 main strip, 22/24 rows 4 apart.
 internal val TopPadding = 2.dp
@@ -26,8 +28,9 @@ internal val RulerHeight = 18.dp
 internal val StripGap = 6.dp
 internal val RowGap = 4.dp
 internal val ClipHeight = 56.dp
-/** Distance from the timeline's top to the main strip. */
-internal val StripTop = TopPadding + RulerHeight + StripGap
+/** Distance from the timeline's top to the main strip, below any overlay rows (none when [compact]). */
+internal fun stripTop(project: Project, compact: Boolean): Dp =
+    TopPadding + RulerHeight + StripGap + if (compact) 0.dp else overlayRowsHeight(project.overlayLanes().size)
 private val TextLaneHeight = 22.dp
 private val AudioRowHeight = 24.dp
 
@@ -36,11 +39,12 @@ private val AudioRowHeight = 24.dp
  * or only the ruler and main strip when [compact] (a tall panel is open).
  */
 fun timelineHeight(project: Project, compact: Boolean = false): Dp {
-    if (compact) return StripTop + ClipHeight + BottomPadding
+    val stripTop = stripTop(project, compact)
+    if (compact) return stripTop + ClipHeight + BottomPadding
     val layerRows = project.lookLayerLanes().size
     val textRows = project.textLanes().size.coerceAtLeast(1)
     val audioRows = project.audioLanes().size.coerceAtLeast(1)
-    return StripTop + ClipHeight + StripGap +
+    return stripTop + ClipHeight + StripGap +
         (TextLaneHeight + RowGap) * layerRows +
         TextLaneHeight * textRows + RowGap * (textRows - 1) + (RowGap + AudioRowHeight) * audioRows + BottomPadding
 }
@@ -57,6 +61,8 @@ data class TimelineSelection(
     val multiIds: Set<String> = emptySet(),
     /** Multi-select is on: unpicked clips show an empty check circle. */
     val multiSelectMode: Boolean = false,
+    /** The junction whose transition is being edited: the id of the clip before it. */
+    val transitionClipId: String? = null,
 )
 
 /** Ruler, clip strip, text rows and audio rows, stacked; laid out in timeline px. */
@@ -92,20 +98,36 @@ fun TimelineLanes(
             .height(RulerHeight),
     )
     Spacer(Modifier.height(StripGap))
-    ClipStrip(
-        project = project,
-        selectedClipId = selection.clipId,
-        multiIds = selection.multiIds,
-        multiSelectMode = selection.multiSelectMode,
-        missingIds = selection.missingIds,
-        pxPerMs = pxPerMs,
-        clipHeight = ClipHeight,
-        visiblePx = visiblePx,
-        loader = loader,
-        snapTargets = trimTargets,
-        snapThresholdMs = snapThresholdMs,
-        onTrim = actions::onTrim,
-    )
+    if (!compact) {
+        OverlayRows(
+            lanes = project.overlayLanes(),
+            selectedId = selection.clipId,
+            videoDurationMs = totalMs,
+            pxPerMs = pxPerMs,
+            rowHeight = OverlayRowHeight,
+            rowGap = StripGap,
+            loader = loader,
+            snap = snap,
+            actions = actions,
+        )
+    }
+    Box {
+        ClipStrip(
+            project = project,
+            selectedClipId = selection.clipId,
+            multiIds = selection.multiIds,
+            multiSelectMode = selection.multiSelectMode,
+            missingIds = selection.missingIds,
+            pxPerMs = pxPerMs,
+            clipHeight = ClipHeight,
+            visiblePx = visiblePx,
+            loader = loader,
+            snapTargets = trimTargets,
+            snapThresholdMs = snapThresholdMs,
+            onTrim = actions::onTrim,
+        )
+        TransitionMarkers(project, selection, pxPerMs, actions::onSelectTransition)
+    }
     if (compact) return
     Spacer(Modifier.height(StripGap))
     LookLayerRows(
@@ -150,6 +172,7 @@ private fun snapTargetsOf(project: Project): List<Pair<String, Long>> = buildLis
     add("" to project.totalDurationMs())
     project.textOverlays.forEach { add(it.id to it.startMs); add(it.id to it.endMs) }
     project.lookLayers.forEach { add(it.id to it.startMs); add(it.id to it.endMs) }
+    project.overlays.forEach { add(it.id to it.timelineStartMs); add(it.id to it.timelineEndMs) }
     project.audioClips.forEach { audio ->
         add(audio.id to audio.timelineStartMs)
         add(audio.id to audio.timelineEndMs())

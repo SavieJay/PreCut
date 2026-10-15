@@ -5,7 +5,10 @@ import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.util.ExperimentalApi
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.MultipleInputVideoGraph
 import androidx.media3.transformer.CompositionPlayer
+import com.savie.precut.media.frame.LiveFrames
 import com.savie.precut.model.Project
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -39,15 +42,28 @@ const val PREVIEW_SHORT_SIDE_PX = 720
  * Owns the preview player, fed by [CompositionBuilder] so preview matches export.
  * Must be created and used on the main thread; call [release] when done.
  */
-@OptIn(ExperimentalApi::class) // CompositionPlayer is experimental in Media3 1.11; it's the only composition preview.
+@OptIn(ExperimentalApi::class, UnstableApi::class) // CompositionPlayer is experimental in Media3 1.11; it's the only composition preview.
 class PreviewController @Inject constructor(
     @ApplicationContext context: Context,
     private val compositionBuilder: CompositionBuilder,
 ) {
 
-    private val compositionPlayer = CompositionPlayer.Builder(context).build()
+    // Multiple-input graph: overlays are extra video sequences composited together (Phase 9).
+    private val compositionPlayer = CompositionPlayer.Builder(context)
+        .setVideoGraphFactory(MultipleInputVideoGraph.Factory())
+        .build()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var ticker: Job? = null
+
+    /**
+     * Whether the player has something to play. With nothing (e.g. every clip's media is
+     * missing), CompositionPlayer must not be seeked: it crashes when no composition was ever set.
+     */
+    private var hasMedia = false
+
+    /** The position live redraws keep returning to; null when not redrawing. */
+    private var redrawBaseMs: Long? = null
+    private var redrawNudged = false
 
     private val _state = MutableStateFlow(PreviewState())
     val state: StateFlow<PreviewState> = _state.asStateFlow()
@@ -66,11 +82,17 @@ class PreviewController @Inject constructor(
         compositionPlayer.addListener(listener)
     }
 
-    /** Rebuilds the preview from [project], starting at [startPositionMs]. */
-    fun setProject(project: Project, startPositionMs: Long = 0L) {
-        val composition = compositionBuilder.build(project, PREVIEW_SHORT_SIDE_PX)
+    /**
+     * Rebuilds the preview from [project], starting at [startPositionMs]. [liveClipId] marks a clip
+     * whose frame follows [LiveFrames] while it's being transformed.
+     */
+    fun setProject(project: Project, startPositionMs: Long = 0L, liveClipId: String? = null) {
+        val composition = compositionBuilder.build(project, PREVIEW_SHORT_SIDE_PX, liveClipId)
         if (composition == null) {
             // CompositionPlayer can't clear its media; stop it and report an empty timeline.
+            hasMedia = false
+            redrawBaseMs = null
+            if (compositionPlayer.isScrubbingModeEnabled) compositionPlayer.setScrubbingModeEnabled(false)
             compositionPlayer.stop()
             stopTicker()
             _state.value = PreviewState()
@@ -78,9 +100,11 @@ class PreviewController @Inject constructor(
         }
         compositionPlayer.setComposition(composition, startPositionMs.coerceAtLeast(0L))
         compositionPlayer.prepare()
+        hasMedia = true
     }
 
     fun togglePlayPause() {
+        if (!hasMedia) return
         endScrub()
         if (compositionPlayer.isPlaying) {
             compositionPlayer.pause()
@@ -92,7 +116,9 @@ class PreviewController @Inject constructor(
 
     fun pause() = compositionPlayer.pause()
 
-    fun play() = compositionPlayer.play()
+    fun play() {
+        if (hasMedia) compositionPlayer.play()
+    }
 
     /** Silences preview playback, e.g. while recording a voiceover so the mic doesn't pick it up. */
     fun setMuted(muted: Boolean) {
@@ -105,7 +131,7 @@ class PreviewController @Inject constructor(
      * preview follows the finger instead of falling behind a queue of exact seeks.
      */
     fun startScrub() {
-        if (compositionPlayer.isScrubbingModeEnabled) return
+        if (!hasMedia || compositionPlayer.isScrubbingModeEnabled) return
         compositionPlayer.pause()
         compositionPlayer.setScrubbingModeEnabled(true)
         publishState()
@@ -119,7 +145,44 @@ class PreviewController @Inject constructor(
     }
 
     fun seekTo(positionMs: Long) {
-        compositionPlayer.seekTo(positionMs)
+        if (!hasMedia) return
+        // The timeline can be longer than what plays (missing media is left out of the preview).
+        val duration = compositionPlayer.duration.takeIf { it != C.TIME_UNSET }
+        compositionPlayer.seekTo(if (duration != null) positionMs.coerceIn(0L, duration) else positionMs.coerceAtLeast(0L))
+        publishState()
+    }
+
+    /** Starts redrawing the paused frame on demand ([redraw]), e.g. while a clip is transformed. */
+    fun beginLiveRedraw() {
+        if (!hasMedia || redrawBaseMs != null) return
+        startScrub()
+        redrawBaseMs = compositionPlayer.currentPosition
+    }
+
+    /**
+     * Renders the paused frame again so a changed live effect shows. ExoPlayer ignores a seek to
+     * the same millisecond, so this alternates between the position and 1 ms beside it (the same
+     * frame). Scrubbing mode drops redraws that arrive while one is still rendering.
+     */
+    fun redraw() {
+        if (!hasMedia) return
+        val base = redrawBaseMs ?: return
+        redrawNudged = !redrawNudged
+        val duration = compositionPlayer.duration.takeIf { it != C.TIME_UNSET } ?: 0L
+        val target = when {
+            !redrawNudged -> base
+            base + 1 < duration -> base + 1
+            else -> (base - 1).coerceAtLeast(0L)
+        }
+        compositionPlayer.seekTo(target)
+    }
+
+    fun endLiveRedraw() {
+        val base = redrawBaseMs ?: return
+        redrawBaseMs = null
+        endScrub()
+        if (!hasMedia) return
+        compositionPlayer.seekTo(base)
         publishState()
     }
 

@@ -28,12 +28,17 @@ object EditReducer {
             is EditAction.DuplicateClip -> project.duplicate(action)
             is EditAction.TrimClip -> project.updateClip(action.clipId) { it.trimmed(action.trimStartMs, action.trimEndMs) }
             is EditAction.SetSpeed -> project.updateClip(action.clipId) {
-                if (it.type == ClipType.IMAGE) it else it.copy(speed = action.speed.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED))
+                if (it.type == ClipType.IMAGE) it else it.copy(speed = action.speed.coerceIn(MIN_CLIP_SPEED, MAX_CLIP_SPEED), speedCurve = null)
+            }
+            is EditAction.SetSpeedCurve -> project.updateClip(action.clipId) {
+                if (it.type == ClipType.IMAGE) it else it.copy(speedCurve = action.curve?.normalized())
             }
             is EditAction.SetKeepPitch -> project.updateClip(action.clipId) { it.copy(keepPitch = action.keepPitch) }
             is EditAction.SetClipLook -> project.updateClip(action.clipId) { it.copy(look = action.look.normalized()) }
             is EditAction.LayerEdit -> project.applyLayerEdit(action)
-            is EditAction.RotateClip -> project.updateClip(action.clipId) { it.copy(rotationDegrees = (it.rotationDegrees + 90) % 360) }
+            is EditAction.FrameEdit -> project.applyFrameEdit(action)
+            is EditAction.MotionEdit -> project.applyMotionEdit(action)
+            is EditAction.OverlayEdit -> project.applyOverlayEdit(action)
             is EditAction.SetName -> action.name.trim().let { if (it == project.name) project else project.copy(name = it) }
             is EditAction.SetAspectRatio ->
                 if (project.aspectRatio == action.aspectRatio) project else project.copy(aspectRatio = action.aspectRatio)
@@ -55,11 +60,12 @@ object EditReducer {
             is EditAction.ReplaceClip -> project.updateClip(action.clipId) { it.replacedWith(action.uri, action.info) }
             is EditAction.RemoveItems -> {
                 val clips = project.clips.filterNot { it.id in action.clipIds }
+                val overlays = project.overlays.filterNot { it.id in action.clipIds }
                 val audio = project.audioClips.filterNot { it.id in action.audioIds }
-                if (clips.size == project.clips.size && audio.size == project.audioClips.size) {
+                if (clips.size == project.clips.size && overlays.size == project.overlays.size && audio.size == project.audioClips.size) {
                     project
                 } else {
-                    project.copy(clips = clips, audioClips = audio)
+                    project.copy(clips = clips, overlays = overlays, audioClips = audio)
                 }
             }
             is EditAction.AudioEdit -> project.applyAudioEdit(action)
@@ -124,13 +130,12 @@ object EditReducer {
     private fun Project.split(action: EditAction.SplitClip): Project {
         val (index, sourceMs) = splitPoint(this, action.atTimelineMs) ?: return this
         val clip = clips[index]
-        val first = clip.copy(trimEndMs = sourceMs)
-        val second = clip.copy(id = action.newClipId, trimStartMs = sourceMs)
+        val (first, second) = clip.splitAt(sourceMs, action.newClipId)
         return copy(clips = clips.subList(0, index) + listOf(first, second) + clips.subList(index + 1, clips.size))
     }
 
     /** Index of the clip to split and the split time in its source, or null if too close to an edge. */
-    private fun splitPoint(project: Project, atTimelineMs: Long): Pair<Int, Long>? {
+    internal fun splitPoint(project: Project, atTimelineMs: Long): Pair<Int, Long>? {
         val position = project.clipAt(atTimelineMs) ?: return null
         val clip = project.clips[position.index]
         val sourceMs = clip.timelineOffsetToSourceMs(position.offsetMs)
@@ -155,13 +160,7 @@ object EditReducer {
     private fun Project.withClips(newClips: List<Clip>): Project =
         if (newClips.size == clips.size) this else copy(clips = newClips)
 
-    private fun Project.updateClip(clipId: String, transform: (Clip) -> Clip): Project {
-        val index = clips.indexOfFirst { it.id == clipId }
-        if (index < 0) return this
-        val updated = transform(clips[index])
-        if (updated == clips[index]) return this
-        return copy(clips = clips.toMutableList().also { it[index] = updated })
-    }
+    private fun Project.updateClip(clipId: String, transform: (Clip) -> Clip): Project = updateAnyClip(clipId, transform)
 
     private fun Clip.replacedWith(uri: String, info: MediaInfo): Clip {
         val fresh = clipFromMedia(id, uri, info)
@@ -170,6 +169,7 @@ object EditReducer {
             trimStartMs = 0L,
             trimEndMs = wantedLength.coerceIn(MIN_CLIP_DURATION_MS.coerceAtMost(fresh.sourceDurationMs), fresh.sourceDurationMs),
             speed = if (fresh.type == ClipType.VIDEO && type == ClipType.VIDEO) speed else 1f,
+            speedCurve = speedCurve?.takeIf { fresh.type == ClipType.VIDEO && type == ClipType.VIDEO },
             keepPitch = keepPitch,
             volume = volume,
             muted = muted,
@@ -177,6 +177,17 @@ object EditReducer {
             rotationDegrees = rotationDegrees,
             fadeInMs = fadeInMs,
             fadeOutMs = fadeOutMs,
+            mirrored = mirrored,
+            crop = crop,
+            cropRatio = cropRatio,
+            fit = fit,
+            transform = transform,
+            opacity = opacity,
+            canvas = canvas,
+            transitionOut = transitionOut,
+            animationIn = animationIn,
+            animationOut = animationOut,
+            animationCombo = animationCombo,
         )
     }
 

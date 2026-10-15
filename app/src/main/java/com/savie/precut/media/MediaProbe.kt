@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.media.ExifInterface
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.webkit.MimeTypeMap
 import com.savie.precut.di.IoDispatcher
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.MediaInfo
@@ -37,7 +38,7 @@ class AndroidMediaProbe @Inject constructor(
 
     override suspend fun probe(uri: String): ProbeResult = withContext(ioDispatcher) {
         val parsed = Uri.parse(uri)
-        val mimeType = context.contentResolver.getType(parsed).orEmpty()
+        val mimeType = mimeTypeOf(parsed)
         try {
             when {
                 mimeType.startsWith("image/") -> probeImage(parsed)
@@ -63,6 +64,14 @@ class AndroidMediaProbe @Inject constructor(
         } finally {
             retriever.release()
         }
+    }
+
+    /** The provider's type for content Uris; for app files (captures, copies), the extension's. */
+    private fun mimeTypeOf(uri: Uri): String {
+        context.contentResolver.getType(uri)?.let { return it }
+        if (uri.scheme != "file") return ""
+        val extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString()).lowercase()
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension).orEmpty()
     }
 
     override suspend fun isReadable(uri: String): Boolean = withContext(ioDispatcher) {

@@ -1,6 +1,7 @@
 package com.savie.precut.ui.editor.timeline
 
 import com.savie.precut.model.Clip
+import com.savie.precut.model.averageSpeed
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.model.edit.MIN_CLIP_DURATION_MS
 import com.savie.precut.model.timelineOffsetToSourceMs
@@ -162,14 +163,14 @@ object TimelineGeometry {
         var trimStart = clip.trimStartMs
         if (startDeltaMs != 0L) {
             val left = snap(clipStartMs + startDeltaMs)
-            trimStart = (clip.trimStartMs + ((left - clipStartMs) * clip.speed).roundToLong())
+            trimStart = (clip.trimStartMs + ((left - clipStartMs) * clip.averageSpeed()).roundToLong())
                 .coerceIn(0L, (clip.trimEndMs - minLength).coerceAtLeast(0L))
         }
         var trimEnd = clip.trimEndMs
         if (endDeltaMs != 0L) {
             val originalRight = clipStartMs + clip.timelineDurationMs()
             val right = snap(originalRight + endDeltaMs)
-            trimEnd = (clip.trimEndMs + ((right - originalRight) * clip.speed).roundToLong())
+            trimEnd = (clip.trimEndMs + ((right - originalRight) * clip.averageSpeed()).roundToLong())
                 .coerceIn(trimStart + minLength, clip.sourceDurationMs.coerceAtLeast(trimStart + minLength))
         }
         return TrimPreview(trimStart, trimEnd, snapped)

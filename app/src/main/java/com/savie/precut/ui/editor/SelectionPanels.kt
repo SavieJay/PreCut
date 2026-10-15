@@ -36,6 +36,7 @@ fun SelectionPanels(state: EditorUiState.Ready, picked: Set<String>, viewModel: 
                     override fun onFilter(filterId: String?) = selection.onFilter(filterId)
                     override fun onIntensity(intensity: Float) = selection.onFilterIntensity(intensity)
                     override fun onImportLut() = viewModel.onPickLut()
+                    override fun onPeek() = Unit
                 },
                 onDone = close,
             )

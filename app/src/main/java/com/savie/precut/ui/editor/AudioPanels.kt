@@ -35,6 +35,7 @@ fun AudioPanels(audio: AudioClip, activeTool: EditorTool?, positionMs: () -> Lon
         EditorTool.BEATS -> BeatsTool(
             beatCount = audio.beatsMs.size,
             beatAtPlayhead = rememberBeatAtPlayhead(audio, positionMs),
+            playheadMs = positionMs(),
             onToggleBeat = controller::onToggleBeat,
             onClear = controller::onClearBeats,
             onDone = close,

@@ -7,10 +7,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,10 +18,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportScreen(
     onClose: () -> Unit,
+    onHome: () -> Unit,
     viewModel: ExportViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -48,33 +44,33 @@ fun ExportScreen(
         if (viewModel.uiState.value == ExportUiState.Idle) startExport()
     }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.export_title)) }) },
-    ) { innerPadding ->
-        ExportContent(
-            state = uiState,
-            contentPadding = innerPadding,
-            onCancel = {
+    val info by viewModel.info.collectAsStateWithLifecycle()
+    ExportContent(
+        state = uiState,
+        info = info,
+        actions = object : ExportActions {
+            override fun onCancel() {
                 viewModel.cancel()
                 onClose()
-            },
-            onRetry = startExport,
-            onOpen = { uri ->
+            }
+            override fun onRetry() = startExport()
+            override fun onOpen(uri: String) {
                 val intent = Intent(Intent.ACTION_VIEW)
                     .setDataAndType(uri.toUri(), VIDEO_MIME)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 context.startActivity(intent)
-            },
-            onShare = { uri ->
+            }
+            override fun onShare(uri: String) {
                 val intent = Intent(Intent.ACTION_SEND)
                     .setType(VIDEO_MIME)
                     .putExtra(Intent.EXTRA_STREAM, uri.toUri())
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 context.startActivity(Intent.createChooser(intent, shareTitle))
-            },
-            onDone = onClose,
-        )
-    }
+            }
+            override fun onBackToEdit() = onClose()
+            override fun onProjects() = onHome()
+        },
+    )
 }
 
 private const val VIDEO_MIME = "video/mp4"

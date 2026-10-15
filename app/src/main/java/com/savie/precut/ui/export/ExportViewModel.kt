@@ -7,18 +7,20 @@ import com.savie.precut.data.ProjectRepository
 import com.savie.precut.media.ExportState
 import com.savie.precut.media.MediaSaver
 import com.savie.precut.media.VideoExporter
+import com.savie.precut.model.totalDurationMs
 import com.savie.precut.ui.navigation.requireProjectId
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 enum class ExportFailure { PROJECT_NOT_FOUND, PERMISSION_DENIED, EXPORT_FAILED, SAVE_FAILED }
 
@@ -30,6 +32,9 @@ sealed interface ExportUiState {
     data class Done(val uri: String?) : ExportUiState
     data class Failed(val reason: ExportFailure, val detail: String? = null) : ExportUiState
 }
+
+/** What the export screens show about the project: its name, length and draft cover. */
+data class ExportInfo(val name: String, val createdAt: Long, val durationMs: Long, val coverPath: String?)
 
 @HiltViewModel
 class ExportViewModel @Inject constructor(
@@ -45,6 +50,9 @@ class ExportViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ExportUiState>(ExportUiState.Idle)
     val uiState: StateFlow<ExportUiState> = _uiState.asStateFlow()
 
+    private val _info = MutableStateFlow<ExportInfo?>(null)
+    val info: StateFlow<ExportInfo?> = _info.asStateFlow()
+
     private var job: Job? = null
 
     /** Starts the export unless one is running or already finished. Retries after a failure. */
@@ -57,6 +65,8 @@ class ExportViewModel @Inject constructor(
                 _uiState.value = ExportUiState.Failed(ExportFailure.PROJECT_NOT_FOUND)
                 return@launch
             }
+            val cover = repository.observeProjects().first().firstOrNull { it.id == projectId }?.coverPath
+            _info.value = ExportInfo(project.name, project.createdAt, project.totalDurationMs(), cover)
             _uiState.value = ExportUiState.Exporting(percent = null)
             exporter.export(project).collect { exportState ->
                 when (exportState) {

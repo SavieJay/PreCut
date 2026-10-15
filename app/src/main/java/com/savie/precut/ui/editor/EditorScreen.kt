@@ -15,6 +15,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +39,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.ui.components.ObserveAsEvents
+import com.savie.precut.ui.editor.crop.CropTopBar
 import com.savie.precut.ui.editor.preview.FullScreenPreview
 import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
@@ -72,6 +74,12 @@ fun EditorScreen(
     val coverPicker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
         viewModel.cover.onImagePicked(uri?.toString())
     }
+    val canvasPicker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        viewModel.frame.onCanvasImagePicked(uri?.toString())
+    }
+    val overlayPicker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        viewModel.overlay.onPicked(uri?.toString())
+    }
     val camera = rememberCameraLaunchers(viewModel::onCaptureResult)
     // `.cube` files have no standard MIME type, so any file can be picked and is validated.
     val lutPicker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
@@ -86,6 +94,23 @@ fun EditorScreen(
                 resources.getQuantityString(R.plurals.home_import_skipped, event.count, event.count)
             EditorEvent.NothingImported -> resources.getString(R.string.home_import_nothing)
             EditorEvent.SpeedNotForPhotos -> resources.getString(R.string.speed_not_for_photos)
+            EditorEvent.FreezeNotForPhotos -> resources.getString(R.string.freeze_not_for_photos)
+            EditorEvent.FreezeFailed -> resources.getString(R.string.freeze_failed)
+            EditorEvent.ReverseNotForPhotos -> resources.getString(R.string.reverse_not_for_photos)
+            EditorEvent.ReverseFailed -> resources.getString(R.string.reverse_failed)
+            EditorEvent.ReverseUnsupported -> resources.getString(R.string.reverse_unsupported)
+            EditorEvent.FrozeFrame, EditorEvent.ClipReversed, EditorEvent.ClipUnreversed -> {
+                val text = when (event) {
+                    EditorEvent.FrozeFrame -> R.string.freeze_added
+                    EditorEvent.ClipReversed -> R.string.reverse_done
+                    else -> R.string.reverse_removed
+                }
+                scope.launch {
+                    val result = snackbarHostState.showSnackbar(resources.getString(text), actionLabel = resources.getString(R.string.action_undo))
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
+                }
+                return@ObserveAsEvents
+            }
             EditorEvent.MusicImportFailed -> resources.getString(R.string.audio_import_failed)
             EditorEvent.RecordingFailed -> resources.getString(R.string.voiceover_failed)
             EditorEvent.NothingToExtract -> resources.getString(R.string.audio_nothing_to_extract)
@@ -100,6 +125,15 @@ fun EditorScreen(
             }
             EditorEvent.PickCoverImage -> {
                 coverPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                return@ObserveAsEvents
+            }
+            EditorEvent.KeepOneMainClip -> resources.getString(R.string.overlay_keep_main)
+            EditorEvent.PickOverlay -> {
+                overlayPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
+                return@ObserveAsEvents
+            }
+            EditorEvent.PickCanvasImage -> {
+                canvasPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
                 return@ObserveAsEvents
             }
             is EditorEvent.LaunchCamera -> {
@@ -147,14 +181,18 @@ fun EditorScreen(
         Scaffold(
             topBar = {
                 val ready = uiState as? EditorUiState.Ready
-                EditorTopBar(
-                    title = ready?.project?.let { projectDisplayName(it.name, it.createdAt) }.orEmpty(),
-                    canExport = ready != null && ready.project.clips.isNotEmpty() && ready.missingIds.isEmpty(),
-                    canUndo = ready?.canUndo == true,
-                    canRedo = ready?.canRedo == true,
-                    renaming = renaming && ready != null,
-                    actions = topBarActions,
-                )
+                if (ready?.cropDraft != null) {
+                    CropTopBar(onCancel = viewModel.frame::onCropCancel, onApply = viewModel.frame::onCropApply)
+                } else {
+                    EditorTopBar(
+                        title = ready?.project?.let { projectDisplayName(it.name, it.createdAt) }.orEmpty(),
+                        canExport = ready != null && ready.project.clips.isNotEmpty() && ready.missingIds.isEmpty(),
+                        canUndo = ready?.canUndo == true,
+                        canRedo = ready?.canRedo == true,
+                        renaming = renaming && ready != null,
+                        actions = topBarActions,
+                    )
+                }
             },
             snackbarHost = {
                 // Above the toolbar, which reaches down behind the navigation bar.

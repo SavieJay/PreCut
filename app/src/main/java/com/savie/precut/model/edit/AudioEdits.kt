@@ -3,6 +3,7 @@ package com.savie.precut.model.edit
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.AudioKind
 import com.savie.precut.model.Clip
+import com.savie.precut.model.averageSpeed
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.MAX_AUDIO_SPEED
 import com.savie.precut.model.MAX_VOLUME
@@ -69,12 +70,7 @@ private fun Project.updateAudio(id: String, transform: (AudioClip) -> AudioClip)
     return copy(audioClips = audioClips.toMutableList().also { it[index] = updated })
 }
 
-private fun Project.updateClipAudio(clipId: String, transform: (Clip) -> Clip): Project {
-    val index = clips.indexOfFirst { it.id == clipId }
-    if (index < 0) return this
-    val updated = transform(clips[index])
-    return if (updated == clips[index]) this else copy(clips = clips.toMutableList().also { it[index] = updated })
-}
+private fun Project.updateClipAudio(clipId: String, transform: (Clip) -> Clip): Project = updateAnyClip(clipId, transform)
 
 private fun Project.extractAudio(action: EditAction.ExtractAudio): Project {
     val index = clips.indexOfFirst { it.id == action.clipId }
@@ -90,7 +86,8 @@ private fun Project.extractAudio(action: EditAction.ExtractAudio): Project {
         trimEndMs = clip.trimEndMs,
         volume = if (clip.muted) 1f else clip.volume,
         kind = AudioKind.EXTRACTED,
-        speed = clip.speed,
+        // Audio clips play at one speed; a curved clip's sound follows its overall speed.
+        speed = clip.averageSpeed(),
         fadeInMs = clip.fadeInMs,
         fadeOutMs = clip.fadeOutMs,
     )

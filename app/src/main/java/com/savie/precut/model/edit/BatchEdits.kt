@@ -2,6 +2,7 @@ package com.savie.precut.model.edit
 
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.Project
+import com.savie.precut.model.frame.ClipCanvas
 import com.savie.precut.model.look.ClipLook
 
 /**
@@ -55,6 +56,10 @@ object BatchEdits {
         project.clips.filter { it.id in ids }.map { EditAction.SetClipVolume(it.id, volume) } +
             project.audioClips.filter { it.id in ids }.map { EditAction.SetAudioVolume(it.id, volume) },
     )
+
+    /** Canvas "Apply to all": every clip gets [canvas]. */
+    fun canvas(project: Project, canvas: ClipCanvas): EditAction.Batch =
+        EditAction.Batch(project.clips.map { EditAction.SetCanvas(it.id, canvas) })
 
     /** Every clip on the main track ("Apply to all"). */
     fun allClipIds(project: Project): Set<String> = project.clips.map { it.id }.toSet()

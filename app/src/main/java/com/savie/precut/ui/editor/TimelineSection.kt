@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.savie.precut.model.clipById
 import com.savie.precut.R
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.WaveformLoader
@@ -51,7 +52,9 @@ fun TimelineSection(
     onCamera: (video: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val compact = state.activeTool in TALL_TOOLS
+    // The Speed panel grows with a curve graph.
+    val curving = state.activeTool == EditorTool.SPEED && state.project.clipById(state.selectedClipId)?.speedCurve != null
+    val compact = state.activeTool in TALL_TOOLS || curving
     Box(modifier.fillMaxWidth().height(timelineHeight(state.project, compact))) {
         Timeline(
             project = state.project,
@@ -63,6 +66,7 @@ fun TimelineSection(
                 missingIds = state.missingIds,
                 multiIds = state.multiSelect.orEmpty(),
                 multiSelectMode = state.multiSelect != null,
+                transitionClipId = state.selectedTransitionId?.takeIf { state.activeTool == EditorTool.TRANSITION },
             ),
             positionMs = positionMs,
             loader = loader,
