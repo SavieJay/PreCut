@@ -1,6 +1,7 @@
 package com.savie.precut.ui.editor
 
 import com.savie.precut.media.MediaImporter
+import com.savie.precut.model.edit.clipShownAt
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.frame.LiveFrames
 import com.savie.precut.model.Clip
@@ -96,7 +97,7 @@ class EditorFrame(
 
     fun onTransformLive(transform: ClipTransform) {
         val clip = selected() ?: return
-        live.set(LiveFrames.Value(clip.id, clip.fit, transform, clip.opacity))
+        live.set(LiveFrames.Value(clip.id, clip.fit, transform, clip.opacity, clip.mask))
         preview.redraw()
     }
 
@@ -116,7 +117,7 @@ class EditorFrame(
     fun onOpacityLive(opacity: Float) {
         val clip = selected() ?: return
         preview.beginLiveRedraw()
-        live.set(LiveFrames.Value(clip.id, clip.fit, clip.transform, opacity))
+        live.set(LiveFrames.Value(clip.id, clip.fit, clip.transform, opacity, clip.mask))
         preview.redraw()
     }
 
@@ -151,7 +152,7 @@ class EditorFrame(
 
     private fun selected(): Clip? {
         val ready = host.ready ?: return null
-        return ready.project.clipById(ready.selectedClipId)
+        return ready.project.clipShownAt(ready.selectedClipId, host.positionMs)
     }
 
     private fun edit(action: (Clip) -> EditAction) {
@@ -170,7 +171,7 @@ class EditorFrame(
 
     companion object {
         /** Tools whose clip is marked live in the preview. */
-        val LIVE_TOOLS = setOf(EditorTool.TRANSFORM, EditorTool.OPACITY)
+        val LIVE_TOOLS = setOf(EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.MASK)
 
         /** Tools that keep the clip's transform frame on the preview. */
         val FRAME_TOOLS = setOf(EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS)

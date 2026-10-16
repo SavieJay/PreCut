@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
@@ -19,9 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.media.PreviewState
+import com.savie.precut.model.edit.textShownAt
 import com.savie.precut.model.outputSize
+import com.savie.precut.ui.editor.preview.DrawOverlay
 import com.savie.precut.ui.editor.preview.PlaybackControls
 import com.savie.precut.ui.editor.preview.PreviewSurface
 import com.savie.precut.ui.editor.preview.ProxyStatusChip
@@ -42,6 +48,7 @@ fun EditorContent(
     onAddMedia: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val player by viewModel.player.collectAsStateWithLifecycle()
     // System Back acts as Done: it closes an open panel, multi-select or the Audio menu first.
     BackHandler(enabled = state.cropDraft != null || state.activeTool != null || state.multiSelect != null || state.audioMenuOpen) {
         when {
@@ -70,14 +77,27 @@ fun EditorContent(
                 ProxyStatusChip(viewModel.proxyProgress, Modifier.align(Alignment.TopStart).padding(12.dp))
                 // While full screen shows the video, this surface steps aside: one player can
                 // only render to one surface, and re-attaching on return is reliable.
-                if (!state.fullScreen) PreviewSurface(player = viewModel.player, modifier = Modifier.fillMaxSize())
-                state.project.textOverlays.firstOrNull { it.id == state.selectedTextId }?.let { text ->
-                    TextTransformOverlay(text, state.project.outputSize(), onTransformed = { viewModel.text.onTransformed(text.id, it) }, onDelete = viewModel.text::onDelete)
+                if (!state.fullScreen) PreviewSurface(player = player, modifier = Modifier.fillMaxSize())
+                state.project.textOverlays.firstOrNull { it.id == state.selectedTextId }
+                    // A keyframed text's box follows the playhead.
+                    ?.let { if (it.keyframes.isEmpty()) it else state.project.textShownAt(it.id, previewState.value.positionMs) }
+                    ?.let { text ->
+                    TextTransformOverlay(
+                            text, state.project.outputSize(),
+                            onTransformed = { viewModel.text.onTransformed(text.id, it) },
+                            onDelete = viewModel.text::onDelete,
+                            render = viewModel::renderText,
+                        )
                 }
                 ClipFrameOverlay(state, previewState, viewModel)
+                MaskPreviewOverlay(state, previewState, viewModel)
+                if (state.activeTool == EditorTool.DRAW) {
+                    val drawing by viewModel.stickers.drawing.collectAsStateWithLifecycle()
+                    DrawOverlay(drawing, state.project.outputSize(), viewModel.stickers::onStroke)
+                }
             }
         }
-        LivePlaybackControls(previewState, onPlayPause = viewModel::onPlayPause, onFullScreen = { viewModel.onFullScreen(true) })
+        LivePlaybackControls(state, previewState, viewModel)
         TimelineSection(
             state = state,
             positionMs = { previewState.value.positionMs },
@@ -97,6 +117,14 @@ fun EditorContent(
 
 /** Reads the preview state in its own scope, so only the controls recompose as time moves. */
 @Composable
-private fun LivePlaybackControls(previewState: State<PreviewState>, onPlayPause: () -> Unit, onFullScreen: () -> Unit) {
-    PlaybackControls(state = previewState.value, onPlayPause = onPlayPause, onFullScreen = onFullScreen)
+private fun LivePlaybackControls(state: EditorUiState.Ready, previewState: State<PreviewState>, viewModel: EditorViewModel) {
+    val keyframe by remember(state) { derivedStateOf { viewModel.keyframes.button(state, previewState.value.positionMs) } }
+    PlaybackControls(
+        state = previewState.value,
+        onPlayPause = viewModel::onPlayPause,
+        onFullScreen = { viewModel.onFullScreen(true) },
+        keyframe = keyframe,
+        onKeyframe = viewModel.keyframes::onToggle,
+        onKeyframeEasing = viewModel.keyframes::onOpenEasing,
+    )
 }

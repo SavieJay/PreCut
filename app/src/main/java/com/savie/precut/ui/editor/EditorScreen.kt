@@ -43,17 +43,20 @@ import com.savie.precut.ui.editor.crop.CropTopBar
 import com.savie.precut.ui.editor.preview.FullScreenPreview
 import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
+import com.savie.precut.ui.editor.export.EditorExportHost
+import com.savie.precut.ui.editor.export.rememberExportNavigator
 
 @Composable
 fun EditorScreen(
     onBack: () -> Unit,
-    onExport: (projectId: String) -> Unit,
+    onExport: (projectId: String, settings: String, kind: String) -> Unit,
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     // Kept as a State and read only where needed: the playhead changes every frame while
     // playing or scrubbing, and the whole editor must not recompose with it.
     val previewState = viewModel.previewState.collectAsStateWithLifecycle()
+    val player by viewModel.player.collectAsStateWithLifecycle()
     val canSplit by viewModel.canSplit.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -82,17 +85,40 @@ fun EditorScreen(
     }
     val camera = rememberCameraLaunchers(viewModel::onCaptureResult)
     // `.cube` files have no standard MIME type, so any file can be picked and is validated.
+    val fontPicker = rememberLauncherForActivityResult(OpenDocument()) { uri -> viewModel.textStyle.onFontPicked(uri?.toString()) }
+    val stickerPicker = rememberLauncherForActivityResult(OpenDocument()) { uri -> viewModel.stickers.onImagePicked(uri?.toString()) }
     val lutPicker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         viewModel.look.onImportLut(uri?.toString())
     }
     val micPermission = rememberLauncherForActivityResult(RequestPermission()) { granted ->
         if (granted) viewModel.audio.onRecordStart(hasPermission = true)
     }
+    val exportNavigator = rememberExportNavigator { onExport(viewModel.projectId, it.settings, it.kind) }
     ObserveAsEvents(viewModel.events) { event ->
         val message = when (event) {
+            is EditorEvent.NavigateExport -> {
+                exportNavigator.navigate(event)
+                return@ObserveAsEvents
+            }
+            EditorEvent.FrameSaved -> resources.getString(R.string.export_frame_saved)
+            EditorEvent.FrameNotSaved -> resources.getString(R.string.export_frame_failed)
             is EditorEvent.SomeFilesSkipped ->
                 resources.getQuantityString(R.plurals.home_import_skipped, event.count, event.count)
             EditorEvent.NothingImported -> resources.getString(R.string.home_import_nothing)
+            EditorEvent.PickFont -> {
+                // Font files rarely have a dependable MIME type; any file is checked on import.
+                fontPicker.launch(arrayOf("font/ttf", "font/otf", "font/sfnt", "application/x-font-ttf", "application/octet-stream", "*/*"))
+                return@ObserveAsEvents
+            }
+            EditorEvent.FontNotUsable -> resources.getString(R.string.text_font_import_failed)
+            EditorEvent.SpeechFailed -> resources.getString(R.string.text_tts_failed)
+            EditorEvent.PickStickerImage -> {
+                stickerPicker.launch(arrayOf("image/png", "image/webp", "image/gif", "image/jpeg"))
+                return@ObserveAsEvents
+            }
+            EditorEvent.StickerNotUsable -> resources.getString(R.string.sticker_import_failed)
+            EditorEvent.StickerImageRemoved -> resources.getString(R.string.sticker_removed)
+            EditorEvent.DrawingNotSaved -> resources.getString(R.string.draw_failed)
             EditorEvent.SpeedNotForPhotos -> resources.getString(R.string.speed_not_for_photos)
             EditorEvent.FreezeNotForPhotos -> resources.getString(R.string.freeze_not_for_photos)
             EditorEvent.FreezeFailed -> resources.getString(R.string.freeze_failed)
@@ -172,7 +198,7 @@ fun EditorScreen(
             override fun onRedo() {
                 viewModel.onRedo()
             }
-            override fun onExport() = onExport(viewModel.projectId)
+            override fun onExport() = viewModel.export.onOpen()
         }
     }
     BackHandler(enabled = renaming) { renaming = false }
@@ -211,22 +237,25 @@ fun EditorScreen(
                 EditorUiState.NotFound -> Box(modifier, contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.editor_not_found))
                 }
-                is EditorUiState.Ready -> EditorContent(
-                    state = state,
-                    dimmed = renaming,
-                    previewState = previewState,
-                    canSplit = canSplit,
-                    viewModel = viewModel,
-                    timelineActions = timelineActions,
-                    onAddMedia = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
-                    modifier = modifier,
-                )
+                is EditorUiState.Ready -> {
+                    EditorContent(
+                        state = state,
+                        dimmed = renaming,
+                        previewState = previewState,
+                        canSplit = canSplit,
+                        viewModel = viewModel,
+                        timelineActions = timelineActions,
+                        onAddMedia = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
+                        modifier = modifier,
+                    )
+                    EditorExportHost(state, viewModel, exportNavigator, viewModel.appSettingsForUi)
+                }
             }
         }
         // Drawn over the whole screen, top bar included.
         (uiState as? EditorUiState.Ready)?.takeIf { it.fullScreen && it.project.clips.isNotEmpty() }?.let {
             FullScreenPreview(
-                player = viewModel.player,
+                player = player,
                 previewState = previewState,
                 onPlayPause = viewModel::onPlayPause,
                 onScrubStart = viewModel::onScrubStart,

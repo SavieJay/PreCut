@@ -14,7 +14,10 @@ import androidx.compose.ui.unit.Dp
 import com.savie.precut.R
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.ui.theme.Ink0
+import com.savie.precut.ui.theme.StickerBar
 import com.savie.precut.ui.theme.TextLaneBar
+import com.savie.precut.model.sticker.Sticker
+import com.savie.precut.model.sticker.StickerKind
 import kotlin.math.roundToLong
 
 /**
@@ -34,13 +37,17 @@ fun TextRows(
     snap: (ownerId: String, startMs: Long, endMs: Long, moveMs: Long) -> Long,
     onSelect: (String) -> Unit,
     onTiming: (textId: String, startMs: Long, endMs: Long) -> Unit,
+    /** Sticker rows (S-01b): their own colour, glyph and labels, and no empty row. */
+    stickers: Boolean = false,
 ) {
     val density = LocalDensity.current
     val totalMs = (widthPx / pxPerMs).roundToLong()
     val placeholder = stringResource(R.string.text_placeholder)
+    val stickerLabels = StickerLabels(stringResource(R.string.sticker_image), stringResource(R.string.sticker_gif), stringResource(R.string.sticker_drawing))
     Column {
-        // At least one (empty) row keeps the lane's place under the clips.
-        lanes.ifEmpty { listOf(emptyList()) }.forEachIndexed { index, lane ->
+        // At least one (empty) text row keeps the lane's place under the clips; sticker rows
+        // sit above it, each followed by a gap.
+        (if (stickers) lanes else lanes.ifEmpty { listOf(emptyList()) }).forEachIndexed { index, lane ->
             if (index > 0) Spacer(Modifier.height(rowGap))
             Box(Modifier.width(with(density) { widthPx.toDp() }).height(rowHeight)) {
                 lane.forEach { overlay ->
@@ -51,21 +58,34 @@ fun TextRows(
                         )
                         TimelineBar(
                             id = overlay.id,
-                            label = overlay.text.ifBlank { placeholder },
-                            color = TextLaneBar,
+                            label = overlay.sticker?.let { stickerLabels.of(it) } ?: overlay.text.ifBlank { placeholder },
+                            color = if (stickers) StickerBar else TextLaneBar,
                             selected = overlay.id == selectedTextId,
                             multiSelected = overlay.id in multiIds,
-                            glyph = R.drawable.ic_text,
+                            glyph = if (stickers) R.drawable.ic_add_reaction else R.drawable.ic_text,
                             labelColor = Ink0,
                             pxPerMs = pxPerMs,
                             rangeFor = ::range,
                             onSelect = { onSelect(overlay.id) },
                             onCommit = { drag -> range(drag).let { (start, end) -> onTiming(overlay.id, start, end) } },
                             snapMove = { move -> snap(overlay.id, overlay.startMs, overlay.endMs, move) },
+                            decoration = { _, _ ->
+                                if (overlay.id == selectedTextId) KeyframeMarks(overlay.keyframes.map { it.atMs }, pxPerMs)
+                            },
                         )
                     }
                 }
             }
         }
+        if (stickers && lanes.isNotEmpty()) Spacer(Modifier.height(rowGap))
+    }
+}
+
+/** What a sticker's bar says: its emoji, or the kind of picture. */
+private class StickerLabels(val image: String, val gif: String, val drawing: String) {
+    fun of(sticker: Sticker): String = when (sticker.kind) {
+        StickerKind.EMOJI -> sticker.value
+        StickerKind.IMAGE -> if (sticker.animated) gif else image
+        StickerKind.DRAWING -> drawing
     }
 }

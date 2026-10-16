@@ -1,5 +1,9 @@
 package com.savie.precut.ui.editor
 
+import com.savie.precut.model.totalDurationMs
+import com.savie.precut.model.overlapMs
+import com.savie.precut.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import com.savie.precut.model.Clip
@@ -26,8 +30,18 @@ fun TransitionPanel(state: EditorUiState.Ready, clipId: String, viewModel: Edito
             override fun onApplyAll() = motion.onTransitionApplyAll()
         }
     }
-    val maxMs = minOf(clips[index].timelineDurationMs(), clips[index + 1].timelineDurationMs())
-    TransitionTool(clips[index].transitionOut, maxMs, actions, onDone = viewModel::onToolClosed)
+    val transition = clips[index].transitionOut
+    val shorter = minOf(clips[index].timelineDurationMs(), clips[index + 1].timelineDurationMs())
+    // An overlap may take at most half the shorter clip (so a clip's two overlaps never meet).
+    val maxMs = if (transition?.type?.overlapping == true) shorter / 2 else shorter
+    val note = if (transition?.type?.overlapping == true) {
+        val after = state.project.totalDurationMs()
+        val before = after + overlapMs(clips[index], clips[index + 1])
+        stringResource(R.string.transition_overlap_note, seconds(before), seconds(after))
+    } else {
+        null
+    }
+    TransitionTool(transition, maxMs, actions, onDone = viewModel::onToolClosed, overlapNote = note)
 }
 
 /** The Animation panel for [clip]. */
@@ -48,3 +62,5 @@ fun AnimationPanel(clip: Clip, viewModel: EditorViewModel) {
         onDone = viewModel::onToolClosed,
     )
 }
+
+private fun seconds(ms: Long): String = String.format(java.util.Locale.getDefault(), "%.1fs", ms / 1000f)

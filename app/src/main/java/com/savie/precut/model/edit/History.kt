@@ -49,5 +49,7 @@ data class History(
 /** Which edits merge into one undo step when repeated quickly (null = always a new step). */
 fun coalesceKeyFor(action: EditAction): String? = when (action) {
     is EditAction.UpdateText -> "text:${action.overlay.id}"
+    is EditAction.EditKeyframedText -> "text:${action.overlay.id}"
+    is EditAction.EditKeyframed -> coalesceKeyFor(action.edit)?.let { "keyframe:${action.timelineMs}:$it" }
     else -> null
 }

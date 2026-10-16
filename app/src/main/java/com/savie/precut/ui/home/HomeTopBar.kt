@@ -28,7 +28,7 @@ import com.savie.precut.ui.theme.TextPrimary
 
 /** Logo and app name, then the camera menu (H-06). Settings (H-09) arrives in Phase 12. */
 @Composable
-fun HomeTopBar(cameraEnabled: Boolean, onCamera: (video: Boolean) -> Unit) {
+fun HomeTopBar(cameraEnabled: Boolean, onCamera: (video: Boolean) -> Unit, onSettings: () -> Unit = {}) {
     var cameraMenu by remember { mutableStateOf(false) }
     Row(
         Modifier.statusBarsPadding().fillMaxWidth().height(64.dp).padding(start = 16.dp, end = 4.dp),
@@ -42,6 +42,9 @@ fun HomeTopBar(cameraEnabled: Boolean, onCamera: (video: Boolean) -> Unit) {
                 Icon(painterResource(R.drawable.ic_camera), contentDescription = stringResource(R.string.home_camera))
             }
             CaptureMenu(expanded = cameraMenu, onDismiss = { cameraMenu = false }, onCamera = onCamera)
+        }
+        IconButton(onClick = onSettings) {
+            Icon(painterResource(R.drawable.ic_settings), contentDescription = stringResource(R.string.settings_open))
         }
     }
 }

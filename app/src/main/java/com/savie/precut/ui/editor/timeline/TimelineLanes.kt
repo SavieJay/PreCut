@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor.timeline
 
+import com.savie.precut.model.slotStartTimesMs
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -15,6 +16,8 @@ import com.savie.precut.model.Project
 import com.savie.precut.model.audioLanes
 import com.savie.precut.model.lookLayerLanes
 import com.savie.precut.model.textLanes
+import com.savie.precut.model.stickerLanes
+import com.savie.precut.model.effectLanes
 import com.savie.precut.model.clipStartTimesMs
 import com.savie.precut.model.timelineAt
 import com.savie.precut.model.timelineEndMs
@@ -43,9 +46,11 @@ fun timelineHeight(project: Project, compact: Boolean = false): Dp {
     if (compact) return stripTop + ClipHeight + BottomPadding
     val layerRows = project.lookLayerLanes().size
     val textRows = project.textLanes().size.coerceAtLeast(1)
+    val stickerRows = project.stickerLanes().size
+    val effectRows = project.effectLanes().size
     val audioRows = project.audioLanes().size.coerceAtLeast(1)
     return stripTop + ClipHeight + StripGap +
-        (TextLaneHeight + RowGap) * layerRows +
+        (TextLaneHeight + RowGap) * (layerRows + stickerRows + effectRows) +
         TextLaneHeight * textRows + RowGap * (textRows - 1) + (RowGap + AudioRowHeight) * audioRows + BottomPadding
 }
 
@@ -141,6 +146,29 @@ fun TimelineLanes(
         actions = actions,
     )
     TextRows(
+        lanes = project.stickerLanes(),
+        selectedTextId = selection.textId,
+        multiIds = selection.multiIds,
+        pxPerMs = pxPerMs,
+        widthPx = contentWidthPx,
+        rowHeight = TextLaneHeight,
+        rowGap = RowGap,
+        snap = snap,
+        onSelect = actions::onSelectText,
+        onTiming = actions::onTextTiming,
+        stickers = true,
+    )
+    EffectLayerRows(
+        lanes = project.effectLanes(),
+        selectedLayerId = selection.layerId,
+        pxPerMs = pxPerMs,
+        widthPx = contentWidthPx,
+        rowHeight = TextLaneHeight,
+        rowGap = RowGap,
+        snap = snap,
+        actions = actions,
+    )
+    TextRows(
         lanes = project.textLanes(),
         selectedTextId = selection.textId,
         multiIds = selection.multiIds,
@@ -168,10 +196,11 @@ fun TimelineLanes(
 
 /** Edges and beats bars can snap to, tagged with the id of the item they belong to. */
 private fun snapTargetsOf(project: Project): List<Pair<String, Long>> = buildList {
-    project.clipStartTimesMs().forEach { add("" to it) }
+    project.slotStartTimesMs().forEach { add("" to it) }
     add("" to project.totalDurationMs())
     project.textOverlays.forEach { add(it.id to it.startMs); add(it.id to it.endMs) }
     project.lookLayers.forEach { add(it.id to it.startMs); add(it.id to it.endMs) }
+    project.effectLayers.forEach { add(it.id to it.startMs); add(it.id to it.endMs) }
     project.overlays.forEach { add(it.id to it.timelineStartMs); add(it.id to it.timelineEndMs) }
     project.audioClips.forEach { audio ->
         add(audio.id to audio.timelineStartMs)

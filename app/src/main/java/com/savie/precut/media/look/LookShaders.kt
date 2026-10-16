@@ -32,6 +32,7 @@ uniform vec4 uAdjustC;   // shadows, fade, vignette, grain
 uniform vec4 uMisc;      // sharpen, lut mix, lut size, grain seed
 uniform vec4 uFlags;     // enabled, hsl enabled, curves enabled, aspect (w / h)
 uniform vec2 uTexelSize;
+uniform vec4 uChroma;    // key Cb, Cr, threshold (< 0: no key), soft edge
 uniform vec4 uHslHueA;
 uniform vec4 uHslHueB;
 uniform vec4 uHslSatA;
@@ -103,6 +104,16 @@ void main() {
     return;
   }
   vec3 c = src.rgb;
+  float keyAlpha = 1.0;
+  if (uChroma.z >= 0.0) {
+    // Keyed on the source colours, before grading, so the picked colour matches.
+    vec2 cbcr = vec2(dot(c, vec3(-0.168736, -0.331264, 0.5)), dot(c, vec3(0.5, -0.418688, -0.081312)));
+    float d = distance(cbcr, uChroma.xy);
+    keyAlpha = smoothstep(uChroma.z, uChroma.z + uChroma.w, d);
+    // Edges keep a tint of the key colour; take some colour out of them.
+    float spill = 1.0 - smoothstep(uChroma.z, uChroma.z + uChroma.w * 2.0 + 0.05, d);
+    c = mix(c, vec3(dot(c, LUMA)), spill * 0.6);
+  }
   if (uMisc.x > 0.0) {
     vec3 around = texture2D(uTexSampler, vTexSamplingCoord + vec2(uTexelSize.x, 0.0)).rgb
         + texture2D(uTexSampler, vTexSamplingCoord - vec2(uTexelSize.x, 0.0)).rgb
@@ -142,7 +153,7 @@ void main() {
     c *= 1.0 - uAdjustC.z * 0.85 * smoothstep(0.35, 1.0, length(d) / corner);
   }
   if (uAdjustC.w > 0.0) c += (hash(vTexSamplingCoord / uTexelSize + uMisc.w) - 0.5) * uAdjustC.w * 0.2;
-  gl_FragColor = vec4(clamp(c, 0.0, 1.0), src.a);
+  gl_FragColor = vec4(clamp(c, 0.0, 1.0), src.a * keyAlpha);
 }
 """
 }

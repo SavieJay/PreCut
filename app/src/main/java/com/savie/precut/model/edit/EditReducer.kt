@@ -1,5 +1,7 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.validSpans
+
 import com.savie.precut.model.Clip
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.clipFromMedia
@@ -36,7 +38,9 @@ object EditReducer {
             is EditAction.SetKeepPitch -> project.updateClip(action.clipId) { it.copy(keepPitch = action.keepPitch) }
             is EditAction.SetClipLook -> project.updateClip(action.clipId) { it.copy(look = action.look.normalized()) }
             is EditAction.LayerEdit -> project.applyLayerEdit(action)
+            is EditAction.EffectEdit -> project.applyEffectEdit(action)
             is EditAction.FrameEdit -> project.applyFrameEdit(action)
+            is EditAction.KeyframeEdit -> project.applyKeyframeEdit(action)
             is EditAction.MotionEdit -> project.applyMotionEdit(action)
             is EditAction.OverlayEdit -> project.applyOverlayEdit(action)
             is EditAction.SetName -> action.name.trim().let { if (it == project.name) project else project.copy(name = it) }
@@ -70,7 +74,7 @@ object EditReducer {
             }
             is EditAction.AudioEdit -> project.applyAudioEdit(action)
         }
-        return if (edited === project) project else edited.withClampedTexts().withClampedLayers()
+        return if (edited === project) project else edited.withClampedTexts().withClampedLayers().withClampedEffectLayers()
     }
 
     /** True if [reduce] would split something at [atTimelineMs]. Used to enable the Split button. */
@@ -100,8 +104,10 @@ object EditReducer {
 
     private fun Project.updateText(overlay: TextOverlay): Project {
         val index = textOverlays.indexOfFirst { it.id == overlay.id }
-        if (index < 0 || textOverlays[index] == overlay) return this
-        return copy(textOverlays = textOverlays.toMutableList().also { it[index] = overlay })
+        // Spans that no longer fit the (edited) words are dropped or clipped.
+        val valid = overlay.copy(spans = overlay.validSpans())
+        if (index < 0 || textOverlays[index] == valid) return this
+        return copy(textOverlays = textOverlays.toMutableList().also { it[index] = valid })
     }
 
     private fun Project.splitText(action: EditAction.SplitText): Project {

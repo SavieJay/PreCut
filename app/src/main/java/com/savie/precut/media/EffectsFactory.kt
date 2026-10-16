@@ -12,15 +12,18 @@ import androidx.media3.effect.Crop
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
 import androidx.media3.effect.ScaleAndRotateTransformation
+import com.savie.precut.media.effect.VideoEffectGl
 import com.savie.precut.media.look.LookEffect
 import com.savie.precut.media.look.LutCache
 import com.savie.precut.media.frame.CanvasEffect
 import com.savie.precut.media.frame.CanvasPatterns
 import com.savie.precut.media.frame.LiveFrames
 import com.savie.precut.media.motion.TransitionEffect
+import com.savie.precut.media.layer.OverlayLayersEffect
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.frame.ClipCanvas
+import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.frame.FrameGeometry
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -39,7 +42,9 @@ class EffectsFactory @Inject constructor(
      * the output frame: plainly fitted on black, or over the clip's canvas.
      */
     fun videoEffects(visual: VisualSpec, outputSize: OutputSize): List<Effect> = buildList {
-        visual.look?.let { add(LookEffect(it, luts)) }
+        if (visual.look != null || visual.chroma != null || visual.lookKeyframes.isNotEmpty()) {
+            add(LookEffect(visual.look ?: ClipLook(), luts, chroma = visual.chroma, keyframes = visual.lookKeyframes, keyframesStartUs = visual.keyframesStartUs))
+        }
         if (visual.mirrored || visual.rotationDegrees % 360 != 0) {
             // Media3 scales before rotating, and rotates counter-clockwise for positive angles; the model is clockwise.
             add(
@@ -61,6 +66,7 @@ class EffectsFactory @Inject constructor(
         }
         // On the placed frame, so the canvas zooms, spins and fades with the clip.
         visual.transition?.let { add(TransitionEffect(it)) }
+        visual.effect?.let { add(VideoEffectGl(it.effect, timeOriginUs = it.startUs)) }
     }
 
     /** The picture of an image canvas, sized to cover the frame; runs on the effects thread. */
@@ -79,7 +85,11 @@ class EffectsFactory @Inject constructor(
      * are separate processors because a fade's shape replaces (not scales) the provider's gain.
      */
     fun audioProcessors(sound: SoundSpec): List<AudioProcessor> = buildList {
-        if (sound.volume != 1f) add(GainProcessor(DefaultGainProvider.Builder(sound.volume).build()))
+        if (sound.volumeKeyframes.isNotEmpty()) {
+            add(GainProcessor(KeyframeGainProvider(sound.volumeKeyframes, sound.keyframeOffsetMs)))
+        } else if (sound.volume != 1f) {
+            add(GainProcessor(DefaultGainProvider.Builder(sound.volume).build()))
+        }
         if (sound.fadeInMs > 1 || sound.fadeOutMs > 1) {
             val fades = DefaultGainProvider.Builder(/* defaultGain= */ 1f)
             if (sound.fadeInMs > 1) fades.addFadeAt(0L, sound.fadeInMs * 1_000, DefaultGainProvider.FADE_IN_LINEAR)
@@ -93,8 +103,8 @@ class EffectsFactory @Inject constructor(
     }
 
     /**
-     * One overlay effect for the cover and all texts, applied to the whole composition in
-     * timeline time. The cover is drawn first so texts stay on top.
+     * One overlay effect for the cover and all texts and stickers, applied to the whole
+     * composition in timeline time. The cover is drawn first so texts stay on top.
      */
     fun overlayEffect(texts: List<TextSpec>, cover: CoverSpec?, outputSize: OutputSize): Effect? {
         if (texts.isEmpty() && cover == null) return null
@@ -108,10 +118,35 @@ class EffectsFactory @Inject constructor(
                 }
             }
         }
-        return OverlayEffect(listOfNotNull(coverOverlay) + texts.map { TimedTextOverlay(it, textRenderer.render(it, outputSize)) })
+        val textOverlays = texts.map { text ->
+            TimedTextOverlay(
+                text,
+                textRenderer.render(text, outputSize),
+                renderRevealed = { reveal -> textRenderer.render(text, outputSize, reveal) },
+                frames = textRenderer.stickerFrames(text),
+            )
+        }
+        return OverlayEffect(listOfNotNull(coverOverlay) + textOverlays)
+    }
+
+    /** Overlapping transitions, then picture-in-picture rows (bottom row first), over the main video; null without either. */
+    fun overlayLayersEffect(lanes: List<OverlayLaneSpec>, transitions: List<TransitionLayerSpec>, outputSize: OutputSize): Effect? {
+        val layers = lanes.flatMap { it.items }
+        if (layers.isEmpty() && transitions.isEmpty()) return null
+        return OverlayLayersEffect(layers, transitions, outputSize, luts, liveFrames) { image ->
+            // Runs once per image on the effects thread; the loader's own IO work happens on its dispatcher.
+            runBlocking {
+                val key = ThumbnailKey(image.uri, ClipType.IMAGE, 0L, maxOf(outputSize.width, outputSize.height), image.rotationDegrees, exact = true)
+                thumbnails.load(key, cache = false)
+            }
+        }
     }
 
     /** Look layers, each active only in its time range (composition time). */
+    /** One pass per effect layer, each changing only its own time range. */
+    fun effectLayerEffects(layers: List<EffectLayerSpec>): List<Effect> =
+        layers.map { VideoEffectGl(it.effect, timeOriginUs = it.startUs, startUs = it.startUs, endUs = it.endUs) }
+
     fun lookLayerEffects(layers: List<LookLayerSpec>): List<Effect> =
         layers.map { LookEffect(it.look, luts, it.startUs until it.endUs) }
 }

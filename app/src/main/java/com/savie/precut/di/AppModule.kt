@@ -21,6 +21,12 @@ import com.savie.precut.media.SharedMediaCopier
 import com.savie.precut.media.SharedMediaStore
 import com.savie.precut.media.VideoExporter
 import dagger.Binds
+import com.savie.precut.data.AndroidAppStorage
+import com.savie.precut.data.AppStorage
+import com.savie.precut.data.AppSettings
+import com.savie.precut.data.PrefsAppSettings
+import com.savie.precut.export.AndroidExportServiceStarter
+import com.savie.precut.export.ExportServiceStarter
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -53,6 +59,15 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindMediaSaver(impl: MediaStoreSaver): MediaSaver
+
+    @Binds
+    abstract fun bindAppStorage(impl: AndroidAppStorage): AppStorage
+
+    @Binds
+    abstract fun bindAppSettings(impl: PrefsAppSettings): AppSettings
+
+    @Binds
+    abstract fun bindExportServiceStarter(impl: AndroidExportServiceStarter): ExportServiceStarter
 
     @Binds
     abstract fun bindCaptureStore(impl: CaptureFiles): CaptureStore

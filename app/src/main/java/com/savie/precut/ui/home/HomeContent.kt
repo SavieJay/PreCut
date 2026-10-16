@@ -57,6 +57,7 @@ fun HomeContent(
     onNewProject: () -> Unit,
     onCamera: (video: Boolean) -> Unit,
     actions: ProjectActions,
+    onSettings: () -> Unit = {},
 ) {
     var renaming by remember { mutableStateOf<ProjectSummary?>(null) }
     var deleting by remember { mutableStateOf<ProjectSummary?>(null) }
@@ -65,7 +66,7 @@ fun HomeContent(
     val fabVisible by remember { derivedStateOf { !gridState.canScrollBackward || !gridState.lastScrolledForward } }
 
     Scaffold(
-        topBar = { HomeTopBar(cameraEnabled = !isImporting, onCamera = onCamera) },
+        topBar = { HomeTopBar(cameraEnabled = !isImporting, onCamera = onCamera, onSettings = onSettings) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             AnimatedVisibility(!isImporting && !projects.isNullOrEmpty() && fabVisible, enter = scaleIn(), exit = scaleOut()) {

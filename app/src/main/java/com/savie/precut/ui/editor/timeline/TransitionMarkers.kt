@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor.timeline
 
+import com.savie.precut.model.slotStartTimesMs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -46,7 +47,8 @@ private val MarkerSize = 24.dp
 fun TransitionMarkers(project: Project, selection: TimelineSelection, pxPerMs: Float, onSelect: (String) -> Unit) {
     if (selection.multiSelectMode || project.clips.size < 2) return
     val density = LocalDensity.current
-    val starts = project.clipStartTimesMs()
+    // Junctions sit where each clip's own stretch begins (after any overlap).
+    val starts = project.slotStartTimesMs()
     val clips = project.clips
     for (index in 0 until clips.lastIndex) {
         val clip = clips[index]
@@ -55,7 +57,11 @@ fun TransitionMarkers(project: Project, selection: TimelineSelection, pxPerMs: F
         val selected = clip.id == selection.transitionClipId
         val transition = clip.transitionOut
         if (selected && transition != null) {
-            val fitted = MotionMath.fittedTransitionMs(transition, clip.timelineDurationMs(), clips[index + 1].timelineDurationMs())
+            val fitted = if (transition.type.overlapping) {
+                MotionMath.fittedOverlapMs(transition, clip.timelineDurationMs(), clips[index + 1].timelineDurationMs())
+            } else {
+                MotionMath.fittedTransitionMs(transition, clip.timelineDurationMs(), clips[index + 1].timelineDurationMs())
+            }
             val bandPx = TimelineGeometry.msToPx(fitted, pxPerMs)
             Box(
                 Modifier

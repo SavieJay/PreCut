@@ -29,7 +29,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import android.text.format.Formatter
+import androidx.compose.ui.platform.LocalContext
 import com.savie.precut.R
+import com.savie.precut.export.ExportFailure
 import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.components.FilledButton
 import com.savie.precut.ui.components.MediaBadge
@@ -74,7 +77,7 @@ internal fun ColumnScope.Done(state: ExportUiState.Done, info: ExportInfo?, acti
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(painterResource(R.drawable.ic_check_circle), contentDescription = null, tint = SnapGuide)
-            Text(stringResource(R.string.export_done), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(if (state.audio) R.string.export_done_audio else R.string.export_done), style = MaterialTheme.typography.titleMedium)
         }
         state.uri?.let { uri ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -86,16 +89,40 @@ internal fun ColumnScope.Done(state: ExportUiState.Done, info: ExportInfo?, acti
 }
 
 @Composable
-internal fun ColumnScope.Failed(state: ExportUiState.Failed, actions: ExportActions) {
+internal fun ColumnScope.Failed(state: ExportUiState.Failed, recovery: ExportRecovery?, actions: ExportActions) {
+    val context = LocalContext.current
     Column(
         Modifier.weight(1f).fillMaxWidth().padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
     ) {
-        Icon(painterResource(R.drawable.ic_error), contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+        val storage = state.reason == ExportFailure.LOW_STORAGE
+        Icon(
+            painterResource(if (storage) R.drawable.ic_sd_card_alert else R.drawable.ic_error),
+            contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp),
+        )
         Text(stringResource(state.reason.messageRes()), style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-        state.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = TextSecondary, textAlign = TextAlign.Center) }
-        if (state.reason != ExportFailure.PROJECT_NOT_FOUND) FilledButton(stringResource(R.string.action_retry), actions::onRetry)
+        val explanation = when {
+            state.reason == ExportFailure.ENCODER && recovery != null && recovery.lower != recovery.resolution ->
+                stringResource(R.string.export_error_encoder, stringResource(recovery.resolution.label()), stringResource(recovery.lower.label()))
+            storage -> stringResource(
+                R.string.export_storage_text,
+                Formatter.formatShortFileSize(context, state.neededBytes), Formatter.formatShortFileSize(context, state.freeBytes),
+            ) + (recovery?.cacheBytes?.takeIf { it > 0 }?.let { " " + stringResource(R.string.export_storage_cache, Formatter.formatShortFileSize(context, it)) } ?: "")
+            else -> state.detail
+        }
+        explanation?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, textAlign = TextAlign.Center) }
+        when {
+            state.reason == ExportFailure.ENCODER && recovery != null && recovery.lower != recovery.resolution -> {
+                FilledButton(stringResource(R.string.export_try_res, stringResource(recovery.lower.label())), actions::onTryLower)
+                AccentTextButton(stringResource(R.string.export_retry_res, stringResource(recovery.resolution.label())), actions::onRetry)
+            }
+            storage -> {
+                if ((recovery?.cacheBytes ?: 0L) > 0L) FilledButton(stringResource(R.string.export_clear_cache), actions::onClearCache)
+                AccentTextButton(stringResource(R.string.action_retry), actions::onRetry)
+            }
+            state.reason != ExportFailure.PROJECT_NOT_FOUND -> FilledButton(stringResource(R.string.action_retry), actions::onRetry)
+        }
         AccentTextButton(stringResource(R.string.export_back_to_edit), actions::onBackToEdit)
     }
 }
@@ -113,4 +140,6 @@ private fun ExportFailure.messageRes(): Int = when (this) {
     ExportFailure.PERMISSION_DENIED -> R.string.export_error_permission
     ExportFailure.EXPORT_FAILED -> R.string.export_error_encode
     ExportFailure.SAVE_FAILED -> R.string.export_error_save
+    ExportFailure.ENCODER -> R.string.export_failed_title
+    ExportFailure.LOW_STORAGE -> R.string.export_storage_title
 }

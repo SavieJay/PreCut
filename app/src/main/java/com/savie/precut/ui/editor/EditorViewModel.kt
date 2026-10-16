@@ -35,6 +35,24 @@ import com.savie.precut.model.withMediaSubstitutes
 import com.savie.precut.model.edit.BatchEdits
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.edit.EditAction
+import com.savie.precut.model.TextOverlay
+import com.savie.precut.media.TextOverlayRenderer
+import com.savie.precut.media.TtsSynthesizer
+import com.savie.precut.media.sticker.StickerLibrary
+import com.savie.precut.data.EffectFavourites
+import com.savie.precut.data.AppSettings
+import com.savie.precut.media.MediaSaver
+import com.savie.precut.media.export.ExportCapabilitiesProbe
+import com.savie.precut.media.export.FrameGrabber
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.savie.precut.media.text.TextFonts
+import com.savie.precut.di.IoDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
+import com.savie.precut.media.textSpecFor
+import com.savie.precut.model.OutputSize
+import android.graphics.Bitmap
+import com.savie.precut.model.edit.keyframed
 import com.savie.precut.model.edit.EditReducer
 import com.savie.precut.model.totalDurationMs
 import com.savie.precut.ui.navigation.requireProjectId
@@ -66,7 +84,7 @@ import javax.inject.Inject
  * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
  * clip when there is one, otherwise on a video clip.
  */
-enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION }
+enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -95,6 +113,8 @@ sealed interface EditorUiState {
         val cropDraft: CropDraft? = null,
         /** The junction marker whose transition is being edited: the id of the clip before it. */
         val selectedTransitionId: String? = null,
+        /** The chroma key's eyedropper is on: the preview picks colours (P-04). */
+        val chromaPicking: Boolean = false,
         /** A reversed copy is being made (T-19). */
         val reversing: ReverseProgress? = null,
     ) : EditorUiState
@@ -103,6 +123,17 @@ sealed interface EditorUiState {
 sealed interface EditorEvent {
     data class SomeFilesSkipped(val count: Int) : EditorEvent
     data object NothingImported : EditorEvent
+    data object PickFont : EditorEvent
+    data object FontNotUsable : EditorEvent
+    data object SpeechFailed : EditorEvent
+    data object PickStickerImage : EditorEvent
+    data object StickerNotUsable : EditorEvent
+    data object StickerImageRemoved : EditorEvent
+    data object DrawingNotSaved : EditorEvent
+    /** Open the export screen with these settings (JSON) and kind. */
+    data class NavigateExport(val settings: String, val kind: String) : EditorEvent
+    data object FrameSaved : EditorEvent
+    data object FrameNotSaved : EditorEvent
     data object SpeedNotForPhotos : EditorEvent
     /** The screen should open the audio file picker. */
     data object PickMusic : EditorEvent
@@ -160,7 +191,22 @@ class EditorViewModel @Inject constructor(
     private val liveFrames: LiveFrames,
     freezeFrames: FreezeFrames,
     reverser: ClipReverser,
+    private val textRenderer: TextOverlayRenderer,
+    textFonts: TextFonts,
+    tts: TtsSynthesizer,
+    stickerLibrary: StickerLibrary,
+    effectFavourites: EffectFavourites,
+    private val appSettings: AppSettings,
+    exportCapabilities: ExportCapabilitiesProbe,
+    frameGrabber: FrameGrabber,
+    mediaSaver: MediaSaver,
+    @ApplicationContext appContext: Context,
+    @IoDispatcher ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
+
+    /** [overlay] drawn as the export draws it, in a frame of [size] (the editor's text box). */
+    fun renderText(overlay: TextOverlay, size: OutputSize): Bitmap = textRenderer.render(textSpecFor(overlay, size), size)
+
 
     val projectId = savedStateHandle.requireProjectId()
 
@@ -191,7 +237,7 @@ class EditorViewModel @Inject constructor(
     }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** For attaching the video surface only; control playback through the event methods. */
-    val player: Player get() = previewController.player
+    val player: StateFlow<Player> = previewController.player
 
     private val host = object : EditorHost {
         override val ready: EditorUiState.Ready? get() = _uiState.value as? EditorUiState.Ready
@@ -237,6 +283,32 @@ class EditorViewModel @Inject constructor(
 
     /** Overlays (picture-in-picture). */
     val overlay = EditorOverlay(host, importer)
+
+    /** Mask and Chroma key. */
+    val mask = EditorMask(host, liveFrames, previewController)
+
+    /** Keyframes and their easing. */
+    val keyframes = EditorKeyframes(host)
+
+    /** Text style, rich text and text to speech. */
+    val textStyle = EditorTextStyle(host, textFonts, tts, importer, ioDispatcher)
+
+    /** Stickers and Draw. */
+    val stickers = EditorStickers(host, stickerLibrary, ioDispatcher)
+
+    /** Video effects and effect layers. */
+    val effects = EditorEffects(host, effectFavourites)
+
+    /** App settings, for the export sheet's one-time notification prompt. */
+    val appSettingsForUi: AppSettings get() = appSettings
+
+    /** The export settings sheet. */
+    val export = EditorExport(host, appSettings, exportCapabilities, frameGrabber, mediaSaver, appContext.cacheDir, ioDispatcher)
+
+    fun isEffectLayer(layerId: String): Boolean = (_uiState.value as? EditorUiState.Ready)?.project?.effectLayers?.any { it.id == layerId } == true
+
+    /** The clip "This clip" applies an effect to (S-04). */
+    fun targetClipIdForEffects(): String? = targetClipId()
 
     /** The camera capture in progress, until the camera app returns. */
     private var pendingCapture: Capture? = null
@@ -327,7 +399,7 @@ class EditorViewModel @Inject constructor(
                 selectedClipId = ready.selectedClipId?.takeIf { id -> project.clips.any { it.id == id } },
                 selectedTextId = ready.selectedTextId?.takeIf { id -> project.textOverlays.any { it.id == id } },
                 selectedAudioId = ready.selectedAudioId?.takeIf { id -> project.audioClips.any { it.id == id } },
-                selectedLayerId = ready.selectedLayerId?.takeIf { id -> project.lookLayers.any { it.id == id } },
+                selectedLayerId = ready.selectedLayerId?.takeIf { id -> project.lookLayers.any { it.id == id } || project.effectLayers.any { it.id == id } },
                 multiSelect = ready.multiSelect?.filter { id -> project.containsItem(id) }?.toSet(),
                 activeTool = null,
                 cropDraft = null,
@@ -458,7 +530,8 @@ class EditorViewModel @Inject constructor(
                 selectedLayerId = null,
                 selectedTransitionId = null,
                 audioMenuOpen = false,
-                activeTool = if (textId != null) EditorTool.TEXT else null,
+                // A sticker shows its toolbar (S-01b); a text opens its panel.
+                activeTool = if (textId != null && it.project.textOverlays.none { t -> t.id == textId && t.sticker != null }) EditorTool.TEXT else null,
             )
         }
     }
@@ -492,6 +565,13 @@ class EditorViewModel @Inject constructor(
             EditorTool.VOICE, EditorTool.BEATS -> Unit // audio-only tools
             EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.ANIMATION -> frame.open(tool)
             EditorTool.TRANSITION -> Unit // opened from a junction marker
+            EditorTool.MASK, EditorTool.CHROMA -> mask.open(tool)
+            EditorTool.KEYFRAME_EASING -> keyframes.onOpenEasing()
+            EditorTool.TEXT_STYLE, EditorTool.TEXT_RICH, EditorTool.TEXT_TTS -> textStyle.open(tool)
+            EditorTool.STICKERS, EditorTool.DRAW -> stickers.open(tool)
+            EditorTool.EFFECTS -> effects.open()
+            EditorTool.EFFECT_TARGET -> Unit // opened by picking an effect
+            EditorTool.STICKER_ANIMATION, EditorTool.STICKER_OPACITY -> updateReady { it.copy(activeTool = tool) }
             EditorTool.TRIM, EditorTool.SPEED, EditorTool.VOLUME, EditorTool.FADE -> {
                 val clipId = targetClipId() ?: return
                 val clip = ready.project.clipById(clipId) ?: return
@@ -511,7 +591,13 @@ class EditorViewModel @Inject constructor(
         val peeking = (_uiState.value as? EditorUiState.Ready)?.peekOriginal == true
         updateReady {
             val back = if (it.activeTool == EditorTool.HSL || it.activeTool == EditorTool.CURVES) EditorTool.ADJUST else null
-            it.copy(activeTool = back, selectedTextId = null, selectedTransitionId = null, peekOriginal = false)
+            // A sticker's panels return to its toolbar.
+            val keepSticker = it.activeTool == EditorTool.STICKER_ANIMATION || it.activeTool == EditorTool.STICKER_OPACITY
+            it.copy(
+                activeTool = back,
+                selectedTextId = if (keepSticker) it.selectedTextId else null,
+                selectedTransitionId = null, peekOriginal = false, chromaPicking = false,
+            )
         }
         if (peeking) host.refreshPreview()
     }
@@ -615,7 +701,7 @@ class EditorViewModel @Inject constructor(
                 if (result.failedCount > 0) _events.send(EditorEvent.SomeFilesSkipped(result.failedCount))
                 val project = (_uiState.value as? EditorUiState.Ready)?.project ?: return@launch
                 val atIndex = project.insertIndexAt(previewState.value.positionMs)
-                applyEdit(EditAction.AddClips(result.imported.map { clipFromMedia(newId(), it.uri, it.info) }, atIndex))
+                applyEdit(EditAction.AddClips(result.imported.map { clipFromMedia(newId(), it.uri, it.info, appSettings.values.value.photoDurationMs) }, atIndex))
             } finally {
                 updateReady { it.copy(isImporting = false) }
             }
@@ -633,7 +719,8 @@ class EditorViewModel @Inject constructor(
     private fun applyEdit(action: EditAction) {
         val ready = _uiState.value as? EditorUiState.Ready ?: return
         val currentSession = session ?: return
-        val edited = currentSession.apply(action) ?: return
+        // On a clip or text with keyframes, a value edit lands in the keyframe at the playhead.
+        val edited = currentSession.apply(ready.project.keyframed(action, previewState.value.positionMs)) ?: return
         _uiState.value = ready.copy(project = edited, canUndo = currentSession.history.canUndo, canRedo = false)
         previewController.pause()
         pendingPreview.value = edited

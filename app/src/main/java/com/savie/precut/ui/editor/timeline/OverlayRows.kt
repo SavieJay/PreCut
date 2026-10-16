@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor.timeline
 
+import com.savie.precut.model.edit.keyframesOnTimeline
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -113,6 +114,7 @@ private fun OverlayBarView(
                         .alpha(0.55f),
                 )
             }
+            if (selected) KeyframeMarks(clip.keyframesOnTimeline().map { it.atMs }, pxPerMs)
         },
     )
 }

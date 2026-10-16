@@ -9,6 +9,7 @@ import com.savie.precut.data.ShareInbox
 import com.savie.precut.ui.editor.EditorScreen
 import com.savie.precut.ui.export.ExportScreen
 import com.savie.precut.ui.home.HomeScreen
+import com.savie.precut.ui.settings.SettingsScreen
 
 @Composable
 fun AppNavHost(shareInbox: ShareInbox) {
@@ -19,13 +20,19 @@ fun AppNavHost(shareInbox: ShareInbox) {
     }
     NavHost(navController = navController, startDestination = HomeRoute) {
         composable<HomeRoute> {
-            HomeScreen(onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) })
+            HomeScreen(
+                onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) },
+                onOpenSettings = { navController.navigate(SettingsRoute) },
+            )
         }
         composable<EditorRoute> {
             EditorScreen(
                 onBack = { navController.popBackStack() },
-                onExport = { projectId -> navController.navigate(ExportRoute(projectId)) },
+                onExport = { projectId, settings, kind -> navController.navigate(ExportRoute(projectId, settings, kind)) },
             )
+        }
+        composable<SettingsRoute> {
+            SettingsScreen(onBack = { navController.popBackStack() })
         }
         composable<ExportRoute> {
             ExportScreen(

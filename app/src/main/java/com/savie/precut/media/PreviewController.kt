@@ -1,12 +1,14 @@
 package com.savie.precut.media
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.ExperimentalApi
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.effect.MultipleInputVideoGraph
+import androidx.media3.transformer.Composition
 import androidx.media3.transformer.CompositionPlayer
 import com.savie.precut.media.frame.LiveFrames
 import com.savie.precut.model.Project
@@ -41,25 +43,53 @@ const val PREVIEW_SHORT_SIDE_PX = 720
 /**
  * Owns the preview player, fed by [CompositionBuilder] so preview matches export.
  * Must be created and used on the main thread; call [release] when done.
+ *
+ * After an error the CompositionPlayer is replaced, not reused: in Media3 1.11.1 it never clears
+ * its error, so it would stay idle for good.
  */
 @OptIn(ExperimentalApi::class, UnstableApi::class) // CompositionPlayer is experimental in Media3 1.11; it's the only composition preview.
 class PreviewController @Inject constructor(
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
     private val compositionBuilder: CompositionBuilder,
 ) {
 
-    // Multiple-input graph: overlays are extra video sequences composited together (Phase 9).
-    private val compositionPlayer = CompositionPlayer.Builder(context)
-        .setVideoGraphFactory(MultipleInputVideoGraph.Factory())
-        .build()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var ticker: Job? = null
+    private var stallWatch: Job? = null
+    private var stallNudges = 0
+
+    private val listener = object : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) {
+            if (player.playbackState == Player.STATE_READY) recoveries = 0
+            publishState()
+            if (player.isPlaying) startTicker() else stopTicker()
+            watchForStall(player)
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            Log.w(TAG, "Preview player failed; replacing it", error)
+            // Not from inside the failing player's callback.
+            scope.launch(Dispatchers.Main) { recover() }
+        }
+    }
+
+    private var compositionPlayer = newPlayer()
+    private val _player = MutableStateFlow<Player>(compositionPlayer)
+
+    /** The current player, only so the UI can attach a video surface. It changes when replaced. */
+    val player: StateFlow<Player> = _player.asStateFlow()
 
     /**
      * Whether the player has something to play. With nothing (e.g. every clip's media is
      * missing), CompositionPlayer must not be seeked: it crashes when no composition was ever set.
      */
     private var hasMedia = false
+    private var composition: Composition? = null
+    private var volume = 1f
+    private var recoveries = 0
+
+    /** The last position shown before any failure; a failed player reports 0. */
+    private var lastGoodPositionMs = 0L
 
     /** The position live redraws keep returning to; null when not redrawing. */
     private var redrawBaseMs: Long? = null
@@ -68,29 +98,16 @@ class PreviewController @Inject constructor(
     private val _state = MutableStateFlow(PreviewState())
     val state: StateFlow<PreviewState> = _state.asStateFlow()
 
-    /** Exposed only so the UI can attach a video surface. */
-    val player: Player get() = compositionPlayer
-
-    private val listener = object : Player.Listener {
-        override fun onEvents(player: Player, events: Player.Events) {
-            publishState()
-            if (player.isPlaying) startTicker() else stopTicker()
-        }
-    }
-
-    init {
-        compositionPlayer.addListener(listener)
-    }
-
     /**
      * Rebuilds the preview from [project], starting at [startPositionMs]. [liveClipId] marks a clip
      * whose frame follows [LiveFrames] while it's being transformed.
      */
     fun setProject(project: Project, startPositionMs: Long = 0L, liveClipId: String? = null) {
-        val composition = compositionBuilder.build(project, PREVIEW_SHORT_SIDE_PX, liveClipId)
-        if (composition == null) {
+        val built = compositionBuilder.build(project, PREVIEW_SHORT_SIDE_PX, liveClipId)
+        if (built == null) {
             // CompositionPlayer can't clear its media; stop it and report an empty timeline.
             hasMedia = false
+            composition = null
             redrawBaseMs = null
             if (compositionPlayer.isScrubbingModeEnabled) compositionPlayer.setScrubbingModeEnabled(false)
             compositionPlayer.stop()
@@ -98,9 +115,8 @@ class PreviewController @Inject constructor(
             _state.value = PreviewState()
             return
         }
-        compositionPlayer.setComposition(composition, startPositionMs.coerceAtLeast(0L))
-        compositionPlayer.prepare()
-        hasMedia = true
+        recoveries = 0
+        load(built, startPositionMs)
     }
 
     fun togglePlayPause() {
@@ -109,7 +125,7 @@ class PreviewController @Inject constructor(
         if (compositionPlayer.isPlaying) {
             compositionPlayer.pause()
         } else {
-            if (compositionPlayer.playbackState == Player.STATE_ENDED) compositionPlayer.seekTo(0L)
+            if (compositionPlayer.playbackState == Player.STATE_ENDED) seekTo(0L)
             compositionPlayer.play()
         }
     }
@@ -122,7 +138,8 @@ class PreviewController @Inject constructor(
 
     /** Silences preview playback, e.g. while recording a voiceover so the mic doesn't pick it up. */
     fun setMuted(muted: Boolean) {
-        compositionPlayer.volume = if (muted) 0f else 1f
+        volume = if (muted) 0f else 1f
+        compositionPlayer.volume = volume
     }
 
     /**
@@ -141,6 +158,9 @@ class PreviewController @Inject constructor(
     fun endScrub() {
         if (!compositionPlayer.isScrubbingModeEnabled) return
         compositionPlayer.setScrubbingModeEnabled(false)
+        // Scrubbing turns the sequences' audio off; one more seek re-primes it while paused, so
+        // the next play doesn't start on an empty mixer (see [watchForStall]).
+        compositionPlayer.seekTo(compositionPlayer.currentPosition)
         publishState()
     }
 
@@ -174,7 +194,7 @@ class PreviewController @Inject constructor(
             base + 1 < duration -> base + 1
             else -> (base - 1).coerceAtLeast(0L)
         }
-        compositionPlayer.seekTo(target)
+        seekTo(target)
     }
 
     fun endLiveRedraw() {
@@ -182,8 +202,7 @@ class PreviewController @Inject constructor(
         redrawBaseMs = null
         endScrub()
         if (!hasMedia) return
-        compositionPlayer.seekTo(base)
-        publishState()
+        seekTo(base)
     }
 
     fun release() {
@@ -192,11 +211,78 @@ class PreviewController @Inject constructor(
         compositionPlayer.release()
     }
 
+    private fun load(newComposition: Composition, positionMs: Long) {
+        if (compositionPlayer.playerError != null) replacePlayer()
+        composition = newComposition
+        compositionPlayer.setComposition(newComposition, positionMs.coerceAtLeast(0L))
+        compositionPlayer.prepare()
+        hasMedia = true
+    }
+
+    /** Puts a fresh player in place of a failed one, at the last shown position, paused. */
+    private fun recover() {
+        val current = composition ?: return
+        if (recoveries >= MAX_RECOVERIES) {
+            Log.e(TAG, "Preview player keeps failing; giving up until the next edit")
+            return
+        }
+        recoveries++
+        load(current, lastGoodPositionMs)
+        publishState()
+    }
+
+    private fun replacePlayer() {
+        val scrubbing = compositionPlayer.isScrubbingModeEnabled
+        stopTicker()
+        compositionPlayer.removeListener(listener)
+        compositionPlayer.release()
+        compositionPlayer = newPlayer().also {
+            it.volume = volume
+            if (scrubbing) it.setScrubbingModeEnabled(true)
+        }
+        _player.value = compositionPlayer
+    }
+
+    /**
+     * CompositionPlayer (1.11.1) can deadlock while playing several sequences: when one runs short
+     * of audio for a moment (seen right after a seek), it pauses every sequence player until all
+     * are ready again, but the main sequence's audio can't become ready while the audio-only
+     * sequences that feed its mixer are paused, so playback sits in BUFFERING for good. Seeking
+     * in place restarts the pipelines; it's tried a few times, later ones waiting longer.
+     */
+    private fun watchForStall(player: Player) {
+        val stalled = player.playWhenReady && player.playbackState == Player.STATE_BUFFERING && !player.isScrubbingMode()
+        if (!stalled) {
+            stallWatch?.cancel()
+            stallWatch = null
+            if (player.playbackState == Player.STATE_READY) stallNudges = 0
+            return
+        }
+        if (stallWatch?.isActive == true || stallNudges >= MAX_STALL_NUDGES) return
+        val positionMs = player.currentPosition
+        stallWatch = scope.launch {
+            delay(STALL_TIMEOUT_MS * (stallNudges + 1))
+            if (player !== compositionPlayer || !player.playWhenReady || player.playbackState != Player.STATE_BUFFERING) return@launch
+            // A real stall creeps a few ms at most.
+            if (player.currentPosition - positionMs > STALL_PROGRESS_MS) return@launch
+            Log.w(TAG, "Preview stalled while buffering at ${player.currentPosition} ms; seeking in place")
+            stallNudges++
+            stallWatch = null
+            player.seekTo(player.currentPosition)
+        }
+    }
+
+    private fun Player.isScrubbingMode() = (this as? CompositionPlayer)?.isScrubbingModeEnabled == true
+
+    private fun newPlayer(): CompositionPlayer = CompositionPlayer.Builder(context).build().also { it.addListener(listener) }
+
     private fun publishState() {
         val duration = compositionPlayer.duration.takeIf { it != C.TIME_UNSET } ?: 0L
+        val positionMs = compositionPlayer.currentPosition.coerceIn(0L, duration)
+        if (compositionPlayer.playerError == null) lastGoodPositionMs = positionMs
         _state.value = PreviewState(
             isPlaying = compositionPlayer.isPlaying,
-            positionMs = compositionPlayer.currentPosition.coerceIn(0L, duration),
+            positionMs = positionMs,
             durationMs = duration,
             isScrubbing = compositionPlayer.isScrubbingModeEnabled,
         )
@@ -218,6 +304,14 @@ class PreviewController @Inject constructor(
     }
 
     private companion object {
+        const val TAG = "PreviewController"
         const val TICK_MS = 50L
+
+        /** Failures in a row, without reaching ready, before the preview stops replacing its player. */
+        const val MAX_RECOVERIES = 3
+        /** How long playback may sit in BUFFERING without moving before a seek in place. */
+        const val STALL_TIMEOUT_MS = 1_200L
+        const val MAX_STALL_NUDGES = 3
+        const val STALL_PROGRESS_MS = 250L
     }
 }

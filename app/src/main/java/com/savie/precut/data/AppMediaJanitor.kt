@@ -7,6 +7,7 @@ import com.savie.precut.media.ProxyManager
 import com.savie.precut.media.ProxyRules
 import com.savie.precut.model.Project
 import com.savie.precut.model.ProjectCover
+import com.savie.precut.model.sticker.StickerKind
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -21,8 +22,8 @@ interface UnusedMediaCleaner {
     suspend fun sweep()
 }
 
-/** App-private media folders: recorded voiceovers, camera captures, copies of picked or shared files, freeze frames, reversed clips. */
-val APP_MEDIA_DIRS = listOf("voiceovers", "captures", "imports", "freezes", "reversed")
+/** App-private media folders: recorded voiceovers, camera captures, copies of picked or shared files, freeze frames, reversed clips, drawings. */
+val APP_MEDIA_DIRS = listOf("voiceovers", "captures", "imports", "freezes", "reversed", "drawings")
 
 class AppMediaJanitor @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -48,7 +49,8 @@ class AppMediaJanitor @Inject constructor(
                 listOfNotNull((project.cover as? ProjectCover.Image)?.uri) +
                 clips.mapNotNull { it.canvas.imageUri } +
                 // A reversed clip's original is restored when it's reversed back.
-                clips.mapNotNull { it.reversedFrom?.uri }
+                clips.mapNotNull { it.reversedFrom?.uri } +
+                project.textOverlays.mapNotNull { overlay -> overlay.sticker?.takeIf { it.kind != StickerKind.EMOJI }?.value }
         }
 
         /** Files in [dirs] whose Uri (per [uriOf]) isn't in [referenced]. */

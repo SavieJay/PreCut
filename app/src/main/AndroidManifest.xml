@@ -4,6 +4,12 @@
     <!-- Voiceover recording; requested when the user first taps Record. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Exports keep running in the background as a foreground service with a progress notification. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Only Android 8–9 need this to save exports to Movies/PreCut. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
@@ -35,6 +41,12 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
+
+        <!-- Exports: mediaProcessing on Android 15+, dataSync before. -->
+        <service
+            android:name=".export.ExportService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProcessing|dataSync" />
 
         <!-- Lets the camera app write captures into app storage. -->
         <provider

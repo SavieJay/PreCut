@@ -16,6 +16,10 @@ val TransitionType.tile: Pair<Int, Int>
         TransitionType.BLUR -> R.drawable.ic_tr_blur to R.string.transition_blur
         TransitionType.GLITCH -> R.drawable.ic_tr_glitch to R.string.transition_glitch
         TransitionType.SPIN -> R.drawable.ic_spin to R.string.transition_spin
+        TransitionType.DISSOLVE -> R.drawable.ic_blur_circular to R.string.transition_dissolve
+        TransitionType.SLIDE -> R.drawable.ic_arrow_forward to R.string.transition_slide
+        TransitionType.PUSH -> R.drawable.ic_keyboard_double_arrow_right to R.string.transition_push
+        TransitionType.WIPE -> R.drawable.ic_swipe_right to R.string.transition_wipe
     }
 
 /** Tile icon and label for each In/Out animation (T-17). */

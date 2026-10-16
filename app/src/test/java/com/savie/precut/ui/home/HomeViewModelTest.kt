@@ -14,6 +14,7 @@ import com.savie.precut.media.SharedMediaStore
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
 import com.savie.precut.model.MediaInfo
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -32,6 +33,8 @@ import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
+    private val settings = com.savie.precut.data.InMemoryAppSettings()
+
 
     private val dispatcher = StandardTestDispatcher()
     private val repository = InMemoryProjectRepository()
@@ -47,9 +50,9 @@ class HomeViewModelTest {
     private val captures = FakeCaptures()
     private var importer = FakeImporter(ImportResult(emptyList(), 0))
 
-    private fun viewModel(result: ImportResult): HomeViewModel {
+    private fun viewModel(result: ImportResult, cleaner: UnusedMediaCleaner = NoOpCleaner): HomeViewModel {
         importer = FakeImporter(result)
-        return HomeViewModel(importer, repository, clock, NoOpCleaner, captures, shareInbox, FakeSharedMedia)
+        return HomeViewModel(importer, repository, clock, cleaner, captures, shareInbox, FakeSharedMedia, settings)
     }
 
     @Test
@@ -151,6 +154,25 @@ class HomeViewModelTest {
         }
         assertEquals(listOf("file:///imports/a"), importer.received)
         assertTrue(shareInbox.pending.value.isEmpty())
+    }
+
+    @Test
+    fun sharedMedia_waitsForTheStartupSweep_soItsCopyIsntDeleted() = runTest(dispatcher) {
+        val sweepDone = CompletableDeferred<Unit>()
+        val cleaner = object : UnusedMediaCleaner {
+            override suspend fun sweep() = sweepDone.await()
+        }
+        val video = ImportedMedia("file:///imports/a", MediaInfo(ClipType.VIDEO, 5_000L, 1920, 1080, 0))
+        shareInbox.offer(listOf("content://share/a"))
+        val vm = viewModel(ImportResult(listOf(video), 0), cleaner)
+        vm.events.test {
+            dispatcher.scheduler.advanceUntilIdle()
+            assertTrue(importer.received.isEmpty())
+            sweepDone.complete(Unit)
+            dispatcher.scheduler.advanceUntilIdle()
+            assertTrue(awaitItem() is HomeEvent.OpenEditor)
+        }
+        assertEquals(listOf("file:///imports/a"), importer.received)
     }
 
     @Test

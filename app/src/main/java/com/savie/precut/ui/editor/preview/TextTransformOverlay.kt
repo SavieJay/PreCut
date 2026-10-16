@@ -1,5 +1,10 @@
 package com.savie.precut.ui.editor.preview
 
+import com.savie.precut.model.sticker.isSticker
+import com.savie.precut.model.sticker.sizeRange
+
+import androidx.compose.foundation.Image
+import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -34,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -53,7 +59,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.media.TEXT_CORNER_RATIO
-import com.savie.precut.media.TEXT_PADDING_RATIO
 import com.savie.precut.media.textSizePx
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.TextOverlay
@@ -78,6 +83,8 @@ fun TextTransformOverlay(
     onTransformed: (TextTransform) -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The text as the export draws it, in a frame of the given size (the box and the drag ghost). */
+    render: (TextOverlay, OutputSize) -> Bitmap? = { _, _ -> null },
 ) {
     val currentOnTransformed by rememberUpdatedState(onTransformed)
     val haptics = LocalHapticFeedback.current
@@ -94,23 +101,27 @@ fun TextTransformOverlay(
         val snapNorm = with(density) { 8.dp.toPx() } / min(frame.width, frame.height)
 
         val textPx = textSizePx(shown.sizeSp, min(frame.width, frame.height).roundToInt())
-        val padding = with(density) { (textPx * TEXT_PADDING_RATIO).toDp() }
         val shape = RoundedCornerShape(with(density) { (textPx * TEXT_CORNER_RATIO).toDp() })
         val active = live != null
         val center = frame.toPx(shown.xNorm, shown.yNorm)
+        // The exact bitmap the export draws, at preview size (place and turn come from the layout).
+        val placeholder = stringResource(R.string.text_placeholder)
+        val styled = overlay.copy(text = overlay.text.ifBlank { placeholder }, textSizeSp = shown.sizeSp, xNorm = 0.5f, yNorm = 0.5f, rotationDegrees = 0f, keyframes = emptyList())
+        val frameSize = OutputSize(frame.width.roundToInt().coerceAtLeast(1), frame.height.roundToInt().coerceAtLeast(1))
+        val image = remember(styled, frameSize) { render(styled, frameSize)?.asImageBitmap() }
+        val visible = active || (overlay.text.isBlank() && !overlay.isSticker)
 
-        Text(
-            text = overlay.text.ifBlank { stringResource(R.string.text_placeholder) },
-            color = if (active || overlay.text.isBlank()) Color(overlay.colorArgb).copy(alpha = 0.85f * overlay.opacity) else Color.Transparent,
-            fontSize = with(density) { textPx.toSp() },
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .centredAt(center, maxWidthPx = frame.width * 0.9f + 2 * with(density) { padding.toPx() }) { textSize = it }
-                .graphicsLayer { rotationZ = shown.rotationDegrees }
-                .dashedOutline(shape)
-                .background(overlay.backgroundArgb?.takeIf { active }?.let { Color(it).copy(alpha = Color(it).alpha * overlay.opacity) } ?: Color.Transparent, shape)
-                .padding(padding),
-        )
+        if (image != null) {
+            Image(
+                bitmap = image,
+                contentDescription = null,
+                alpha = if (visible) 0.85f * overlay.opacity else 0f,
+                modifier = Modifier
+                    .centredAt(center, maxWidthPx = frame.width * 2f) { textSize = it }
+                    .graphicsLayer { rotationZ = shown.rotationDegrees }
+                    .dashedOutline(shape),
+            )
+        }
         // On top of the text so it receives every touch on the preview.
         Box(
             Modifier
@@ -133,7 +144,7 @@ fun TextTransformOverlay(
                             zoom *= event.calculateZoom()
                             if (pressed >= 2) rotation += event.calculateRotation()
                             val next = TextTransform.applyGesture(
-                                origin, pan.x / currentFrame.width, pan.y / currentFrame.height, zoom, rotation, snapNorm,
+                                origin, pan.x / currentFrame.width, pan.y / currentFrame.height, zoom, rotation, snapNorm, overlay.sizeRange(),
                             )
                             if (next.second != latest?.second && next.second.any()) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             latest = next
@@ -148,7 +159,7 @@ fun TextTransformOverlay(
         )
         // Corner handles turn with the text: ✕ deletes, the bottom-right one rotates and scales.
         fun corner(sx: Float, sy: Float): Offset = rotate(Offset(sx * textSize.x / 2, sy * textSize.y / 2), shown.rotationDegrees) + center
-        FrameHandle(R.drawable.ic_close, stringResource(R.string.text_delete), corner(-1f, -1f)) { Modifier.clickable(role = Role.Button, onClick = onDelete) }
+        FrameHandle(R.drawable.ic_close, stringResource(if (overlay.isSticker) R.string.sticker_delete else R.string.text_delete), corner(-1f, -1f)) { Modifier.clickable(role = Role.Button, onClick = onDelete) }
         FrameHandle(R.drawable.ic_open_in_full, stringResource(R.string.text_rotate_scale), corner(1f, 1f)) {
             Modifier.pointerInput(overlay.id) {
                 var origin = currentStart
@@ -173,7 +184,7 @@ fun TextTransformOverlay(
                     val to = from + dragged
                     val zoom = if (from.getDistance() > 0f) to.getDistance() / from.getDistance() else 1f
                     val turn = Math.toDegrees((atan2(to.y, to.x) - atan2(from.y, from.x)).toDouble()).toFloat()
-                    latest = TextTransform.applyGesture(origin, 0f, 0f, zoom, turn, 0f).also { live = it }
+                    latest = TextTransform.applyGesture(origin, 0f, 0f, zoom, turn, 0f, overlay.sizeRange()).also { live = it }
                 }
             }
         }

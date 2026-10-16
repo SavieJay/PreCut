@@ -37,7 +37,7 @@ import com.savie.precut.ui.theme.Ink0
  * Tools whose panels are tall (~400 dp): the timeline collapses to the main strip so the preview
  * keeps at least 40% of the height (DESIGN.md "Panel heights").
  */
-val TALL_TOOLS = setOf(EditorTool.HSL, EditorTool.CURVES, EditorTool.TEXT)
+val TALL_TOOLS = setOf(EditorTool.HSL, EditorTool.CURVES, EditorTool.TEXT) + TEXT_STYLE_TOOLS + STICKER_SHEET_TOOLS + EFFECT_TOOLS
 
 /** The timeline with its pinned "+" add-media button (gallery or camera). */
 @Composable

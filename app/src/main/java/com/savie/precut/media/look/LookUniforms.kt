@@ -1,5 +1,6 @@
 package com.savie.precut.media.look
 
+import com.savie.precut.model.look.Adjustments
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.look.ColorMath
 import com.savie.precut.model.look.CurveChannel
@@ -34,14 +35,14 @@ class LookUniforms private constructor(
         const val EXPOSURE_STOPS = 1.5f
 
         fun of(look: ClipLook): LookUniforms {
-            val a = look.adjust
+            val adjust = adjustOf(look.adjust)
             val bands = look.hsl.takeIf { it.size == HslColor.entries.size } ?: ClipLook.DEFAULT_HSL
             return LookUniforms(
-                adjustA = floatArrayOf(a.exposure / 100f * EXPOSURE_STOPS, a.brightness / 100f, a.contrast / 100f, a.saturation / 100f),
-                adjustB = floatArrayOf(a.temperature / 100f, a.tint / 100f, a.hue / 100f * GLOBAL_HUE_DEGREES, a.highlights / 100f),
-                adjustC = floatArrayOf(a.shadows / 100f, a.fade / 100f, a.vignette / 100f, a.grain / 100f),
-                sharpen = a.sharpen / 100f,
-                lutMix = if (look.hasFilter) look.filterIntensity.coerceIn(0f, 1f) else 0f,
+                adjustA = adjust.a,
+                adjustB = adjust.b,
+                adjustC = adjust.c,
+                sharpen = adjust.sharpen,
+                lutMix = lutMixOf(look),
                 hslHue = FloatArray(8) { bands[it].hue / 100f * BAND_HUE_DEGREES },
                 hslSaturation = FloatArray(8) { bands[it].saturation / 100f },
                 hslLightness = FloatArray(8) { bands[it].lightness / 100f },
@@ -49,6 +50,16 @@ class LookUniforms private constructor(
                 curveTable = if (look.curves.isIdentity) null else curveTable(look),
             )
         }
+
+        /** The Adjust part alone, cheap enough to redo every frame for keyframes. */
+        fun adjustOf(a: Adjustments): AdjustUniforms = AdjustUniforms(
+            a = floatArrayOf(a.exposure / 100f * EXPOSURE_STOPS, a.brightness / 100f, a.contrast / 100f, a.saturation / 100f),
+            b = floatArrayOf(a.temperature / 100f, a.tint / 100f, a.hue / 100f * GLOBAL_HUE_DEGREES, a.highlights / 100f),
+            c = floatArrayOf(a.shadows / 100f, a.fade / 100f, a.vignette / 100f, a.grain / 100f),
+            sharpen = a.sharpen / 100f,
+        )
+
+        fun lutMixOf(look: ClipLook): Float = if (look.hasFilter) look.filterIntensity.coerceIn(0f, 1f) else 0f
 
         private fun curveTable(look: ClipLook): FloatArray {
             val master = ColorMath.curveTable(look.curves[CurveChannel.RGB])
@@ -60,3 +71,6 @@ class LookUniforms private constructor(
         }
     }
 }
+
+/** The Adjust uniforms: [a], [b] and [c] as in [LookUniforms], and sharpen. */
+class AdjustUniforms(val a: FloatArray, val b: FloatArray, val c: FloatArray, val sharpen: Float)

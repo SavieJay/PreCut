@@ -1,5 +1,8 @@
 package com.savie.precut.ui.editor.timeline
 
+import com.savie.precut.model.timelineOffsetToSourceMs
+import com.savie.precut.model.overlapsBeforeMs
+import com.savie.precut.model.slotStartTimesMs
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -27,8 +30,12 @@ fun ClipStrip(
     onTrim: (clipId: String, trimStartMs: Long, trimEndMs: Long) -> Unit,
 ) {
     Row {
-        val starts = project.clipStartTimesMs()
-        project.clips.forEachIndexed { index, clip ->
+        // Each clip shows from its own stretch: an overlapping transition hides its head under the clip before.
+        val starts = project.slotStartTimesMs()
+        val overlaps = project.overlapsBeforeMs()
+        project.clips.forEachIndexed { index, fullClip ->
+            val hiddenMs = overlaps[index]
+            val clip = if (hiddenMs > 0) fullClip.copy(trimStartMs = fullClip.timelineOffsetToSourceMs(hiddenMs)) else fullClip
             val clipStartPx = TimelineGeometry.msToPx(starts[index], pxPerMs)
             // key(): after a reorder each clip keeps its own state (drag offsets, tiles).
             key(clip.id) {
@@ -49,7 +56,8 @@ fun ClipStrip(
                     loader = loader,
                     snapTargets = snapTargets,
                     snapThresholdMs = snapThresholdMs,
-                    onTrim = { start, end -> onTrim(clip.id, start, end) },
+                    // Back to the whole clip's trim (the shown one starts later by the hidden head).
+                    onTrim = { start, end -> onTrim(clip.id, start - (clip.trimStartMs - fullClip.trimStartMs), end) },
                     modifier = Modifier.zIndex(if (clip.id == selectedClipId) 1f else 0f),
                 )
             }

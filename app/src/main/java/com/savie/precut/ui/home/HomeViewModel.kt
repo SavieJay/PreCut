@@ -2,6 +2,7 @@ package com.savie.precut.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.savie.precut.data.AppSettings
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.data.ProjectSummary
 import com.savie.precut.data.ShareInbox
@@ -49,6 +50,7 @@ class HomeViewModel @Inject constructor(
     private val captures: CaptureStore,
     private val shareInbox: ShareInbox,
     private val sharedMedia: SharedMediaStore,
+    private val settings: AppSettings,
 ) : ViewModel() {
 
     /** The camera capture in progress, until the camera app returns. */
@@ -61,12 +63,14 @@ class HomeViewModel @Inject constructor(
     private val _events = Channel<HomeEvent>(Channel.BUFFERED)
     val events: Flow<HomeEvent> = _events.receiveAsFlow()
 
+    // No editor is open on this screen, so unused recordings can't be needed for undo. New media
+    // is copied in only after it finishes, or the sweep would delete it before its project is saved.
+    private val sweep = viewModelScope.launch { cleaner.sweep() }
+
     init {
         viewModelScope.launch {
             repository.observeProjects().collect { projects -> _uiState.update { it.copy(projects = projects) } }
         }
-        // No editor is open on this screen, so unused recordings can't be needed for undo.
-        viewModelScope.launch { cleaner.sweep() }
         viewModelScope.launch {
             shareInbox.pending.filter { it.isNotEmpty() }.collect { onShared(shareInbox.take()) }
         }
@@ -106,6 +110,7 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(isImporting = true) }
         viewModelScope.launch {
             try {
+                sweep.join()
                 val local = if (copyFirst) sharedMedia.copyIn(uris) else uris
                 val result = importer.import(local).let { it.copy(failedCount = it.failedCount + uris.size - local.size) }
                 if (result.imported.isEmpty()) {
@@ -113,11 +118,13 @@ class HomeViewModel @Inject constructor(
                     return@launch
                 }
                 val now = clock.millis()
+                val defaults = settings.values.value
                 val project = Project(
                     id = newId(),
                     // Named by the user later; the UI shows a fallback for blank names.
                     name = "",
-                    clips = result.imported.map { clipFromMedia(newId(), it.uri, it.info) },
+                    clips = result.imported.map { clipFromMedia(newId(), it.uri, it.info, defaults.photoDurationMs) },
+                    aspectRatio = defaults.aspectRatio,
                     createdAt = now,
                     updatedAt = now,
                 )

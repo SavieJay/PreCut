@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor.timeline
 
+import com.savie.precut.model.edit.keyframesOnTimeline
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -139,6 +140,7 @@ fun ClipView(
                 soundOff = look.soundOff,
                 modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
             )
+            if (look.selected) KeyframeMarks(shown.keyframesOnTimeline().map { it.atMs }, pxPerMs)
             if (look.multiSelected) Box(Modifier.matchParentSize().border(2.dp, Accent, ClipShape))
             if (look.multiSelectMode) CheckBadge(look.multiSelected, Modifier.align(Alignment.TopEnd).padding(4.dp))
         }

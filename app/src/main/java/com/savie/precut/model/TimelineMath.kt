@@ -1,5 +1,6 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.motion.MotionMath
 import com.savie.precut.model.speed.SpeedSteps
 import kotlin.math.roundToLong
 
@@ -23,11 +24,36 @@ fun Clip.averageSpeed(): Float {
     return if (length > 0) (trimEndMs - trimStartMs).toFloat() / length else 1f
 }
 
-fun Project.totalDurationMs(): Long = clips.sumOf { it.timelineDurationMs() }
+/** How much clip [incoming] starts before [outgoing] ends: an overlapping transition between them, else 0. */
+fun overlapMs(outgoing: Clip, incoming: Clip): Long {
+    val transition = outgoing.transitionOut?.takeIf { it.type.overlapping } ?: return 0L
+    return MotionMath.fittedOverlapMs(transition, outgoing.timelineDurationMs(), incoming.timelineDurationMs())
+}
 
-/** Timeline start time of each clip, in order. */
-fun Project.clipStartTimesMs(): List<Long> =
-    clips.runningFold(0L) { acc, clip -> acc + clip.timelineDurationMs() }.dropLast(1)
+/** Each clip's overlap with the one before it (0 for the first). */
+fun Project.overlapsBeforeMs(): List<Long> = clips.indices.map { i -> if (i == 0) 0L else overlapMs(clips[i - 1], clips[i]) }
+
+fun Project.totalDurationMs(): Long {
+    val starts = clipStartTimesMs()
+    return if (clips.isEmpty()) 0L else starts.last() + clips.last().timelineDurationMs()
+}
+
+/** Timeline start time of each clip, in order (an overlapping transition starts a clip early). */
+fun Project.clipStartTimesMs(): List<Long> {
+    val overlaps = overlapsBeforeMs()
+    var end = 0L
+    return clips.mapIndexed { i, clip ->
+        val start = end - overlaps[i]
+        end = start + clip.timelineDurationMs()
+        start
+    }
+}
+
+/**
+ * Where each clip's own stretch begins: its start, or the previous clip's end when it overlaps.
+ * The timeline strip shows each clip from here, and junctions sit here.
+ */
+fun Project.slotStartTimesMs(): List<Long> = clipStartTimesMs().zip(overlapsBeforeMs()) { start, overlap -> start + overlap }
 
 /**
  * The clip playing at [timelineMs]. A boundary instant belongs to the following clip, except the
@@ -36,13 +62,14 @@ fun Project.clipStartTimesMs(): List<Long> =
  */
 fun Project.clipAt(timelineMs: Long): ClipPosition? {
     if (clips.isEmpty() || timelineMs < 0) return null
-    var start = 0L
+    // Inside an overlap, the clip that's ending still owns the time.
+    val starts = clipStartTimesMs()
+    var end = 0L
     clips.forEachIndexed { index, clip ->
-        val end = start + clip.timelineDurationMs()
-        if (timelineMs < end) return ClipPosition(index, timelineMs - start)
-        start = end
+        end = starts[index] + clip.timelineDurationMs()
+        if (timelineMs < end) return ClipPosition(index, timelineMs - starts[index])
     }
-    return if (timelineMs == start) {
+    return if (timelineMs == end) {
         ClipPosition(clips.lastIndex, clips.last().timelineDurationMs())
     } else {
         null

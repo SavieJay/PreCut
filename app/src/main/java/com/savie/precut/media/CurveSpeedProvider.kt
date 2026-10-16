@@ -11,11 +11,11 @@ import com.savie.precut.model.speed.SpeedSteps
  * `SpeedChangingMediaSource` subtracts the clipping start in both preview and export).
  */
 @OptIn(UnstableApi::class)
-class CurveSpeedProvider(private val steps: SpeedSteps) : SpeedProvider {
-    override fun getSpeed(timeUs: Long): Float = steps.speeds[steps.stepAt(timeUs)]
+class CurveSpeedProvider(private val steps: SpeedSteps, private val offsetUs: Long = 0L) : SpeedProvider {
+    override fun getSpeed(timeUs: Long): Float = steps.speeds[steps.stepAt(timeUs + offsetUs)]
 
     override fun getNextSpeedChangeTimeUs(timeUs: Long): Long {
-        val next = steps.stepAt(timeUs) + 1
-        return if (next >= steps.count) C.TIME_UNSET else steps.boundaryUs(next)
+        val next = steps.stepAt(timeUs + offsetUs) + 1
+        return if (next >= steps.count) C.TIME_UNSET else steps.boundaryUs(next) - offsetUs
     }
 }

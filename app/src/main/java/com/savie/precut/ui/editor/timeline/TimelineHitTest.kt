@@ -1,5 +1,7 @@
 package com.savie.precut.ui.editor.timeline
 
+import com.savie.precut.model.totalDurationMs
+import com.savie.precut.model.slotStartTimesMs
 import com.savie.precut.model.Project
 import com.savie.precut.model.clipAt
 import com.savie.precut.model.clipStartTimesMs
@@ -29,7 +31,7 @@ class TimelineHitTest(
     fun clipIndexAt(x: Float, y: Float): Int? {
         if (!isInClipStrip(y)) return null
         val ms = TimelineGeometry.pxToMs(toTimelinePx(x), pxPerMs)
-        val total = project.clips.sumOf { it.timelineDurationMs() }
+        val total = project.totalDurationMs()
         return if (ms in 0 until total) project.clipAt(ms)?.index else null
     }
 
@@ -37,8 +39,9 @@ class TimelineHitTest(
     fun isOnTrimHandle(x: Float): Boolean {
         val index = project.clips.indexOfFirst { it.id == selectedClipId }
         if (index < 0) return false
-        val startX = toViewportX(TimelineGeometry.msToPx(project.clipStartTimesMs()[index], pxPerMs))
-        val endX = startX + TimelineGeometry.msToPx(project.clips[index].timelineDurationMs(), pxPerMs)
+        // The clip shows from its own stretch (an overlap hides its head under the clip before).
+        val startX = toViewportX(TimelineGeometry.msToPx(project.slotStartTimesMs()[index], pxPerMs))
+        val endX = toViewportX(TimelineGeometry.msToPx(project.clipStartTimesMs()[index] + project.clips[index].timelineDurationMs(), pxPerMs))
         return abs(x - startX) < handleSlopPx || abs(x - endX) < handleSlopPx
     }
 }

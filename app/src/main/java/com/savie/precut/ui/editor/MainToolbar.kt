@@ -2,6 +2,8 @@ package com.savie.precut.ui.editor
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.savie.precut.ui.editor.tools.EditorToolbar
 import com.savie.precut.ui.editor.tools.OverlayToolbar
 import com.savie.precut.ui.editor.tools.OverlayToolbarActions
@@ -10,17 +12,26 @@ import com.savie.precut.ui.editor.tools.ToolbarActions
 /** The overlay tool row (P-02), wired to the ViewModel. */
 @Composable
 fun OverlayToolbarFor(viewModel: EditorViewModel) {
+    val haptics = LocalHapticFeedback.current
     OverlayToolbar(
         remember(viewModel) {
             object : OverlayToolbarActions {
                 override fun onAnimation() = viewModel.onToolSelected(EditorTool.ANIMATION)
                 override fun onOpacity() = viewModel.onToolSelected(EditorTool.OPACITY)
+                override fun onMask() = viewModel.onToolSelected(EditorTool.MASK)
+                override fun onChroma() = viewModel.onToolSelected(EditorTool.CHROMA)
                 override fun onFilters() = viewModel.onToolSelected(EditorTool.FILTER)
                 override fun onAdjust() = viewModel.onToolSelected(EditorTool.ADJUST)
                 override fun onToMain() = viewModel.overlay.onToMain()
-                override fun onSplit() = viewModel.overlay.onSplit()
+                override fun onSplit() {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    viewModel.overlay.onSplit()
+                }
                 override fun onDuplicate() = viewModel.overlay.onDuplicate()
-                override fun onDelete() = viewModel.overlay.onDelete()
+                override fun onDelete() {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    viewModel.overlay.onDelete()
+                }
             }
         },
     )
@@ -29,11 +40,15 @@ fun OverlayToolbarFor(viewModel: EditorViewModel) {
 /** The main tool row, wired to the ViewModel. */
 @Composable
 fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: EditorViewModel) {
+    val haptics = LocalHapticFeedback.current
     EditorToolbar(
         canSplit = canSplit,
         hasClips = state.project.clips.isNotEmpty(),
         actions = object : ToolbarActions {
-            override fun onSplit() = viewModel.onSplit()
+            override fun onSplit() {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                viewModel.onSplit()
+            }
             override fun onTrim() = viewModel.onToolSelected(EditorTool.TRIM)
             override fun onSpeed() = viewModel.onToolSelected(EditorTool.SPEED)
             override fun onFilters() = viewModel.onToolSelected(EditorTool.FILTER)
@@ -45,6 +60,8 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onEdit() = viewModel.onToolSelected(EditorTool.EDIT)
             override fun onCanvas() = viewModel.onToolSelected(EditorTool.CANVAS)
             override fun onOpacity() = viewModel.onToolSelected(EditorTool.OPACITY)
+            override fun onMask() = viewModel.onToolSelected(EditorTool.MASK)
+            override fun onChroma() = viewModel.onToolSelected(EditorTool.CHROMA)
             override fun onAnimation() = viewModel.onToolSelected(EditorTool.ANIMATION)
             override fun onFreeze() = viewModel.motion.onFreeze()
             override fun onReverse() = viewModel.reverse.onReverse()
@@ -52,9 +69,15 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onToOverlay() = viewModel.overlay.onToOverlay()
             override fun onReplace() = viewModel.onReplaceClip()
             override fun onText() = viewModel.onToolSelected(EditorTool.TEXT)
+            override fun onStickers() = viewModel.onToolSelected(EditorTool.STICKERS)
+            override fun onDraw() = viewModel.onToolSelected(EditorTool.DRAW)
+            override fun onEffects() = viewModel.onToolSelected(EditorTool.EFFECTS)
             override fun onRatio() = viewModel.onToolSelected(EditorTool.RATIO)
             override fun onDuplicate() = viewModel.onDuplicate()
-            override fun onDelete() = viewModel.onDelete()
+            override fun onDelete() {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                viewModel.onDelete()
+            }
             override fun onSelect() = viewModel.selection.onStart()
             override fun onCover() = viewModel.onToolSelected(EditorTool.COVER)
         },

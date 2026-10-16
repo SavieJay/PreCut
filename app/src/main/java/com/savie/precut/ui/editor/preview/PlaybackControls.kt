@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor.preview
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,9 +21,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
+import com.savie.precut.ui.editor.KeyframeButton
 import com.savie.precut.media.PreviewState
 import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.theme.PreCutTheme
+import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.PreCutType
 import com.savie.precut.ui.theme.TextDisabled
 import com.savie.precut.ui.theme.TextPrimary
@@ -38,6 +41,10 @@ fun PlaybackControls(
     onPlayPause: () -> Unit,
     onFullScreen: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The keyframe button (P-05); null hides it. */
+    keyframe: KeyframeButton? = null,
+    onKeyframe: () -> Unit = {},
+    onKeyframeEasing: () -> Unit = {},
 ) {
     val hasMedia = state.durationMs > 0L
     val colors = IconButtonDefaults.iconButtonColors(contentColor = TextPrimary, disabledContentColor = TextDisabled)
@@ -62,6 +69,28 @@ fun PlaybackControls(
                 stringResource(if (state.isPlaying) R.string.action_pause else R.string.action_play),
                 modifier = Modifier.size(32.dp),
             )
+        }
+        keyframe?.let { button ->
+            val label = stringResource(if (button.atKeyframe) R.string.keyframe_remove else R.string.keyframe_add)
+            Box(
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 52.dp)
+                    .size(48.dp)
+                    .combinedClickable(
+                        onClickLabel = label,
+                        onLongClickLabel = stringResource(R.string.keyframe_easing),
+                        onLongClick = onKeyframeEasing,
+                        onClick = onKeyframe,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(if (button.atKeyframe) R.drawable.ic_diamond else R.drawable.ic_add_diamond),
+                    label,
+                    tint = if (button.atKeyframe) Accent else TextPrimary,
+                )
+            }
         }
         IconButton(onClick = onFullScreen, enabled = hasMedia, colors = colors, modifier = Modifier.align(Alignment.CenterEnd)) {
             Icon(painterResource(R.drawable.ic_fullscreen), stringResource(R.string.preview_full_screen))

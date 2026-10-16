@@ -9,6 +9,7 @@ import com.savie.precut.model.clipById
 import com.savie.precut.model.clipTimelineRange
 import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.clipStartTimesMs
+import com.savie.precut.model.overlapMs
 import com.savie.precut.model.edit.EditAction
 import com.savie.precut.model.motion.ClipAnimation
 import com.savie.precut.model.motion.ClipTransition
@@ -120,9 +121,15 @@ class EditorMotion(
         val project = host.ready?.project ?: return
         val index = project.clips.indexOfFirst { it.id == clipId }
         if (index < 0 || index >= project.clips.lastIndex) return
-        val junction = project.clipStartTimesMs()[index + 1]
-        val duration = transitionOf(clipId)?.durationMs ?: return
-        play((junction - duration / 2 - LEAD_MS).coerceAtLeast(0L), duration + 2 * LEAD_MS)
+        val start = project.clipStartTimesMs()[index + 1]
+        val transition = transitionOf(clipId) ?: return
+        val overlap = overlapMs(project.clips[index], project.clips[index + 1])
+        if (overlap > 0) {
+            // Overlapping: both clips show from the incoming clip's (early) start for the overlap.
+            play((start - LEAD_MS).coerceAtLeast(0L), overlap + 2 * LEAD_MS)
+        } else {
+            play((start - transition.durationMs / 2 - LEAD_MS).coerceAtLeast(0L), transition.durationMs + 2 * LEAD_MS)
+        }
     }
 
     /** Plays [lengthMs] from [startMs], then pauses (after the edit's preview rebuild settles). */

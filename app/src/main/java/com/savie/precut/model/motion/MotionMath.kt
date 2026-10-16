@@ -140,6 +140,14 @@ object MotionMath {
      * Transition durations at the junctions around a clip: each is limited to the shorter of its
      * two clips, so a clip's incoming and outgoing halves never overlap.
      */
+    /**
+     * How long an overlapping transition really overlaps: its duration, at most half the shorter
+     * clip, so a clip's incoming and outgoing overlaps never meet.
+     */
+    fun fittedOverlapMs(transition: ClipTransition, outgoingLengthMs: Long, incomingLengthMs: Long): Long =
+        transition.durationMs.coerceIn(MIN_TRANSITION_MS, MAX_TRANSITION_MS)
+            .coerceAtMost(min(outgoingLengthMs, incomingLengthMs) / 2)
+
     fun fittedTransitionMs(transition: ClipTransition, outgoingLengthMs: Long, incomingLengthMs: Long): Long =
         transition.durationMs.coerceIn(MIN_TRANSITION_MS, MAX_TRANSITION_MS)
             .coerceAtMost(min(outgoingLengthMs, incomingLengthMs))
@@ -162,6 +170,8 @@ object MotionMath {
             TransitionType.GLITCH -> TransitionLook(glitch = peak)
             // A full turn: the outgoing clip turns the first half, the incoming one the second.
             TransitionType.SPIN -> TransitionLook(rotationDegrees = 360f * easeInOutCubic(p), scale = 1f - 0.35f * eased)
+            // Overlapping ones are drawn by their own layer, not on the clips' edges.
+            TransitionType.DISSOLVE, TransitionType.SLIDE, TransitionType.PUSH, TransitionType.WIPE -> TransitionLook()
         }
     }
 

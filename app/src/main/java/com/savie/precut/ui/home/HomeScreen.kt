@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     onOpenEditor: (projectId: String) -> Unit,
+    onOpenSettings: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -61,6 +62,7 @@ fun HomeScreen(
             picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
         },
         onCamera = viewModel::onCameraRequested,
+        onSettings = onOpenSettings,
         actions = object : ProjectActions {
             override fun onOpen(projectId: String) = onOpenEditor(projectId)
             override fun onRename(projectId: String, name: String) = viewModel.onRename(projectId, name)

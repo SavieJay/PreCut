@@ -15,6 +15,8 @@ import androidx.media3.effect.GlShaderProgram
 import com.savie.precut.media.FrameSpec
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.frame.CanvasKind
+import com.savie.precut.model.frame.ClipMask
+import com.savie.precut.model.keyframe.valuesAt
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.motion.MotionMath
 import com.savie.precut.model.motion.Pose
@@ -108,18 +110,25 @@ internal class CanvasShaderProgram(
     private fun drawClip(inputTexId: Int, presentationTimeUs: Long) {
         val override = live.current(frame.liveKey)
         val fit = override?.fit ?: frame.fit
+        // Keyframes replace the plain transform, opacity and mask; a gesture in progress wins.
+        val keyed = frame.keyframes.valuesAt((presentationTimeUs - frame.clipStartUs) / 1_000)
         val pose = frame.animation?.let { spec ->
             val atMs = (presentationTimeUs - spec.time.startUs) / 1_000
             MotionMath.pose(spec.animationIn, spec.animationOut, spec.combo, atMs, spec.time.lengthMs)
         } ?: Pose.REST
-        val base = override?.transform ?: frame.transform
+        val base = override?.transform ?: keyed?.transform ?: frame.transform
         val transform = ClipTransform(
             scale = base.scale * pose.scale,
             rotationDegrees = base.rotationDegrees + pose.rotationDegrees,
             offsetX = base.offsetX + pose.offsetX,
             offsetY = base.offsetY + pose.offsetY,
         )
-        val opacity = (override?.opacity ?: frame.opacity) * pose.opacity.coerceIn(0f, 1f)
+        val opacity = (override?.opacity ?: keyed?.opacity ?: frame.opacity) * pose.opacity.coerceIn(0f, 1f)
+        val mask = when {
+            override != null -> override.mask
+            keyed != null -> keyed.mask
+            else -> frame.mask
+        }
         val outW = outputSize.width.toFloat()
         val outH = outputSize.height.toFloat()
         val placement = FrameGeometry.placement(inputWidth.toFloat(), inputHeight.toFloat(), outW, outH, fit, transform)
@@ -145,8 +154,27 @@ internal class CanvasShaderProgram(
         compose.setFloatsUniform("uCosSin", floatArrayOf(cos(radians).toFloat(), sin(radians).toFloat()))
         compose.setFloatsUniform("uOpacity", floatArrayOf(opacity))
         compose.setFloatsUniform("uTransparent", floatArrayOf(if (frame.transparent) 1f else 0f))
+        setMaskUniforms(mask, placement.width * outW / 2f, placement.height * outH / 2f)
         compose.bindAttributesAndUniforms()
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+    }
+
+    /** The mask in the picture's pixels: [halfW] × [halfH] is half the placed picture. */
+    private fun setMaskUniforms(mask: ClipMask?, halfW: Float, halfH: Float) {
+        if (mask == null) {
+            compose.setFloatsUniform("uMaskA", floatArrayOf(0f, 0f, 0f, 0f))
+            compose.setFloatsUniform("uMaskB", floatArrayOf(0f, 0f, 1f, 1f))
+            compose.setFloatsUniform("uMaskCosSin", floatArrayOf(1f, 0f))
+            return
+        }
+        val radians = Math.toRadians(mask.rotationDegrees.toDouble())
+        compose.setFloatsUniform(
+            "uMaskA",
+            floatArrayOf(mask.shape.ordinal + 1f, mask.feather * minOf(halfW, halfH), mask.cornerRadius, if (mask.inverted) 1f else 0f),
+        )
+        // Fractions of the picture (y down) to pixels from its centre (y up).
+        compose.setFloatsUniform("uMaskB", floatArrayOf(mask.centerX * 2f * halfW, -mask.centerY * 2f * halfH, mask.width * halfW, mask.height * halfH))
+        compose.setFloatsUniform("uMaskCosSin", floatArrayOf(cos(radians).toFloat(), sin(radians).toFloat()))
     }
 
     /** Fills smallA with the blurred clip, then puts the output framebuffer back. */

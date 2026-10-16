@@ -1,5 +1,6 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.effect.EffectLayer
 import com.savie.precut.model.look.LookLayer
 
 /**
@@ -21,7 +22,15 @@ fun Project.audioLanes(): List<List<AudioClip>> =
 
 /** Text overlays stacked into rows. */
 fun Project.textLanes(): List<List<TextOverlay>> =
-    stackIntoLanes(textOverlays, TextOverlay::startMs, TextOverlay::endMs, TextOverlay::id)
+    stackIntoLanes(textOverlays.filter { it.sticker == null }, TextOverlay::startMs, TextOverlay::endMs, TextOverlay::id)
+
+/** Stickers stacked into rows (their own lane, above the texts). */
+fun Project.stickerLanes(): List<List<TextOverlay>> =
+    stackIntoLanes(textOverlays.filter { it.sticker != null }, TextOverlay::startMs, TextOverlay::endMs, TextOverlay::id)
+
+/** Effect layers stacked into rows. */
+fun Project.effectLanes(): List<List<EffectLayer>> =
+    stackIntoLanes(effectLayers, EffectLayer::startMs, EffectLayer::endMs, EffectLayer::id)
 
 /** Look layers stacked into rows. */
 fun Project.lookLayerLanes(): List<List<LookLayer>> =

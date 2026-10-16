@@ -28,12 +28,19 @@ private val SWATCHES = listOf(
 /** A custom-colour swatch (opens the picker) and 8 preset swatches, spread across the panel. */
 @Composable
 fun TextColorRow(overlay: TextOverlay, recentColors: List<Int>, onChange: (TextOverlay) -> Unit) {
+    ColorSwatchRow(overlay.colorArgb, recentColors) { argb ->
+        onChange(overlay.copy(colorArgb = argb, backgroundArgb = overlay.backgroundArgb?.let { backgroundFor(argb) }))
+    }
+}
+
+/** The swatch row for any colour: [selectedArgb] (null: none picked), custom picker, 8 presets. */
+@Composable
+fun ColorSwatchRow(selectedArgb: Int?, recentColors: List<Int>, onPick: (Int) -> Unit) {
     var picking by remember { mutableStateOf(false) }
-    fun withColor(argb: Int) = overlay.copy(colorArgb = argb, backgroundArgb = overlay.backgroundArgb?.let { backgroundFor(argb) })
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        val custom = SWATCHES.none { it.toArgb() == overlay.colorArgb }
+        val custom = selectedArgb != null && SWATCHES.none { it.toArgb() == selectedArgb }
         ColorDot(
-            color = Color(overlay.colorArgb),
+            color = selectedArgb?.let { Color(it) } ?: Color.Transparent,
             selected = custom,
             description = stringResource(R.string.color_custom),
             onClick = { picking = true },
@@ -41,16 +48,16 @@ fun TextColorRow(overlay: TextOverlay, recentColors: List<Int>, onChange: (TextO
         )
         SWATCHES.forEach { color ->
             val argb = color.toArgb()
-            ColorDot(color, selected = argb == overlay.colorArgb, description = formatHexColor(argb), onClick = { onChange(withColor(argb)) })
+            ColorDot(color, selected = argb == selectedArgb, description = formatHexColor(argb), onClick = { onPick(argb) })
         }
     }
     if (picking) {
         ColorPickerSheet(
-            initialArgb = overlay.colorArgb,
+            initialArgb = selectedArgb ?: Color.White.toArgb(),
             recentColors = recentColors,
             onPicked = { argb ->
                 picking = false
-                onChange(withColor(argb))
+                onPick(argb)
             },
             onDismiss = { picking = false },
         )

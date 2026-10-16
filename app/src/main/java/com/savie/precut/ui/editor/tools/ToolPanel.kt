@@ -41,6 +41,9 @@ fun ToolPanel(
     actions: @Composable RowScope.() -> Unit = {},
     /** A back arrow before the title (HSL and Curves return to Adjust). */
     onBack: (() -> Unit)? = null,
+    /** The back button's icon and label (Draw shows a Close that discards). */
+    backIcon: Int = R.drawable.ic_back,
+    backLabel: Int = R.string.action_back,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -56,7 +59,7 @@ fun ToolPanel(
         ) {
             onBack?.let { back ->
                 IconButton(onClick = back) {
-                    Icon(painterResource(R.drawable.ic_back), contentDescription = stringResource(R.string.adjust_back))
+                    Icon(painterResource(backIcon), contentDescription = stringResource(backLabel))
                 }
             }
             Text(

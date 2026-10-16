@@ -14,6 +14,11 @@ import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.frame.CanvasKind
+import com.savie.precut.model.keyframe.ClipKeyframe
+import com.savie.precut.model.look.Adjustments
+import com.savie.precut.model.frame.ChromaKey
+import com.savie.precut.model.frame.ClipMask
+import com.savie.precut.model.frame.MaskShape
 import com.savie.precut.model.frame.ClipCanvas
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.frame.CropRect
@@ -304,11 +309,58 @@ class CompositionSpecTest {
     }
 
     @Test
-    fun layerCompositor_hidesRowsOutsideTheirOverlays() {
-        val settings = LayerCompositorSettings(OutputSize(1080, 1920), listOf(emptyList(), listOf(2_000_000L until 5_000_000L), null))
-        assertEquals(false, settings.isVisible(0, 3_000_000L))
-        assertEquals(true, settings.isVisible(1, 3_000_000L))
-        assertEquals(false, settings.isVisible(1, 6_000_000L))
-        assertEquals(true, settings.isVisible(2, 6_000_000L))
+    fun overlaySourceTime_followsTrimAndSpeed() {
+        val video = ItemSpec.Video("v", sourceDurationMs = 10_000L, clipStartMs = 2_000L, clipEndMs = 6_000L, speed = 2f)
+        assertEquals(2_000_000L, video.sourceUsAt(0L))
+        assertEquals(3_000_000L, video.sourceUsAt(500_000L))
+        // Never past the trim end.
+        assertEquals(6_000_000L, video.sourceUsAt(5_000_000L))
+    }
+
+    @Test
+    fun overlaySourceTime_followsASpeedCurve() {
+        val curve = SpeedCurve.preset(SpeedPreset.MONTAGE)
+        val video = ItemSpec.Video("v", sourceDurationMs = 10_000L, clipStartMs = 0L, clipEndMs = 4_000L, speedCurve = curve)
+        val steps = speedStepsOf(video)!!
+        val local = 1_234_000L
+        assertEquals(steps.sourceAtUs(local.toDouble()), video.sourceUsAt(local))
+    }
+
+    @Test
+    fun imageOverlay_keepsItsExifRotation() {
+        val p = project(videoClip("a")).copy(
+            overlays = listOf(OverlayClip(clipFromMedia("o", "content://o", MediaInfo(ClipType.IMAGE, 0L, 40, 30, 90)), timelineStartMs = 0L)),
+        )
+        val image = compositionSpecOf(p).overlayLanes.single().items.single().item as ItemSpec.Image
+        assertEquals(90, image.rotationDegrees)
+    }
+
+    @Test
+    fun maskAndChroma_needTheFramePass_andReachTheSpec() {
+        val mask = ClipMask(MaskShape.CIRCLE)
+        val key = ChromaKey(0xFF00FF00.toInt())
+        val masked = compositionSpecOf(project(videoClip("a").copy(mask = mask))).items.single().visual
+        assertEquals(mask, masked.frame?.mask)
+        val keyed = compositionSpecOf(project(videoClip("a").copy(chroma = key))).items.single().visual
+        assertEquals(key, keyed.chroma)
+        // Keyed pixels must show the canvas, so the clip can't take the plain path.
+        assertTrue(keyed.frame != null)
+    }
+
+    @Test
+    fun keyframes_reachFrameLookAndSound_inTimelineTime() {
+        val clip = videoClip("b", 8_000L, speed = 2f).copy(
+            keyframes = listOf(
+                ClipKeyframe(atMs = 0L, opacity = 1f, volume = 1f),
+                ClipKeyframe(atMs = 4_000L, opacity = 0f, volume = 0f, adjust = Adjustments(brightness = 50f)),
+            ),
+        )
+        val item = compositionSpecOf(project(videoClip("a", 1_000L), clip)).items[1] as ItemSpec.Video
+        val frame = item.visual.frame!!
+        // Source 4 s at 2x is 2 s into the clip; the clip starts at 1 s.
+        assertEquals(listOf(0L, 2_000L), frame.keyframes.map { it.atMs })
+        assertEquals(1_000_000L, frame.clipStartUs)
+        assertEquals(listOf(0L, 2_000L), item.visual.lookKeyframes.map { it.atMs })
+        assertEquals(listOf(1f, 0f), item.sound.volumeKeyframes.map { it.volume })
     }
 }

@@ -30,7 +30,10 @@ class SharedMediaCopier @Inject constructor(
 
     private fun copy(source: Uri, dir: File): String? {
         val resolver = context.contentResolver
-        val extension = resolver.getType(source)?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) } ?: "bin"
+        // File Uris have no provider type; their own extension tells the probe what they are.
+        val extension = resolver.getType(source)?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) }
+            ?: source.lastPathSegment?.substringAfterLast('.', "")?.takeIf { it.isNotEmpty() }
+            ?: "bin"
         val target = File(dir, "${UUID.randomUUID()}.$extension")
         return try {
             val input = resolver.openInputStream(source) ?: return null

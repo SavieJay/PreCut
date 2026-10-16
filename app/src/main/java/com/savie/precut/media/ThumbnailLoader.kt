@@ -122,7 +122,9 @@ class ThumbnailLoader @Inject constructor(
         val resolver = context.contentResolver
         val uri = Uri.parse(key.uri)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: return null
+        // A bounds-only decode returns null by design; the size lands in [bounds].
+        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
         // Height of the image as displayed, after EXIF rotation.
         val shownHeight = if (key.rotationDegrees % 180 == 0) bounds.outHeight else bounds.outWidth
         var sample = 1

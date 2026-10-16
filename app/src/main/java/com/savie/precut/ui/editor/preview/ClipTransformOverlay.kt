@@ -110,7 +110,11 @@ fun ClipTransformOverlay(clip: Clip, outputSize: OutputSize, actions: ClipTransf
                 },
         )
         // Below the bottom edge, turning with the clip: drag around the centre to rotate and scale.
-        val handleAt = box.center + rotate(Offset(0f, box.size.y / 2 + with(density) { 40.dp.toPx() }), box.rotationDegrees)
+        // Kept on the preview: a clip filling the frame would otherwise put it over Play.
+        val handleAt = keepInside(
+            box.center + rotate(Offset(0f, box.size.y / 2 + with(density) { 40.dp.toPx() }), box.rotationDegrees),
+            constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat(), with(density) { 20.dp.toPx() },
+        )
         FrameHandle(R.drawable.ic_rotate_right, stringResource(R.string.transform_rotate), handleAt) {
             Modifier.pointerInput(clip.id) {
                 var origin = currentClip.transform
@@ -144,7 +148,7 @@ fun ClipTransformOverlay(clip: Clip, outputSize: OutputSize, actions: ClipTransf
 /** The clip's outline in preview pixels: centre, size and clockwise turn. */
 data class ClipBox(val center: Offset, val size: Offset, val rotationDegrees: Float)
 
-private fun clipBox(clip: Clip, transform: ClipTransform, output: OutputSize, frame: FrameRect): ClipBox {
+internal fun clipBox(clip: Clip, transform: ClipTransform, output: OutputSize, frame: FrameRect): ClipBox {
     val placement = FrameGeometry.placement(clip.contentAspect(), 1f, output.width.toFloat(), output.height.toFloat(), clip.fit, transform)
     return ClipBox(
         center = frame.toPx(placement.centerX, placement.centerY),

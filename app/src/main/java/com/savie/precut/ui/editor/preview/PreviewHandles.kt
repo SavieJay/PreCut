@@ -41,6 +41,10 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /** [v] rotated clockwise (screen space) by [degrees]. */
+/** [at] moved inside a [width] × [height] area, [margin] from its edges, so a handle stays on the preview. */
+internal fun keepInside(at: Offset, width: Float, height: Float, margin: Float): Offset =
+    Offset(at.x.coerceIn(margin, (width - margin).coerceAtLeast(margin)), at.y.coerceIn(margin, (height - margin).coerceAtLeast(margin)))
+
 internal fun rotate(v: Offset, degrees: Float): Offset {
     val r = Math.toRadians(degrees.toDouble())
     return Offset((v.x * cos(r) - v.y * sin(r)).toFloat(), (v.x * sin(r) + v.y * cos(r)).toFloat())

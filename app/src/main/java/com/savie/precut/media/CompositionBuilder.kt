@@ -5,91 +5,129 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.SpeedParameters
 import androidx.media3.common.util.ExperimentalApi
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
+import androidx.media3.effect.FrameDropEffect
 import com.savie.precut.model.DEFAULT_SHORT_SIDE_PX
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.Project
 import com.savie.precut.model.speed.SpeedSteps
 import javax.inject.Inject
 
+/**
+ * How an export differs from the preview: a lower frame rate (frames are dropped), keeping HDR,
+ * or sound only. The preview passes none.
+ */
+data class ExportOutput(val frameRate: Int? = null, val keepHdr: Boolean = false, val audioOnly: Boolean = false)
+
 /** The single Project → Composition path shared by preview and export. */
+// Media3's composition API (sequences, gaps, speed, HDR modes) is unstable in 1.11 and is used throughout.
+@OptIn(UnstableApi::class)
 class CompositionBuilder @Inject constructor(private val effectsFactory: EffectsFactory) {
 
     /**
      * Returns null when the project has nothing to play. [shortSidePx] sets the output size;
      * [liveClipId] is for the preview only (see [compositionSpecOf]).
      */
-    fun build(project: Project, shortSidePx: Int = DEFAULT_SHORT_SIDE_PX, liveClipId: String? = null): Composition? {
+    fun build(project: Project, shortSidePx: Int = DEFAULT_SHORT_SIDE_PX, liveClipId: String? = null, output: ExportOutput? = null): Composition? {
         val spec = compositionSpecOf(project, shortSidePx, liveClipId)
         if (spec.items.isEmpty()) return null
+        if (output?.audioOnly == true) return buildAudioOnly(spec)
         val main = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
             .addItems(spec.items.map { toEditedMediaItem(it, spec.outputSize) })
             .build()
-        val layers = videoLayers(spec, main)
-        val builder = Composition.Builder(layers.sequences + spec.audioLanes.map(::audioSequence))
-            // The look shader works in SDR; HDR sources are tone-mapped (HDR export: Phase 12).
-            .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL)
-        layers.compositor?.let(builder::setVideoCompositorSettings)
-        // Layers grade the composed frame; text and the cover go on top, ungraded.
-        val videoEffects = effectsFactory.lookLayerEffects(spec.lookLayers) +
+        val overlayAudio = (spec.overlayLanes + listOfNotNull(spec.transitionAudio)).mapNotNull(::overlayAudioSequence)
+        val builder = Composition.Builder(listOf(main) + overlayAudio + spec.audioLanes.map { audioSequence(it, spec.durationUs) })
+            // PreCut's own shaders work in SDR, so HDR stays HDR only when none of them run.
+            .setHdrMode(
+                if (output?.keepHdr == true && !spec.usesOwnShaders()) Composition.HDR_MODE_KEEP_HDR
+                else Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL,
+            )
+        // Overlays go on the main video, layers grade the result, and text and the cover go on top, ungraded.
+        // A lower frame rate drops frames first, so later passes do less work.
+        val videoEffects = listOfNotNull(output?.frameRate?.let { FrameDropEffect.createDefaultFrameDropEffect(it.toFloat()) }) +
+            listOfNotNull(effectsFactory.overlayLayersEffect(spec.overlayLanes, spec.transitions, spec.outputSize)) +
+            effectsFactory.lookLayerEffects(spec.lookLayers) +
+            effectsFactory.effectLayerEffects(spec.effectLayers) +
             listOfNotNull(effectsFactory.overlayEffect(spec.texts, spec.cover, spec.outputSize))
         if (videoEffects.isNotEmpty()) builder.setEffects(Effects(/* audioProcessors= */ emptyList(), videoEffects))
         return builder.build()
     }
 
-    private class VideoLayers(val sequences: List<EditedMediaItemSequence>, val compositor: LayerCompositorSettings?)
-
-    /**
-     * The video sequences, top first. Without overlays, just [main]. With them, Media3's compositor
-     * draws the first sequence on top and takes its frame timing from it, so the order is: a
-     * gap-only timing track (invisible, steady 30 fps, the video's full length), the overlay rows
-     * (top row first), then the main track.
-     */
-    private fun videoLayers(spec: CompositionSpec, main: EditedMediaItemSequence): VideoLayers {
-        if (spec.overlayLanes.isEmpty()) return VideoLayers(listOf(main), null)
-        val timing = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_VIDEO)).addGap(spec.durationUs).build()
-        val rows = spec.overlayLanes.asReversed()
-        val sequences = listOf(timing) + rows.map { overlaySequence(it, spec.outputSize) } + main
-        val visible = listOf(emptyList<LongRange>()) + rows.map { row -> row.items.map { it.startUs until it.endUs } } + listOf(null)
-        return VideoLayers(sequences, LayerCompositorSettings(spec.outputSize, visible))
+    /** Every sound of the project, no picture (Audio only, EX-01): photos become silence. */
+    private fun buildAudioOnly(spec: CompositionSpec): Composition {
+        val main = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
+        spec.items.forEach { item ->
+            when (item) {
+                is ItemSpec.Video -> main.addItem(
+                    EditedMediaItem.Builder(clippedItem(item.uri, item.clipStartMs, item.clipEndMs))
+                        .setDurationUs(item.sourceDurationMs * 1_000)
+                        .setRemoveVideo(true)
+                        .setEffects(Effects(effectsFactory.audioProcessors(item.sound), emptyList()))
+                        .apply { applyTiming(item, capFrameRate = false) }
+                        .build(),
+                )
+                is ItemSpec.Image -> main.addGap(item.durationMs * 1_000)
+            }
+        }
+        val overlayAudio = (spec.overlayLanes + listOfNotNull(spec.transitionAudio)).mapNotNull(::overlayAudioSequence)
+        return Composition.Builder(listOf(main.build()) + overlayAudio + spec.audioLanes.map { audioSequence(it, spec.durationUs) }).build()
     }
 
-    /** One overlay row: a gap up to each overlay, the overlay, then a gap to the video's end. */
-    private fun overlaySequence(lane: OverlayLaneSpec, outputSize: OutputSize): EditedMediaItemSequence {
-        val builder = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO, C.TRACK_TYPE_VIDEO))
+    /**
+     * An overlay row's sound as an audio-only sequence: silence up to each video overlay, then its
+     * audio. Null when nothing in the row makes a sound. (Their pictures are drawn by
+     * [EffectsFactory.overlayLayersEffect].)
+     */
+    private fun overlayAudioSequence(lane: OverlayLaneSpec): EditedMediaItemSequence? {
+        if (lane.items.none { (it.item as? ItemSpec.Video)?.sound?.volume?.let { v -> v > 0f } == true }) return null
+        val builder = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
+        var silenceUs = 0L
         lane.items.forEach { overlay ->
-            if (overlay.gapBeforeUs > 0) builder.addGap(overlay.gapBeforeUs)
-            builder.addItem(toEditedMediaItem(overlay.item, outputSize))
+            silenceUs += overlay.gapBeforeUs
+            val video = overlay.item as? ItemSpec.Video
+            if (video == null || video.sound.volume <= 0f) {
+                silenceUs += overlay.endUs - overlay.startUs
+                return@forEach
+            }
+            if (silenceUs > 0) builder.addGap(silenceUs)
+            silenceUs = 0L
+            builder.addItem(
+                EditedMediaItem.Builder(clippedItem(video.uri, video.clipStartMs, video.clipEndMs))
+                    .setDurationUs(video.sourceDurationMs * 1_000)
+                    .setEffects(Effects(effectsFactory.audioProcessors(video.sound), emptyList()))
+                    .apply { applyTiming(video, capFrameRate = false) }
+                    .build(),
+            )
         }
-        if (lane.trailingGapUs > 0) builder.addGap(lane.trailingGapUs)
+        silenceUs += lane.trailingGapUs
+        if (silenceUs > 0) builder.addGap(silenceUs)
         return builder.build()
     }
 
-    /** One audio row: for each clip, a silent gap up to its start, then the clip. */
-    private fun audioSequence(lane: List<AudioItemSpec>): EditedMediaItemSequence {
+    /**
+     * One audio row: for each clip, a silent gap up to its start, then the clip, then silence to
+     * the video's end ([durationUs]). A row that ends early stalls `CompositionPlayer` (1.11.1):
+     * after a seek back over its end, the mixer waits on the ended input and playback freezes.
+     */
+    private fun audioSequence(lane: List<AudioItemSpec>, durationUs: Long): EditedMediaItemSequence {
         val builder = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
+        var endUs = 0L
         lane.forEach { audio ->
             if (audio.gapBeforeMs > 0) builder.addGap(audio.gapBeforeMs * 1_000)
-            val mediaItem = MediaItem.Builder()
-                .setUri(audio.uri)
-                .setClippingConfiguration(
-                    MediaItem.ClippingConfiguration.Builder()
-                        .setStartPositionMs(audio.clipStartMs)
-                        .setEndPositionMs(audio.clipEndMs)
-                        .build(),
-                )
-                .build()
+            endUs += audio.gapBeforeMs * 1_000 + ((audio.clipEndMs - audio.clipStartMs) * 1_000 / audio.speed).toLong()
             builder.addItem(
-                EditedMediaItem.Builder(mediaItem)
+                EditedMediaItem.Builder(clippedItem(audio.uri, audio.clipStartMs, audio.clipEndMs))
                     .setDurationUs(audio.sourceDurationMs * 1_000)
                     .setEffects(Effects(effectsFactory.audioProcessors(audio.sound), emptyList()))
                     .apply { if (audio.speed != 1f) applySpeed(audio.speed, capFrameRate = false) }
                     .build(),
             )
         }
+        if (durationUs - endUs >= MIN_TRAILING_GAP_US) builder.addGap(durationUs - endUs)
         return builder.build()
     }
 
@@ -97,30 +135,13 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
         val audio = if (item is ItemSpec.Video) effectsFactory.audioProcessors(item.sound) else emptyList()
         val effects = Effects(audio, effectsFactory.videoEffects(item.visual, outputSize))
         return when (item) {
-            is ItemSpec.Video -> {
-                val mediaItem = MediaItem.Builder()
-                    .setUri(item.uri)
-                    .setClippingConfiguration(
-                        MediaItem.ClippingConfiguration.Builder()
-                            .setStartPositionMs(item.clipStartMs)
-                            .setEndPositionMs(item.clipEndMs)
-                            .build(),
-                    )
-                    .build()
-                EditedMediaItem.Builder(mediaItem)
+            is ItemSpec.Video ->
+                EditedMediaItem.Builder(clippedItem(item.uri, item.clipStartMs, item.clipEndMs))
                     // CompositionPlayer requires the pre-clipping, pre-speed source duration.
                     .setDurationUs(item.sourceDurationMs * 1_000)
                     .setEffects(effects)
-                    .apply {
-                        val curve = item.speedCurve
-                        if (curve != null) {
-                            applyCurve(SpeedSteps.of(curve, (item.clipEndMs - item.clipStartMs) * 1_000), item.keepPitch)
-                        } else if (item.speed != 1f) {
-                            applySpeed(item.speed, keepPitch = item.keepPitch)
-                        }
-                    }
+                    .apply { applyTiming(item) }
                     .build()
-            }
             is ItemSpec.Image -> {
                 val mediaItem = MediaItem.Builder()
                     .setUri(item.uri)
@@ -132,6 +153,27 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
                     .setEffects(effects)
                     .build()
             }
+        }
+    }
+
+    private fun clippedItem(uri: String, startMs: Long, endMs: Long): MediaItem = MediaItem.Builder()
+        .setUri(uri)
+        .setClippingConfiguration(
+            MediaItem.ClippingConfiguration.Builder()
+                .setStartPositionMs(startMs)
+                .setEndPositionMs(endMs)
+                .build(),
+        )
+        .build()
+
+    /** A video's speed or speed curve (laid over its curve range, which may start before this item). */
+    private fun EditedMediaItem.Builder.applyTiming(item: ItemSpec.Video, capFrameRate: Boolean = true) {
+        val steps = speedStepsOf(item)
+        if (steps != null) {
+            val offsetUs = (item.clipStartMs - (item.curveRangeMs?.first ?: item.clipStartMs)) * 1_000
+            applyCurve(steps, item.keepPitch, offsetUs)
+        } else if (item.speed != 1f) {
+            applySpeed(item.speed, capFrameRate = capFrameRate, keepPitch = item.keepPitch)
         }
     }
 
@@ -147,13 +189,15 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
 
     /** A speed curve's steps, with the same frame-rate cap as a sped-up clip where it goes above 1x. */
     @OptIn(ExperimentalApi::class) // SpeedParameters (pitch control) is experimental in Media3 1.11.
-    private fun EditedMediaItem.Builder.applyCurve(steps: SpeedSteps, keepPitch: Boolean) {
-        setSpeed(SpeedParameters(CurveSpeedProvider(steps), /* shouldMaintainPitch= */ keepPitch))
+    private fun EditedMediaItem.Builder.applyCurve(steps: SpeedSteps, keepPitch: Boolean, offsetUs: Long) {
+        setSpeed(SpeedParameters(CurveSpeedProvider(steps, offsetUs), /* shouldMaintainPitch= */ keepPitch))
         if (steps.maxSpeed() > 1f) setFrameRate(MAX_FRAME_RATE)
     }
 
     private companion object {
         const val IMAGE_FRAME_RATE = 30
         const val MAX_FRAME_RATE = 60
+        /** Shorter trailing silence isn't worth a gap item. */
+        const val MIN_TRAILING_GAP_US = 1_000L
     }
 }

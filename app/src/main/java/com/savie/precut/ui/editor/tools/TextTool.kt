@@ -1,5 +1,7 @@
 package com.savie.precut.ui.editor.tools
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +39,9 @@ interface TextToolActions {
     fun onSplit()
     fun onDuplicate()
     fun onDelete()
+    fun onStyle()
+    fun onRich()
+    fun onTts()
 }
 
 /**
@@ -55,6 +60,7 @@ fun TextTool(
 ) {
     var size by remember(overlay.id, overlay.textSizeSp) { mutableFloatStateOf(overlay.textSizeSp) }
     var opacity by remember(overlay.id, overlay.opacity) { mutableFloatStateOf(overlay.opacity) }
+    val typed = rememberTypedText(overlay.id, overlay.text)
     ToolPanel(
         stringResource(R.string.text_title),
         onDone,
@@ -66,8 +72,11 @@ fun TextTool(
         },
     ) {
         OutlinedTextField(
-            value = overlay.text,
-            onValueChange = { actions.onChange(overlay.copy(text = it)) },
+            value = typed.value,
+            onValueChange = {
+                typed.type(it)
+                actions.onChange(overlay.copy(text = it))
+            },
             placeholder = { Text(stringResource(R.string.text_placeholder)) },
             textStyle = MaterialTheme.typography.bodyLarge,
             minLines = 2,
@@ -100,6 +109,11 @@ fun TextTool(
                 onReset = { actions.onChange(overlay.copy(opacity = 1f)) },
                 modifier = sliderModifier,
             )
+        }
+        Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
+            ToolButton(R.drawable.ic_style, R.string.text_more_style, onClick = actions::onStyle)
+            ToolButton(R.drawable.ic_format_bold, R.string.text_more_rich, enabled = overlay.text.isNotEmpty(), onClick = actions::onRich)
+            ToolButton(R.drawable.ic_record_voice_over, R.string.text_more_tts, enabled = overlay.text.isNotBlank(), onClick = actions::onTts)
         }
         TextColorRow(overlay, recentColors, onChange = actions::onChange)
         SwitchRow(

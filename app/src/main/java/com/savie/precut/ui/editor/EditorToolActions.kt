@@ -15,6 +15,9 @@ fun rememberTextToolActions(viewModel: EditorViewModel): TextToolActions = remem
         override fun onSplit() = viewModel.text.onSplit()
         override fun onDuplicate() = viewModel.text.onDuplicate()
         override fun onDelete() = viewModel.text.onDelete()
+        override fun onStyle() = viewModel.onToolSelected(EditorTool.TEXT_STYLE)
+        override fun onRich() = viewModel.onToolSelected(EditorTool.TEXT_RICH)
+        override fun onTts() = viewModel.onToolSelected(EditorTool.TEXT_TTS)
     }
 }
 

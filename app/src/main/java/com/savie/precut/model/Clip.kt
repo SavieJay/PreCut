@@ -1,10 +1,15 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.effect.EffectSettings
+
+import com.savie.precut.model.frame.ChromaKey
 import com.savie.precut.model.frame.ClipCanvas
+import com.savie.precut.model.frame.ClipMask
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.frame.CropRatio
 import com.savie.precut.model.frame.CropRect
 import com.savie.precut.model.frame.FrameFit
+import com.savie.precut.model.keyframe.ClipKeyframe
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.motion.ClipAnimation
 import com.savie.precut.model.motion.ClipTransition
@@ -19,6 +24,9 @@ const val MAX_VOLUME = 2f
 
 /** Photos have no intrinsic length; this is how far their trim range can be extended. */
 const val MAX_IMAGE_DURATION_MS = 60_000L
+
+/** Shortest default photo length the Settings screen offers. */
+const val MIN_PHOTO_DURATION_MS = 500L
 
 @Serializable
 data class Clip(
@@ -60,6 +68,19 @@ data class Clip(
     val opacity: Float = 1f,
     /** What shows around and under the clip. */
     val canvas: ClipCanvas = ClipCanvas(),
+    /** Cuts the picture to a shape (P-03); null shows all of it. */
+    val mask: ClipMask? = null,
+    /** Removes a colour (P-04); null keeps every colour. */
+    val chroma: ChromaKey? = null,
+    /**
+     * Animated values (P-05), sorted by [ClipKeyframe.atMs], which is *source* time, so keyframes
+     * stay on the same moment of the media when the clip is trimmed or sped up. While there are
+     * keyframes, they (not the plain values above) set transform, opacity, mask, chroma
+     * strength, filter strength, Adjust and volume.
+     */
+    val keyframes: List<ClipKeyframe> = emptyList(),
+    /** This clip's own video effect (Phase 11); it moves and trims with the clip. */
+    val effect: EffectSettings? = null,
     /** Into the next clip; ignored on the last clip. */
     val transitionOut: ClipTransition? = null,
     val animationIn: ClipAnimation? = null,
@@ -97,10 +118,11 @@ data class MediaInfo(
     val rotationDegrees: Int,
 )
 
-fun clipFromMedia(id: String, uri: String, info: MediaInfo): Clip {
+/** A new clip for imported media; photos show for [photoDurationMs] (the Settings default). */
+fun clipFromMedia(id: String, uri: String, info: MediaInfo, photoDurationMs: Long = DEFAULT_IMAGE_DURATION_MS): Clip {
     val (sourceDuration, shownDuration) = when (info.type) {
         ClipType.VIDEO -> info.durationMs to info.durationMs
-        ClipType.IMAGE -> MAX_IMAGE_DURATION_MS to DEFAULT_IMAGE_DURATION_MS
+        ClipType.IMAGE -> MAX_IMAGE_DURATION_MS to photoDurationMs.coerceIn(MIN_PHOTO_DURATION_MS, MAX_IMAGE_DURATION_MS)
     }
     return Clip(
         id = id,

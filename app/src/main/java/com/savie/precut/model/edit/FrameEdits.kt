@@ -4,6 +4,7 @@ import com.savie.precut.model.Clip
 import com.savie.precut.model.Project
 import com.savie.precut.model.frame.CanvasKind
 import com.savie.precut.model.frame.ClipCanvas
+import com.savie.precut.model.frame.ClipMask
 import com.savie.precut.model.frame.CropRect
 import com.savie.precut.model.frame.FrameGeometry
 import com.savie.precut.model.frame.MAX_CANVAS_BLUR
@@ -33,7 +34,21 @@ internal fun Project.applyFrameEdit(action: EditAction.FrameEdit): Project = whe
     }
     is EditAction.SetOpacity -> updateFrame(action.clipId) { it.copy(opacity = action.opacity.coerceIn(0f, 1f)) }
     is EditAction.SetCanvas -> updateFrame(action.clipId) { it.copy(canvas = action.canvas.normalized()) }
+    is EditAction.SetMask -> updateFrame(action.clipId) { it.copy(mask = action.mask?.normalized()) }
+    is EditAction.SetChroma -> updateFrame(action.clipId) {
+        it.copy(chroma = action.chroma?.let { key -> key.copy(intensity = key.intensity.coerceIn(0f, 1f), shadow = key.shadow.coerceIn(0f, 1f)) })
+    }
 }
+
+private fun ClipMask.normalized(): ClipMask = copy(
+    centerX = centerX.coerceIn(-1f, 1f),
+    centerY = centerY.coerceIn(-1f, 1f),
+    width = width.coerceIn(ClipMask.MIN_SIZE, ClipMask.MAX_SIZE),
+    height = height.coerceIn(ClipMask.MIN_SIZE, ClipMask.MAX_SIZE),
+    rotationDegrees = FrameGeometry.normalizeDegrees(rotationDegrees),
+    feather = feather.coerceIn(0f, 1f),
+    cornerRadius = cornerRadius.coerceIn(0f, 1f),
+)
 
 /** A further 90° clockwise; the crop and its ratio chip turn with the picture. */
 fun Clip.rotated(): Clip = copy(

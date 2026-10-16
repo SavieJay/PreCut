@@ -1,5 +1,7 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.withStyleOf
+import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.Project
 import com.savie.precut.model.frame.ClipCanvas
@@ -62,5 +64,11 @@ object BatchEdits {
         EditAction.Batch(project.clips.map { EditAction.SetCanvas(it.id, canvas) })
 
     /** Every clip on the main track ("Apply to all"). */
+    /** Every text styled like [from] (X-04 batch edit): font, colours, effects and animations; words, timing and place stay. */
+    fun textStyle(project: Project, from: TextOverlay): EditAction.Batch = EditAction.Batch(
+        // Stickers have no text style.
+        project.textOverlays.filter { it.id != from.id && it.sticker == null }.map { EditAction.UpdateText(it.withStyleOf(from)) },
+    )
+
     fun allClipIds(project: Project): Set<String> = project.clips.map { it.id }.toSet()
 }

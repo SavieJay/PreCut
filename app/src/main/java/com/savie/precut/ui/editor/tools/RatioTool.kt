@@ -45,7 +45,7 @@ fun RatioTool(
 }
 
 @Composable
-private fun AspectRatio.label(): String = when (this) {
+fun AspectRatio.label(): String = when (this) {
     AspectRatio.ORIGINAL -> stringResource(R.string.ratio_original)
     AspectRatio.RATIO_235_100 -> "2.35:1"
     AspectRatio.RATIO_185_100 -> "1.85:1"

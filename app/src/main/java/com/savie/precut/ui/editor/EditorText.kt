@@ -63,7 +63,7 @@ class EditorText(private val host: EditorHost) {
     /** A text left empty when its panel closes is removed rather than kept invisible. */
     fun dropBlankSelected() {
         val text = host.ready?.selectedTextId?.let(::find) ?: return
-        if (text.text.isBlank()) host.applyEdit(EditAction.DeleteText(text.id))
+        if (text.text.isBlank() && text.sticker == null) host.applyEdit(EditAction.DeleteText(text.id))
     }
 
     private fun find(textId: String): TextOverlay? = host.ready?.project?.textOverlays?.firstOrNull { it.id == textId }

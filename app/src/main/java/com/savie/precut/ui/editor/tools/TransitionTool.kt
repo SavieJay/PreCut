@@ -1,5 +1,8 @@
 package com.savie.precut.ui.editor.tools
 
+import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.PreCutType
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -24,14 +27,20 @@ interface TransitionActions {
     fun onApplyAll()
 }
 
+/** P-06 order: Fade black, the overlapping ones, then the other edge transitions. */
+private val TRANSITION_ORDER: List<TransitionType> = listOf(TransitionType.FADE_BLACK) +
+    TransitionType.entries.filter { it.overlapping } +
+    TransitionType.entries.filter { !it.overlapping && it != TransitionType.FADE_BLACK }
+
 /**
- * Transition (T-16): None and the edge transitions in a 5-column grid, then the duration, up to
- * [maxMs] (the shorter of the two clips). Picking one plays it once.
+ * Transition (T-16, P-06): None, then edge and overlapping transitions in a 5-column grid, then
+ * the duration, up to [maxMs]. [overlapNote] explains how much shorter an overlapping one makes
+ * the video. Picking one plays it once.
  */
 @Composable
-fun TransitionTool(transition: ClipTransition?, maxMs: Long, actions: TransitionActions, onDone: () -> Unit) {
+fun TransitionTool(transition: ClipTransition?, maxMs: Long, actions: TransitionActions, onDone: () -> Unit, overlapNote: String? = null) {
     ToolPanel(stringResource(R.string.tool_transition), onDone, actions = { ApplyToAllButton(actions::onApplyAll) }) {
-        TileGrid(listOf<TransitionType?>(null) + TransitionType.entries, columns = 5) { type ->
+        TileGrid(listOf<TransitionType?>(null) + TRANSITION_ORDER, columns = 5) { type ->
             if (type == null) {
                 PresetTile(stringResource(R.string.motion_none), R.drawable.ic_block, selected = transition == null, onClick = { actions.onType(null) })
             } else {
@@ -41,6 +50,7 @@ fun TransitionTool(transition: ClipTransition?, maxMs: Long, actions: Transition
         }
         val top = maxMs.coerceIn(MIN_TRANSITION_MS, MAX_TRANSITION_MS)
         DurationRow(transition?.durationMs ?: 0L, MIN_TRANSITION_MS, top, enabled = transition != null && top > MIN_TRANSITION_MS, onChanged = actions::onDuration)
+        overlapNote?.let { Text(it, style = PreCutType.labelChip, color = TextSecondary) }
     }
 }
 

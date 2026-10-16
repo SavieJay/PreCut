@@ -12,6 +12,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.BaseGlShaderProgram
 import androidx.media3.effect.GlEffect
 import androidx.media3.effect.GlShaderProgram
+import com.savie.precut.model.frame.ChromaKey
+import com.savie.precut.model.keyframe.ClipKeyframe
+import com.savie.precut.model.keyframe.valuesAt
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.look.Cube
 
@@ -25,17 +28,29 @@ class LookEffect(
     private val look: ClipLook,
     private val luts: LutCache,
     private val activeUs: LongRange? = null,
+    private val chroma: ChromaKey? = null,
+    /** Keyframes (times into the clip) animating filter strength, Adjust and chroma strength. */
+    private val keyframes: List<ClipKeyframe> = emptyList(),
+    private val keyframesStartUs: Long = 0L,
 ) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
         // Baked/parsed here, on the GL thread, so building a composition stays cheap.
-        LookShaderProgram(LookUniforms.of(look), look.filterId?.takeIf { look.hasFilter }?.let(luts::cube), activeUs)
+        LookShaderProgram(
+            LookUniforms.of(look), look.filterId?.let(luts::cube), activeUs, chroma,
+            keyframes.takeIf { it.isNotEmpty() }?.let { LookKeyframes(look, it, keyframesStartUs) },
+        )
 }
+
+/** What look keyframes change per frame. */
+internal class LookKeyframes(val look: ClipLook, val keyframes: List<ClipKeyframe>, val startUs: Long)
 
 @OptIn(UnstableApi::class)
 internal class LookShaderProgram(
     private val uniforms: LookUniforms,
     cube: Cube?,
     private val activeUs: LongRange?,
+    private val chroma: ChromaKey? = null,
+    private val animated: LookKeyframes? = null,
 ) : BaseGlShaderProgram(/* useHighPrecisionColorComponents= */ false, /* texturePoolCapacity= */ 1) {
 
     private val program: GlProgram
@@ -45,6 +60,7 @@ internal class LookShaderProgram(
     private var texelWidth = 0f
     private var texelHeight = 0f
     private var aspect = 1f
+    private val chromaUniform = chroma?.let(::chromaUniform) ?: floatArrayOf(0f, 0f, -1f, 0f)
 
     init {
         try {
@@ -76,16 +92,27 @@ internal class LookShaderProgram(
             program.setSamplerTexIdUniform("uTexSampler", inputTexId, 0)
             program.setSamplerTexIdUniform("uLut", lutTexture, 1)
             program.setSamplerTexIdUniform("uCurves", curveTexture, 2)
-            program.setFloatsUniform("uAdjustA", uniforms.adjustA)
-            program.setFloatsUniform("uAdjustB", uniforms.adjustB)
-            program.setFloatsUniform("uAdjustC", uniforms.adjustC)
+            val keyed = animated?.let { it.keyframes.valuesAt((presentationTimeUs - it.startUs) / 1_000) }
+            val adjust = keyed?.let { LookUniforms.adjustOf(it.adjust) }
+            program.setFloatsUniform("uAdjustA", adjust?.a ?: uniforms.adjustA)
+            program.setFloatsUniform("uAdjustB", adjust?.b ?: uniforms.adjustB)
+            program.setFloatsUniform("uAdjustC", adjust?.c ?: uniforms.adjustC)
             val seed = (presentationTimeUs / 33_333L % 997L).toFloat()
-            program.setFloatsUniform("uMisc", floatArrayOf(uniforms.sharpen, uniforms.lutMix, lutSize, seed))
+            val lutMix = animated?.let { a -> keyed?.let { LookUniforms.lutMixOf(a.look.copy(filterIntensity = it.filterIntensity)) } } ?: uniforms.lutMix
+            program.setFloatsUniform("uMisc", floatArrayOf(adjust?.sharpen ?: uniforms.sharpen, lutMix, lutSize, seed))
             program.setFloatsUniform(
                 "uFlags",
                 floatArrayOf(if (enabled) 1f else 0f, if (uniforms.hslEnabled) 1f else 0f, if (uniforms.curveTable != null) 1f else 0f, aspect),
             )
             program.setFloatsUniform("uTexelSize", floatArrayOf(texelWidth, texelHeight))
+            program.setFloatsUniform(
+                "uChroma",
+                if (keyed != null && chroma != null) {
+                    chromaUniform(chroma.copy(intensity = keyed.chromaIntensity ?: chroma.intensity, shadow = keyed.chromaShadow ?: chroma.shadow))
+                } else {
+                    chromaUniform
+                },
+            )
             program.setFloatsUniform("uHslHueA", uniforms.hslHue.copyOfRange(0, 4))
             program.setFloatsUniform("uHslHueB", uniforms.hslHue.copyOfRange(4, 8))
             program.setFloatsUniform("uHslSatA", uniforms.hslSaturation.copyOfRange(0, 4))
@@ -108,6 +135,15 @@ internal class LookShaderProgram(
         } catch (e: GlUtil.GlException) {
             throw VideoFrameProcessingException(e)
         }
+    }
+
+    /** The key colour in CbCr (as the shader computes it) with the key's threshold and soft edge. */
+    private fun chromaUniform(key: ChromaKey): FloatArray {
+        val r = (key.colorArgb shr 16 and 0xFF) / 255f
+        val g = (key.colorArgb shr 8 and 0xFF) / 255f
+        val b = (key.colorArgb and 0xFF) / 255f
+        val (threshold, soft) = key.thresholds()
+        return floatArrayOf(-0.168736f * r - 0.331264f * g + 0.5f * b, 0.5f * r - 0.418688f * g - 0.081312f * b, threshold, soft)
     }
 
     private fun textureOf(bitmap: Bitmap?): Int =

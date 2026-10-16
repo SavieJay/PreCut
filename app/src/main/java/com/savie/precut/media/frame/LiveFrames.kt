@@ -1,5 +1,6 @@
 package com.savie.precut.media.frame
 
+import com.savie.precut.model.frame.ClipMask
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.frame.FrameFit
 import javax.inject.Inject
@@ -13,7 +14,8 @@ import javax.inject.Singleton
 @Singleton
 class LiveFrames @Inject constructor() {
 
-    data class Value(val clipId: String, val fit: FrameFit, val transform: ClipTransform, val opacity: Float)
+    /** The whole live frame state of [clipId]: values not being edited are the clip's own. */
+    data class Value(val clipId: String, val fit: FrameFit, val transform: ClipTransform, val opacity: Float, val mask: ClipMask?)
 
     // Written on the main thread, read on the effects thread.
     @Volatile

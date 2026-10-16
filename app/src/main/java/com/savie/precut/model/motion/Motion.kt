@@ -2,9 +2,16 @@ package com.savie.precut.model.motion
 
 import kotlinx.serialization.Serializable
 
-/** Edge transitions (T-16): no overlap, so the timeline keeps its length. Overlapping ones come in Phase 9. */
+/**
+ * Transitions between clips. Edge ones (T-16) play half over each clip with no overlap, so the
+ * timeline keeps its length; [overlapping] ones (P-06) show both clips at once, the incoming one
+ * starting [ClipTransition.durationMs] earlier, so the video gets shorter by that much.
+ */
 @Serializable
-enum class TransitionType { FADE_BLACK, FADE_WHITE, FLASH, ZOOM_IN, ZOOM_OUT, BLUR, GLITCH, SPIN }
+enum class TransitionType(val overlapping: Boolean = false) {
+    FADE_BLACK, FADE_WHITE, FLASH, ZOOM_IN, ZOOM_OUT, BLUR, GLITCH, SPIN,
+    DISSOLVE(overlapping = true), SLIDE(overlapping = true), PUSH(overlapping = true), WIPE(overlapping = true),
+}
 
 const val MIN_TRANSITION_MS = 100L
 const val MAX_TRANSITION_MS = 2_000L

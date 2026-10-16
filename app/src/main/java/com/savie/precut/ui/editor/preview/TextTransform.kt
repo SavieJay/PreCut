@@ -29,6 +29,7 @@ data class TextTransform(val xNorm: Float, val yNorm: Float, val sizeSp: Float, 
             zoom: Float,
             rotationDelta: Float,
             centreSnapNorm: Float,
+            sizeRange: ClosedFloatingPointRange<Float> = MIN_TEXT_SIZE_SP..MAX_TEXT_SIZE_SP,
         ): Pair<TextTransform, Snaps> {
             var x = (start.xNorm + panXNorm).coerceIn(0f, 1f)
             var y = (start.yNorm + panYNorm).coerceIn(0f, 1f)
@@ -39,7 +40,7 @@ data class TextTransform(val xNorm: Float, val yNorm: Float, val sizeSp: Float, 
             val rotation = normalizeDegrees(start.rotationDegrees + rotationDelta)
             val rightAngle = (rotation / 90f).roundToInt() * 90f
             val snapRotation = abs(rotation - rightAngle) <= ROTATION_SNAP_DEGREES
-            val size = (start.sizeSp * zoom).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+            val size = (start.sizeSp * zoom).coerceIn(sizeRange)
             val transform = TextTransform(x, y, size, if (snapRotation) normalizeDegrees(rightAngle) else rotation)
             return transform to Snaps(snapX, snapY, snapRotation)
         }

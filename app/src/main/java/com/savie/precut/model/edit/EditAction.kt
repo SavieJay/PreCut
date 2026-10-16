@@ -8,13 +8,19 @@ import com.savie.precut.model.OverlayClip
 import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.VoiceEffect
+import com.savie.precut.model.frame.ChromaKey
 import com.savie.precut.model.frame.ClipCanvas
+import com.savie.precut.model.frame.ClipMask
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.frame.CropRatio
 import com.savie.precut.model.frame.CropRect
 import com.savie.precut.model.frame.FrameFit
+import com.savie.precut.model.keyframe.Easing
+import com.savie.precut.model.keyframe.EasingCurve
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.look.LookLayer
+import com.savie.precut.model.effect.EffectLayer
+import com.savie.precut.model.effect.EffectSettings
 import com.savie.precut.model.motion.ClipAnimation
 import com.savie.precut.model.motion.ClipTransition
 import com.savie.precut.model.motion.ComboAnimation
@@ -69,6 +75,53 @@ sealed interface EditAction {
     /** A copy starting where the original ends. */
     data class DuplicateLookLayer(val layerId: String, val newId: String) : LayerEdit
 
+    /** Video effect edits (Phase 11), applied by `applyEffectEdit`. */
+    sealed interface EffectEdit : EditAction
+
+    data class AddEffectLayer(val layer: EffectLayer) : EffectEdit
+
+    /** Replaces the layer with the same id (effect and timing); timing is clamped. */
+    data class UpdateEffectLayer(val layer: EffectLayer) : EffectEdit
+
+    data class DeleteEffectLayer(val layerId: String) : EffectEdit
+
+    data class SplitEffectLayer(val layerId: String, val atMs: Long, val newId: String) : EffectEdit
+
+    /** A copy starting where the original ends. */
+    data class DuplicateEffectLayer(val layerId: String, val newId: String) : EffectEdit
+
+    /** A clip's own effect; null removes it. */
+    data class SetClipEffect(val clipId: String, val effect: EffectSettings?) : EffectEdit
+
+    /** The same effect (or none) on every main-track clip. */
+    data class SetEffectOnAllClips(val effect: EffectSettings?) : EffectEdit
+
+    /** Keyframe edits (P-05), applied by `applyKeyframeEdit`. Times are the playhead's, in timeline ms. */
+    sealed interface KeyframeEdit : EditAction
+
+    /** Adds a keyframe of the clip's current values at [timelineMs] (replacing one already there). */
+    data class AddKeyframe(val clipId: String, val timelineMs: Long) : KeyframeEdit
+
+    data class RemoveKeyframe(val clipId: String, val timelineMs: Long) : KeyframeEdit
+
+    /** The easing out of the keyframe at [timelineMs]. */
+    data class SetKeyframeEasing(val clipId: String, val timelineMs: Long, val easing: Easing, val curve: EasingCurve?) : KeyframeEdit
+
+    /**
+     * A value edit ([edit]: transform, opacity, mask, chroma, look or volume) on a clip with
+     * keyframes: the animated part lands in the keyframe at [timelineMs], made if missing.
+     */
+    data class EditKeyframed(val timelineMs: Long, val edit: EditAction) : KeyframeEdit
+
+    data class AddTextKeyframe(val textId: String, val timelineMs: Long) : KeyframeEdit
+
+    data class RemoveTextKeyframe(val textId: String, val timelineMs: Long) : KeyframeEdit
+
+    data class SetTextKeyframeEasing(val textId: String, val timelineMs: Long, val easing: Easing, val curve: EasingCurve?) : KeyframeEdit
+
+    /** A text change on a text with keyframes: place, size, turn and opacity land in the keyframe at [timelineMs]. */
+    data class EditKeyframedText(val timelineMs: Long, val overlay: TextOverlay) : KeyframeEdit
+
     /** Frame edits (crop, mirror, rotate, transform, opacity, canvas), applied by `applyFrameEdit`. */
     sealed interface FrameEdit : EditAction
 
@@ -94,6 +147,12 @@ sealed interface EditAction {
     data class SetOpacity(val clipId: String, val opacity: Float) : FrameEdit
 
     data class SetCanvas(val clipId: String, val canvas: ClipCanvas) : FrameEdit
+
+    /** Sets or (null) removes a clip's mask (P-03). */
+    data class SetMask(val clipId: String, val mask: ClipMask?) : FrameEdit
+
+    /** Sets or (null) removes a clip's chroma key (P-04). */
+    data class SetChroma(val clipId: String, val chroma: ChromaKey?) : FrameEdit
 
     /** Motion edits (transitions, animations, freeze frame), applied by `applyMotionEdit`. */
     sealed interface MotionEdit : EditAction

@@ -1,6 +1,7 @@
 package com.savie.precut.ui.editor
 
 import com.savie.precut.media.look.CustomLut
+import com.savie.precut.model.edit.clipShownAt
 import com.savie.precut.media.look.LutCache
 import com.savie.precut.model.look.Adjustment
 import com.savie.precut.model.look.ClipLook
@@ -33,7 +34,7 @@ class EditorLook(private val host: EditorHost, private val luts: LutCache) {
 
     /** The look being edited, if any. */
     fun current(ready: EditorUiState.Ready): ClipLook? =
-        ready.selectedLayer()?.look ?: ready.project.clipById(ready.selectedClipId)?.look
+        ready.selectedLayer()?.look ?: ready.project.clipShownAt(ready.selectedClipId, host.positionMs)?.look
 
     /** Opens a look tool (FILTER, ADJUST, HSL, CURVES) on the layer or clip, or adds a layer. */
     fun open(tool: EditorTool) {
@@ -133,7 +134,7 @@ class EditorLook(private val host: EditorHost, private val luts: LutCache) {
         when {
             layer != null -> host.applyEdit(EditAction.UpdateLookLayer(layer.copy(look = transform(layer.look))))
             ready.selectedClipId != null -> {
-                val clip = ready.project.clipById(ready.selectedClipId) ?: return
+                val clip = ready.project.clipShownAt(ready.selectedClipId, host.positionMs) ?: return
                 host.applyEdit(EditAction.SetClipLook(clip.id, transform(clip.look)))
             }
         }

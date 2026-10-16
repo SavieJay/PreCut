@@ -108,8 +108,10 @@ class AndroidMediaProbe @Inject constructor(
 
     private fun probeImage(uri: Uri): ProbeResult {
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+        val stream = context.contentResolver.openInputStream(uri)
             ?: return ProbeResult.Failed(IOException("Cannot open $uri"))
+        // A bounds-only decode returns null by design; the size lands in [options].
+        stream.use { BitmapFactory.decodeStream(it, null, options) }
         if (options.outWidth <= 0 || options.outHeight <= 0) return ProbeResult.Unsupported
         val rotation = context.contentResolver.openInputStream(uri)?.use {
             exifRotation(ExifInterface(it))

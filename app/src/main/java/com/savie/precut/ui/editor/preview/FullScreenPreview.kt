@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.ContextWrapper
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -95,14 +93,15 @@ fun FullScreenPreview(
             )
         }
     }
+    val zoom = remember { PreviewZoom() }
     BoxWithConstraints(
         Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { controls = !controls },
+            .pinchToZoom(zoom, onTap = { controls = !controls }),
     ) {
         val landscape = maxWidth > maxHeight
-        PreviewSurface(player, Modifier.fillMaxSize())
+        PreviewSurface(player, Modifier.fillMaxSize().zoomed(zoom), textureView = true)
         if (!controls) return@BoxWithConstraints
         Box(Modifier.fillMaxWidth().height(if (landscape) 96.dp else 120.dp).background(Brush.verticalGradient(listOf(TopScrim, Color.Transparent))))
         IconButton(

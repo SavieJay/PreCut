@@ -1,8 +1,10 @@
 package com.savie.precut.ui.editor
 
 import android.Manifest
+import com.savie.precut.model.edit.clipShownAt
 import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -20,9 +22,12 @@ import com.savie.precut.model.frameRatio
 import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.ui.editor.tools.AudioMenuBar
+import com.savie.precut.ui.editor.tools.ChromaTool
 import com.savie.precut.ui.editor.tools.ClipVolumeTool
+import com.savie.precut.ui.editor.tools.MaskTool
 import com.savie.precut.ui.editor.tools.CoverTool
 import com.savie.precut.ui.editor.tools.FadeTool
+import com.savie.precut.ui.editor.tools.KeyframeEasingTool
 import com.savie.precut.ui.editor.tools.LayerToolbar
 import com.savie.precut.ui.editor.tools.RatioTool
 import com.savie.precut.ui.editor.tools.SpeedTool
@@ -40,7 +45,8 @@ import com.savie.precut.ui.editor.tools.VolumeSlider
 fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs: () -> Long, viewModel: EditorViewModel) {
     val context = LocalContext.current
     val recording by viewModel.audio.recording.collectAsStateWithLifecycle()
-    val clip = state.project.clipById(state.selectedClipId)
+    // With keyframes, panels show (and edit from) the values at the playhead.
+    val clip = state.project.clipShownAt(state.selectedClipId, positionMs())
     val text = state.project.textOverlays.firstOrNull { it.id == state.selectedTextId }
     val audio = state.project.audioClips.firstOrNull { it.id == state.selectedAudioId }
     val close = viewModel::onToolClosed
@@ -53,6 +59,14 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         AudioPanels(audio, state.activeTool, positionMs, viewModel)
         return
     }
+    state.activeTool?.takeIf { it in EFFECT_TOOLS }?.let { tool ->
+        EffectPanels(state, tool, positionMs, viewModel)
+        return
+    }
+    state.project.effectLayers.firstOrNull { it.id == state.selectedLayerId }?.let { layer ->
+        EffectLayerPanel(layer, positionMs, viewModel)
+        return
+    }
     state.project.lookLayers.firstOrNull { it.id == state.selectedLayerId }?.let { layer ->
         val tool = state.activeTool
         if (tool in LOOK_TOOLS && tool != null) {
@@ -63,6 +77,18 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
                 actions = rememberLayerToolbarActions(viewModel),
             )
         }
+        return
+    }
+    state.activeTool?.takeIf { it in STICKER_SHEET_TOOLS }?.let { tool ->
+        StickerSheetPanels(tool, positionMs, viewModel)
+        return
+    }
+    if (text?.sticker != null && state.activeTool != EditorTool.KEYFRAME_EASING) {
+        SelectedStickerPanels(state, text, positionMs, viewModel)
+        return
+    }
+    if (state.activeTool == EditorTool.KEYFRAME_EASING) {
+        KeyframeEasingPanel(state, positionMs, viewModel)
         return
     }
     when {
@@ -88,8 +114,13 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         )
         state.activeTool in EditorFrame.FRAME_TOOLS && clip != null && state.activeTool != null ->
             FramePanels(clip, state.activeTool, viewModel)
+        state.activeTool == EditorTool.MASK && clip != null -> MaskTool(clip.mask, rememberMaskActions(viewModel), onDone = close)
+        state.activeTool == EditorTool.CHROMA && clip != null ->
+            ChromaTool(clip.chroma, state.chromaPicking, rememberChromaActions(viewModel), onDone = close)
         state.activeTool == EditorTool.FADE && clip != null ->
             FadeTool(clip.fadeInMs, clip.fadeOutMs, clip.timelineDurationMs(), viewModel::onClipFadesChanged, onDone = close)
+        state.activeTool in TEXT_STYLE_TOOLS && text != null && state.activeTool != null ->
+            TextStylePanels(state, text, state.activeTool, viewModel)
         state.activeTool == EditorTool.TEXT && text != null ->
             TextTool(
                 overlay = text,
@@ -154,3 +185,14 @@ fun rememberCanSplit(positionMs: () -> Long, startMs: Long, endMs: Long): Boolea
 
 fun canSplitAt(positionMs: Long, startMs: Long, endMs: Long): Boolean =
     positionMs > startMs + MIN_CLIP_DURATION_MS && positionMs < endMs - MIN_CLIP_DURATION_MS
+
+/** The easing panel for the keyframe at the playhead; closes itself when the playhead leaves it. */
+@Composable
+private fun KeyframeEasingPanel(state: EditorUiState.Ready, positionMs: () -> Long, viewModel: EditorViewModel) {
+    val easing = viewModel.keyframes.easing(state, positionMs())
+    if (easing == null) {
+        LaunchedEffect(Unit) { viewModel.onToolClosed() }
+        return
+    }
+    KeyframeEasingTool(easing.easing, easing.curve, onEasing = viewModel.keyframes::onEasing, onDone = viewModel::onToolClosed)
+}

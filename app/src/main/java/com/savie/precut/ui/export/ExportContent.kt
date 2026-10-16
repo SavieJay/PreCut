@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
+import com.savie.precut.model.export.ExportResolution
 import com.savie.precut.ui.components.OutlinedPreCutButton
 import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.components.projectDisplayName
@@ -50,16 +51,23 @@ interface ExportActions {
     fun onShare(uri: String)
     fun onBackToEdit()
     fun onProjects()
+    /** EX-05: retry one resolution lower. */
+    fun onTryLower()
+    /** EX-05b: clear the preview cache, then retry. */
+    fun onClearCache()
 }
+
+/** What the failure screens need to explain themselves: the resolution tried, the lower one, the cache size. */
+data class ExportRecovery(val resolution: ExportResolution, val lower: ExportResolution, val cacheBytes: Long)
 
 /** EX-02 progress (ring around the cover), EX-04 done (cover, Open, Share) and failures. */
 @Composable
-fun ExportContent(state: ExportUiState, info: ExportInfo?, actions: ExportActions) {
+fun ExportContent(state: ExportUiState, info: ExportInfo?, actions: ExportActions, recovery: ExportRecovery? = null) {
     Column(Modifier.fillMaxSize().background(Ink0).statusBarsPadding().navigationBarsPadding()) {
         when (state) {
             ExportUiState.Idle, is ExportUiState.Exporting, ExportUiState.Saving -> Progress(state, info, actions)
             is ExportUiState.Done -> Done(state, info, actions)
-            is ExportUiState.Failed -> Failed(state, actions)
+            is ExportUiState.Failed -> Failed(state, recovery, actions)
         }
     }
 }
@@ -102,7 +110,10 @@ private fun ColumnScope.Progress(state: ExportUiState, info: ExportInfo?, action
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                 textAlign = TextAlign.Center,
             )
-            info?.let { Text(stringResource(R.string.export_quality, formatDurationMs(it.durationMs)), style = MaterialTheme.typography.bodyMedium.tabular(), color = TextSecondary) }
+            info?.let {
+                val quality = if (it.audio) formatDurationMs(it.durationMs) else stringResource(R.string.export_quality, stringResource(it.settings.resolution.label()), it.settings.frameRate, formatDurationMs(it.durationMs))
+                Text(quality, style = MaterialTheme.typography.bodyMedium.tabular(), color = TextSecondary)
+            }
             Text(stringResource(R.string.export_keep_open), style = MaterialTheme.typography.bodyMedium, color = TextSecondary, textAlign = TextAlign.Center)
         }
     }
@@ -127,6 +138,8 @@ private fun ExportContentPreview() {
                 override fun onShare(uri: String) = Unit
                 override fun onBackToEdit() = Unit
                 override fun onProjects() = Unit
+                override fun onTryLower() = Unit
+                override fun onClearCache() = Unit
             },
         )
     }

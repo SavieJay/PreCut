@@ -12,6 +12,7 @@ import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.Project
 import com.savie.precut.model.clipById
+import com.savie.precut.model.edit.clipShownAt
 import com.savie.precut.model.clipTimelineRange
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.frame.CropRatio
@@ -29,7 +30,9 @@ import com.savie.precut.ui.editor.preview.ClipTransformOverlay
  */
 @Composable
 fun ClipFrameOverlay(state: EditorUiState.Ready, previewState: State<PreviewState>, viewModel: EditorViewModel) {
-    val clip = state.project.clipById(state.selectedClipId) ?: return
+    val stored = state.project.clipById(state.selectedClipId) ?: return
+    // Only keyframed clips follow the playhead (reading it recomposes on every tick).
+    val clip = if (stored.keyframes.isEmpty()) stored else state.project.clipShownAt(stored.id, previewState.value.positionMs) ?: stored
     val toolAllows = state.activeTool == null || state.activeTool in EditorFrame.FRAME_TOOLS
     if (!toolAllows || state.selectedTextId != null || state.multiSelect != null) return
     val range = remember(state.project, clip.id) { state.project.clipTimelineRange(clip.id) ?: LongRange.EMPTY }

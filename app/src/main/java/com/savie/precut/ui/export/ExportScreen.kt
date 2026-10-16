@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -45,14 +46,22 @@ fun ExportScreen(
     }
 
     val info by viewModel.info.collectAsStateWithLifecycle()
+    val cacheBytes by viewModel.cacheBytes.collectAsStateWithLifecycle()
+    // A finished or failed export is forgotten once the user leaves it.
+    DisposableEffect(Unit) {
+        onDispose { if (viewModel.uiState.value is ExportUiState.Done || viewModel.uiState.value is ExportUiState.Failed) viewModel.dismiss() }
+    }
     ExportContent(
         state = uiState,
         info = info,
+        recovery = ExportRecovery(viewModel.currentSettings().resolution, viewModel.lowerResolution(), cacheBytes),
         actions = object : ExportActions {
             override fun onCancel() {
                 viewModel.cancel()
                 onClose()
             }
+            override fun onTryLower() = viewModel.startLower()
+            override fun onClearCache() = viewModel.clearCacheAndRetry()
             override fun onRetry() = startExport()
             override fun onOpen(uri: String) {
                 val intent = Intent(Intent.ACTION_VIEW)
