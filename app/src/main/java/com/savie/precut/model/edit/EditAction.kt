@@ -148,6 +148,9 @@ sealed interface EditAction {
 
     data class SetCanvas(val clipId: String, val canvas: ClipCanvas) : FrameEdit
 
+    /** Motion blur strength, clamped to 0..1. */
+    data class SetMotionBlur(val clipId: String, val strength: Float) : FrameEdit
+
     /** Sets or (null) removes a clip's mask (P-03). */
     data class SetMask(val clipId: String, val mask: ClipMask?) : FrameEdit
 

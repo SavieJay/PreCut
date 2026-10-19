@@ -40,11 +40,12 @@ vec4 sampleFrame(vec2 uv) {
 vec4 blurred(vec2 uv, float radius) {
   if (radius <= 0.0) return sampleFrame(uv);
   vec4 sum = sampleFrame(uv);
+  // Golden-angle spiral: each tap turns the last direction by 2.39996 rad (no trig per tap).
+  vec2 dir = vec2(-0.737366696, 0.675492676);
   for (int i = 1; i < 24; i++) {
-    float f = float(i);
-    float r = radius * sqrt(f / 24.0);
-    float a = f * 2.39996; // golden angle
-    sum += sampleFrame(uv + vec2(cos(a), sin(a)) * r / uSize);
+    float r = radius * sqrt(float(i) / 24.0);
+    sum += sampleFrame(uv + dir * r / uSize);
+    dir = vec2(-0.737366696 * dir.x - 0.675492676 * dir.y, 0.675492676 * dir.x - 0.737366696 * dir.y);
   }
   return sum / 24.0;
 }

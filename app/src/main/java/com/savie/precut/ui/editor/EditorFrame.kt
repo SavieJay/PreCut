@@ -126,6 +126,16 @@ class EditorFrame(
         edit { EditAction.SetOpacity(it.id, opacity) }
     }
 
+    // Motion blur
+
+    fun onMotionBlur(strength: Float) = edit { EditAction.SetMotionBlur(it.id, strength) }
+
+    fun onMotionBlurApplyAll() {
+        val ready = host.ready ?: return
+        val strength = selected()?.motionBlur ?: return
+        host.applyEdit(BatchEdits.motionBlur(ready.project, strength))
+    }
+
     // Canvas
 
     fun onCanvas(canvas: ClipCanvas) = edit { EditAction.SetCanvas(it.id, canvas) }
@@ -174,6 +184,6 @@ class EditorFrame(
         val LIVE_TOOLS = setOf(EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.MASK)
 
         /** Tools that keep the clip's transform frame on the preview. */
-        val FRAME_TOOLS = setOf(EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS)
+        val FRAME_TOOLS = setOf(EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.MOTION_BLUR)
     }
 }

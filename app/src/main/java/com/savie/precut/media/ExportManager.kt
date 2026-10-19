@@ -9,7 +9,10 @@ import androidx.media3.transformer.DefaultEncoderFactory
 import androidx.media3.transformer.VideoEncoderSettings
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.export.EXPORT_AUDIO_BITRATE
+import com.savie.precut.model.export.ExportBitrate
 import com.savie.precut.model.export.ExportCodec
+import com.savie.precut.model.export.GifSettings
+import com.savie.precut.media.export.gif.GifTranscoder
 import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.model.export.videoBitrate
 import com.savie.precut.model.outputSize
@@ -25,11 +28,15 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 
@@ -47,6 +54,9 @@ interface VideoExporter {
      * collection cancels the export.
      */
     fun export(project: Project, settings: ExportSettings = ExportSettings(), audioOnly: Boolean = false): Flow<ExportState>
+
+    /** Exports [project] as a looping GIF ([gif] size and frame rate) to a temporary file. */
+    fun exportGif(project: Project, gif: GifSettings): Flow<ExportState>
 }
 
 // Transformer's encoder settings and error codes are unstable in Media3 1.11.
@@ -62,6 +72,48 @@ class ExportManager @Inject constructor(
         val composition = compositionBuilder.build(project, settings.resolution.shortSidePx, output = output)
             ?: return flowOf(ExportState.Failed(IllegalStateException("Project has no clips")))
         return export(composition, settings, project.outputSize(settings.resolution.shortSidePx), audioOnly)
+    }
+
+    /**
+     * The same composition as the preview, exported to a temporary MP4 at the GIF's size and frame
+     * rate (60% of the progress), then transcoded to a GIF (the rest).
+     */
+    override fun exportGif(project: Project, gif: GifSettings): Flow<ExportState> = channelFlow {
+        val size = project.outputSize(gif.size.shortSidePx)
+        val composition = compositionBuilder.build(project, gif.size.shortSidePx, output = ExportOutput(frameRate = gif.frameRate))
+        if (composition == null) {
+            send(ExportState.Failed(IllegalStateException("Project has no clips")))
+            return@channelFlow
+        }
+        // A high bitrate so the GIF's colours come from a clean picture.
+        val video = ExportSettings(frameRate = gif.frameRate, bitrate = ExportBitrate.HIGHER)
+        export(composition, video, size, audioOnly = false).collect { state ->
+            when (state) {
+                is ExportState.Running -> send(ExportState.Running(state.percent?.let { it * VIDEO_SHARE / 100 }))
+                is ExportState.Failed -> send(state)
+                is ExportState.Success -> {
+                    val target = File(state.file.parentFile, state.file.nameWithoutExtension + ".gif")
+                    try {
+                        withContext(Dispatchers.Default) {
+                            GifTranscoder().transcode(state.file, target, gif.frameRate) { f -> trySend(ExportState.Running(VIDEO_SHARE + (f * (100 - VIDEO_SHARE)).toInt())) }
+                        }
+                        send(ExportState.Success(target))
+                    } catch (e: CancellationException) {
+                        target.delete()
+                        throw e
+                    } catch (e: IOException) {
+                        target.delete()
+                        send(ExportState.Failed(e))
+                    } catch (e: IllegalStateException) {
+                        // MediaCodec reports decoder failures this way.
+                        target.delete()
+                        send(ExportState.Failed(e))
+                    } finally {
+                        state.file.delete()
+                    }
+                }
+            }
+        }
     }
 
     private fun export(composition: Composition, settings: ExportSettings, size: OutputSize, audioOnly: Boolean): Flow<ExportState> = callbackFlow {
@@ -130,5 +182,7 @@ class ExportManager @Inject constructor(
         )
         const val EXPORT_DIR = "exports"
         const val PROGRESS_POLL_MS = 200L
+        /** The MP4's share of a GIF export's progress, in percent. */
+        const val VIDEO_SHARE = 60
     }
 }

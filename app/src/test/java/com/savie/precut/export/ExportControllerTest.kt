@@ -7,6 +7,8 @@ import com.savie.precut.media.ExportState
 import com.savie.precut.media.MediaSaver
 import com.savie.precut.media.SavedMedia
 import com.savie.precut.media.VideoExporter
+import com.savie.precut.model.export.GifSettings
+import com.savie.precut.model.export.GifSize
 import com.savie.precut.model.Project
 import com.savie.precut.model.export.ExportResolution
 import com.savie.precut.model.export.ExportSettings
@@ -80,6 +82,20 @@ class ExportControllerTest {
         // The name uses local time, so only its shape is checked.
         assertTrue(saver.savedName.orEmpty().matches(Regex("PreCut_20261012_\\d{6}\\.mp4")))
         assertEquals(SavedMedia.VIDEO, saver.savedAs)
+    }
+
+    @Test
+    fun gif_exportsWithItsSettings_andSavesToPictures() = runTest(dispatcher) {
+        repository.save(project(videoClip("a")))
+        val controller = controller()
+        val gif = GifSettings(GifSize.SMALL, frameRate = 10)
+        controller.start("p", settings.copy(gif = gif), ExportKind.GIF)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(gif, exporter.lastGif)
+        exportStates.emit(ExportState.Success(File("out.gif")))
+        dispatcher.scheduler.runCurrent()
+        assertEquals(SavedMedia.GIF, saver.savedAs)
+        assertTrue(saver.savedName.orEmpty().endsWith(".gif"))
     }
 
     @Test
@@ -173,6 +189,12 @@ class ExportControllerTest {
         var cancelled = false
         var lastSettings: ExportSettings? = null
         var lastAudioOnly = false
+        var lastGif: GifSettings? = null
+        override fun exportGif(project: Project, gif: GifSettings): Flow<ExportState> {
+            lastGif = gif
+            return export(project, ExportSettings(), audioOnly = false)
+        }
+
         override fun export(project: Project, settings: ExportSettings, audioOnly: Boolean): Flow<ExportState> {
             starts++
             lastSettings = settings

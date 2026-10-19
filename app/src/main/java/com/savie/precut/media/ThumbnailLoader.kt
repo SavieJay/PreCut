@@ -67,9 +67,23 @@ class ThumbnailLoader @Inject constructor(
         return withContext(ioDispatcher) {
             lock.withLock {
                 this@ThumbnailLoader.cache.get(quantized)
-                    ?: extract(quantized)?.also { if (cache) this@ThumbnailLoader.cache.put(quantized, it) }
+                    ?: extract(quantized)?.let { frame ->
+                        if (cache) compact(frame, quantized).also { this@ThumbnailLoader.cache.put(quantized, it) } else frame
+                    }
             }
         }
+    }
+
+    /**
+     * Cached timeline-sized tiles are kept as RGB_565, half the memory of ARGB_8888 with no visible
+     * difference at that size. Exact frames (covers) and uncached ones (canvases, freeze frames,
+     * exports) keep full colour and alpha.
+     */
+    private fun compact(frame: Bitmap, key: ThumbnailKey): Bitmap {
+        if (key.exact || frame.config == Bitmap.Config.RGB_565) return frame
+        val small = frame.copy(Bitmap.Config.RGB_565, /* isMutable= */ false) ?: return frame
+        frame.recycle()
+        return small
     }
 
     private fun extract(key: ThumbnailKey): Bitmap? = try {

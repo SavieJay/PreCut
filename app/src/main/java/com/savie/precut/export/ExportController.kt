@@ -7,6 +7,8 @@ import com.savie.precut.media.ExportState
 import com.savie.precut.media.MediaSaver
 import com.savie.precut.media.SavedMedia
 import com.savie.precut.media.VideoExporter
+import com.savie.precut.model.Project
+import com.savie.precut.model.export.ExportBitrate
 import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.model.export.estimatedBytes
 import com.savie.precut.model.outputSize
@@ -25,8 +27,8 @@ import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** A video, or only its sound (EX-01 "Audio only"). */
-enum class ExportKind { VIDEO, AUDIO }
+/** A video, only its sound (EX-01 "Audio only"), or a looping GIF; each saved as its [media]. */
+enum class ExportKind(val media: SavedMedia) { VIDEO(SavedMedia.VIDEO), AUDIO(SavedMedia.AUDIO), GIF(SavedMedia.GIF) }
 
 enum class ExportFailure { PROJECT_NOT_FOUND, PERMISSION_DENIED, EXPORT_FAILED, SAVE_FAILED, ENCODER, LOW_STORAGE }
 
@@ -98,7 +100,7 @@ class ExportController @Inject constructor(
             val durationMs = project.totalDurationMs()
             val job = ExportJob(projectId, project.name, durationMs, kind, settings, project.createdAt)
             // The file is written to the cache, then copied to the gallery.
-            val needed = settings.estimatedBytes(project.outputSize(settings.resolution.shortSidePx), durationMs, kind == ExportKind.AUDIO) * 2 + STORAGE_MARGIN_BYTES
+            val needed = neededBytes(project, settings, kind, durationMs) + STORAGE_MARGIN_BYTES
             val free = storage.freeBytes()
             if (free < needed) {
                 _state.value = ExportJobState.Failed(job, ExportFailure.LOW_STORAGE, neededBytes = needed, freeBytes = free)
@@ -106,7 +108,8 @@ class ExportController @Inject constructor(
             }
             _state.value = ExportJobState.Running(job, percent = null)
             serviceStarter.start()
-            exporter.export(project, settings, audioOnly = kind == ExportKind.AUDIO).collect { exportState ->
+            val export = if (kind == ExportKind.GIF) exporter.exportGif(project, settings.gif) else exporter.export(project, settings, audioOnly = kind == ExportKind.AUDIO)
+            export.collect { exportState ->
                 when (exportState) {
                     is ExportState.Running -> _state.value = ExportJobState.Running(job, exportState.percent)
                     is ExportState.Failed -> _state.value = ExportJobState.Failed(
@@ -117,7 +120,7 @@ class ExportController @Inject constructor(
                     is ExportState.Success -> {
                         _state.value = ExportJobState.Saving(job)
                         val size = exportState.file.length()
-                        val media = if (kind == ExportKind.AUDIO) SavedMedia.AUDIO else SavedMedia.VIDEO
+                        val media = kind.media
                         _state.value = saver.save(exportState.file, displayName(media), media).fold(
                             onSuccess = { ExportJobState.Done(job, it, size) },
                             onFailure = { ExportJobState.Failed(job, ExportFailure.SAVE_FAILED, it.message) },
@@ -143,6 +146,16 @@ class ExportController @Inject constructor(
     /** Forgets a finished or failed export once it's been seen. */
     fun dismiss() {
         if (!isBusy) _state.value = ExportJobState.Idle
+    }
+
+    /** Room for the temporary file and its gallery copy (a GIF also needs its temporary MP4). */
+    private fun neededBytes(project: Project, settings: ExportSettings, kind: ExportKind, durationMs: Long): Long {
+        if (kind == ExportKind.GIF) {
+            val size = project.outputSize(settings.gif.size.shortSidePx)
+            val video = ExportSettings(frameRate = settings.gif.frameRate, bitrate = ExportBitrate.HIGHER).estimatedBytes(size, durationMs)
+            return video + settings.gif.estimatedBytes(size, durationMs) * 2
+        }
+        return settings.estimatedBytes(project.outputSize(settings.resolution.shortSidePx), durationMs, kind == ExportKind.AUDIO) * 2
     }
 
     private fun displayName(media: SavedMedia): String =

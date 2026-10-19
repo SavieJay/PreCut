@@ -83,7 +83,8 @@ class PreviewController @Inject constructor(
      * Whether the player has something to play. With nothing (e.g. every clip's media is
      * missing), CompositionPlayer must not be seeked: it crashes when no composition was ever set.
      */
-    private var hasMedia = false
+    var hasMedia = false
+        private set
     private var composition: Composition? = null
     private var volume = 1f
     private var recoveries = 0

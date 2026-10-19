@@ -363,4 +363,14 @@ class CompositionSpecTest {
         assertEquals(listOf(0L, 2_000L), item.visual.lookKeyframes.map { it.atMs })
         assertEquals(listOf(1f, 0f), item.sound.volumeKeyframes.map { it.volume })
     }
+
+    @Test
+    fun motionBlur_onMainClipsOnly() {
+        val p = project(videoClip("a").copy(motionBlur = 0.6f)).copy(
+            overlays = listOf(OverlayClip(videoClip("o").copy(motionBlur = 0.6f), 0L)),
+        )
+        val spec = compositionSpecOf(p)
+        assertEquals(0.6f, spec.items.single().visual.motionBlur)
+        assertEquals(0f, spec.overlayLanes.single().items.single().item.visual.motionBlur)
+    }
 }

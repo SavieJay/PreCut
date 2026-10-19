@@ -9,10 +9,11 @@ import com.savie.precut.model.frame.ClipCanvas
 import com.savie.precut.ui.editor.tools.CanvasActions
 import com.savie.precut.ui.editor.tools.CanvasTool
 import com.savie.precut.ui.editor.tools.EditTool
+import com.savie.precut.ui.editor.tools.MotionBlurTool
 import com.savie.precut.ui.editor.tools.OpacityTool
 import com.savie.precut.ui.editor.tools.TransformTool
 
-/** The Edit, Transform, Opacity and Canvas panels for [clip]. */
+/** The Edit, Transform, Opacity, Motion blur and Canvas panels for [clip]. */
 @Composable
 fun FramePanels(clip: Clip, tool: EditorTool, viewModel: EditorViewModel) {
     val frame = viewModel.frame
@@ -21,6 +22,7 @@ fun FramePanels(clip: Clip, tool: EditorTool, viewModel: EditorViewModel) {
         EditorTool.EDIT -> EditTool(onCrop = frame::onCropStart, onMirror = frame::onMirror, onRotate = frame::onRotate, onDone = close)
         EditorTool.TRANSFORM -> TransformTool(clip.fit, clip.transform, onFit = frame::onFit, onReset = frame::onResetTransform, onDone = close)
         EditorTool.OPACITY -> OpacityTool(clip.opacity, onLive = frame::onOpacityLive, onChanged = frame::onOpacityDone, onDone = close)
+        EditorTool.MOTION_BLUR -> MotionBlurTool(clip.motionBlur, onChanged = frame::onMotionBlur, onApplyAll = frame::onMotionBlurApplyAll, onDone = close)
         EditorTool.CANVAS -> {
             val actions = remember(frame) {
                 object : CanvasActions {

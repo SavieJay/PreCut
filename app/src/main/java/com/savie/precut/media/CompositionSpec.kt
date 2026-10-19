@@ -135,6 +135,8 @@ data class VisualSpec(
     val keyframesStartUs: Long = 0L,
     /** The clip's own effect, last in its chain; null without one. */
     val effect: ClipEffectSpec? = null,
+    /** Motion blur strength (0..1) blended over the placed frame; 0 is off. */
+    val motionBlur: Float = 0f,
 )
 
 /** Where a clip sits in composition time, for effects that change over the clip. */
@@ -410,6 +412,8 @@ private fun itemSpecOf(clip: Clip, originalAudioMuted: Boolean, live: Boolean, m
         lookKeyframes = keyframes.takeIf { clip.animatesLook() }.orEmpty(),
         keyframesStartUs = if (clip.animatesLook()) motion.time.startUs else 0L,
         effect = clip.effect?.let { ClipEffectSpec(it, motion.time.startUs) },
+        // Overlays are drawn by their own renderer, which doesn't run clip effects.
+        motionBlur = if (overlay) 0f else clip.motionBlur,
     )
     return when (clip.type) {
         ClipType.VIDEO -> ItemSpec.Video(

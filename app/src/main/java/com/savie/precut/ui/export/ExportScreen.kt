@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.savie.precut.export.ExportKind
 import com.savie.precut.R
 
 @Composable
@@ -65,13 +66,13 @@ fun ExportScreen(
             override fun onRetry() = startExport()
             override fun onOpen(uri: String) {
                 val intent = Intent(Intent.ACTION_VIEW)
-                    .setDataAndType(uri.toUri(), VIDEO_MIME)
+                    .setDataAndType(uri.toUri(), mimeOf(uiState))
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 context.startActivity(intent)
             }
             override fun onShare(uri: String) {
                 val intent = Intent(Intent.ACTION_SEND)
-                    .setType(VIDEO_MIME)
+                    .setType(mimeOf(uiState))
                     .putExtra(Intent.EXTRA_STREAM, uri.toUri())
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 context.startActivity(Intent.createChooser(intent, shareTitle))
@@ -82,7 +83,8 @@ fun ExportScreen(
     )
 }
 
-private const val VIDEO_MIME = "video/mp4"
+/** What was saved (video, M4A or GIF), so Open and Share pick a fitting app. */
+private fun mimeOf(state: ExportUiState): String = ((state as? ExportUiState.Done)?.kind ?: ExportKind.VIDEO).media.mime
 
 private fun needsStoragePermission(context: Context): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&

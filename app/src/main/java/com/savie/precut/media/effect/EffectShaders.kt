@@ -29,13 +29,14 @@ float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
 // A distance in short-side units as uv.
 vec2 su(vec2 d) { return uAspect >= 1.0 ? vec2(d.x / uAspect, d.y) : vec2(d.x, d.y * uAspect); }
 
+// A golden-angle spiral; each tap turns the last direction by the golden angle (no trig per tap).
 vec3 blurAt(vec2 uv, float r) {
   vec3 sum = tex(uv).rgb;
+  vec2 dir = vec2(1.0, 0.0);
   for (int i = 0; i < 24; i++) {
-    float fi = float(i);
-    float a = fi * 2.39996;
-    float rr = r * sqrt((fi + 0.5) / 24.0);
-    sum += tex(uv + su(vec2(cos(a), sin(a)) * rr)).rgb;
+    float rr = r * sqrt((float(i) + 0.5) / 24.0);
+    sum += tex(uv + su(dir * rr)).rgb;
+    dir = vec2(-0.737366696 * dir.x - 0.675492676 * dir.y, 0.675492676 * dir.x - 0.737366696 * dir.y);
   }
   return sum / 25.0;
 }

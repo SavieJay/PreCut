@@ -620,4 +620,18 @@
     <string name="settings_version">Version %1$s</string>
     <string name="settings_licences">Open-source licences</string>
     <string name="settings_licences_text">PreCut is built with AndroidX, Jetpack Compose, Media3, Hilt, Room, kotlinx.serialization and Coil (Apache License 2.0). Icons: Material Symbols (Apache License 2.0). Fonts: Roboto Flex, Bebas Neue, Playfair Display, Pacifico, Space Mono, Caveat, Anton and Lobster (SIL Open Font License 1.1).</string>
+    <string name="export_gif">GIF</string>
+    <string name="export_gif_title">Export a GIF</string>
+    <string name="export_gif_size">Size</string>
+    <string name="export_gif_small">Small · %1$dp</string>
+    <string name="export_gif_medium">Medium · %1$dp</string>
+    <string name="export_gif_long">GIFs get big quickly. Shorter than 15 seconds works best for sharing.</string>
+    <string name="export_gif_action">Export GIF</string>
+    <string name="export_quality_gif">GIF · %1$dp · %2$d fps · %3$s</string>
+    <string name="export_done_gif">Saved to Pictures/PreCut</string>
+    <string name="export_notif_done_gif">GIF saved</string>
+    <string name="export_album_pictures">Pictures/PreCut</string>
+    <string name="tool_motion_blur">Motion blur</string>
+    <string name="motion_blur_strength">Strength</string>
+    <string name="motion_blur_hint">Blends each frame with the ones just before it. It shows while playing and in the export; a paused frame stays sharp.</string>
 </resources>

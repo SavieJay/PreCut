@@ -47,13 +47,14 @@ interface ExportSheetActions {
     fun onSettings(settings: ExportSettings)
     fun onExportVideo()
     fun onAudioOnly()
+    fun onGif()
     fun onSaveFrame()
     fun onDismiss()
 }
 
 /**
  * EX-01: resolution, frame rate, bitrate, codec and HDR, the estimated size, then Export video,
- * Audio only and Save frame. Choices the phone can't encode are disabled.
+ * Audio only, GIF (its own options, [GifExportDialog]) and Save frame. Choices the phone can't encode are disabled.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,13 +132,14 @@ fun ExportSettingsSheet(
             FilledButton(stringResource(R.string.export_video), actions::onExportVideo, Modifier.fillMaxWidth(), icon = R.drawable.ic_movie, large = true)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TonalButton(stringResource(R.string.export_audio_only), actions::onAudioOnly, Modifier.weight(1f).height(44.dp), icon = R.drawable.ic_music_note)
-                if (savingFrame) {
-                    Row(Modifier.weight(1f).height(44.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.size(24.dp), color = Accent, strokeWidth = 3.dp)
-                    }
-                } else {
-                    TonalButton(stringResource(R.string.export_save_frame), actions::onSaveFrame, Modifier.weight(1f).height(44.dp), icon = R.drawable.ic_image)
+                TonalButton(stringResource(R.string.export_gif), actions::onGif, Modifier.weight(1f).height(44.dp), icon = R.drawable.ic_gif)
+            }
+            if (savingFrame) {
+                Row(Modifier.fillMaxWidth().height(44.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(24.dp), color = Accent, strokeWidth = 3.dp)
                 }
+            } else {
+                TonalButton(stringResource(R.string.export_save_frame), actions::onSaveFrame, Modifier.fillMaxWidth().height(44.dp), icon = R.drawable.ic_image)
             }
         }
     }

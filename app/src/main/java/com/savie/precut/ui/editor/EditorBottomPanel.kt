@@ -45,8 +45,11 @@ import com.savie.precut.ui.editor.tools.VolumeSlider
 fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs: () -> Long, viewModel: EditorViewModel) {
     val context = LocalContext.current
     val recording by viewModel.audio.recording.collectAsStateWithLifecycle()
-    // With keyframes, panels show (and edit from) the values at the playhead.
-    val clip = state.project.clipShownAt(state.selectedClipId, positionMs())
+    // With keyframes, panels show (and edit from) the values at the playhead. Derived, so playback
+    // only recomposes the panel when the shown clip changes (never for a clip without keyframes).
+    val clip = remember(state.project, state.selectedClipId, positionMs) {
+        derivedStateOf { state.project.clipShownAt(state.selectedClipId, positionMs()) }
+    }.value
     val text = state.project.textOverlays.firstOrNull { it.id == state.selectedTextId }
     val audio = state.project.audioClips.firstOrNull { it.id == state.selectedAudioId }
     val close = viewModel::onToolClosed
@@ -189,7 +192,7 @@ fun canSplitAt(positionMs: Long, startMs: Long, endMs: Long): Boolean =
 /** The easing panel for the keyframe at the playhead; closes itself when the playhead leaves it. */
 @Composable
 private fun KeyframeEasingPanel(state: EditorUiState.Ready, positionMs: () -> Long, viewModel: EditorViewModel) {
-    val easing = viewModel.keyframes.easing(state, positionMs())
+    val easing = remember(state, positionMs) { derivedStateOf { viewModel.keyframes.easing(state, positionMs()) } }.value
     if (easing == null) {
         LaunchedEffect(Unit) { viewModel.onToolClosed() }
         return

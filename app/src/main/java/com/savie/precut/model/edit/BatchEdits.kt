@@ -63,6 +63,10 @@ object BatchEdits {
     fun canvas(project: Project, canvas: ClipCanvas): EditAction.Batch =
         EditAction.Batch(project.clips.map { EditAction.SetCanvas(it.id, canvas) })
 
+    /** Motion blur "Apply to all": every main-track clip gets [strength]. */
+    fun motionBlur(project: Project, strength: Float): EditAction.Batch =
+        EditAction.Batch(project.clips.map { EditAction.SetMotionBlur(it.id, strength) })
+
     /** Every clip on the main track ("Apply to all"). */
     /** Every text styled like [from] (X-04 batch edit): font, colours, effects and animations; words, timing and place stay. */
     fun textStyle(project: Project, from: TextOverlay): EditAction.Batch = EditAction.Batch(

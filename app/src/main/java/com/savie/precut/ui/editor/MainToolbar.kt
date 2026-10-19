@@ -60,6 +60,7 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onEdit() = viewModel.onToolSelected(EditorTool.EDIT)
             override fun onCanvas() = viewModel.onToolSelected(EditorTool.CANVAS)
             override fun onOpacity() = viewModel.onToolSelected(EditorTool.OPACITY)
+            override fun onMotionBlur() = viewModel.onToolSelected(EditorTool.MOTION_BLUR)
             override fun onMask() = viewModel.onToolSelected(EditorTool.MASK)
             override fun onChroma() = viewModel.onToolSelected(EditorTool.CHROMA)
             override fun onAnimation() = viewModel.onToolSelected(EditorTool.ANIMATION)

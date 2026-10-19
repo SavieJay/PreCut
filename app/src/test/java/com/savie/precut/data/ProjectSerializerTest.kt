@@ -68,6 +68,7 @@ class ProjectSerializerTest {
         assertNull(clip?.animationCombo)
         assertNull(clip?.speedCurve)
         assertNull(clip?.reversedFrom)
+        assertEquals(0f, clip?.motionBlur)
         assertEquals(emptyList<Any>(), ProjectSerializer.decode(json)?.overlays)
 
         val framed = project(

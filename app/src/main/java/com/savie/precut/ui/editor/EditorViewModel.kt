@@ -84,7 +84,7 @@ import javax.inject.Inject
  * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
  * clip when there is one, otherwise on a video clip.
  */
-enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET }
+enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET, MOTION_BLUR }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -319,6 +319,9 @@ class EditorViewModel @Inject constructor(
     /** What the preview currently plays, to skip rebuilds that wouldn't change anything. */
     private var previewed: Project? = null
 
+    /** The clip [previewed] marks live (see [showInPreview]). */
+    private var previewedLiveClipId: String? = null
+
     /** Latest edited project; the preview rebuilds once edits pause, so rapid edits rebuild once. */
     private val pendingPreview = MutableStateFlow<Project?>(null)
 
@@ -474,6 +477,11 @@ class EditorViewModel @Inject constructor(
     private fun showInPreview(playable: Project, positionMs: Long) {
         val ready = _uiState.value as? EditorUiState.Ready
         val liveClipId = ready?.selectedClipId?.takeIf { ready.activeTool in EditorFrame.LIVE_TOOLS }
+        // The same project with the same live clip would build the same composition: re-preparing
+        // the player for nothing is a visible hitch (e.g. the debounced rebuild of an edit that
+        // refreshPreview already showed, or reselecting the clip a live tool is on).
+        if (playable == previewed && liveClipId == previewedLiveClipId && previewController.hasMedia) return
+        previewedLiveClipId = liveClipId
         previewed = playable
         // The new composition has the committed frame; a gesture's live value is no longer needed.
         liveFrames.clear()
@@ -563,7 +571,7 @@ class EditorViewModel @Inject constructor(
             EditorTool.TEXT -> text.onAdd()
             EditorTool.FILTER, EditorTool.ADJUST, EditorTool.HSL, EditorTool.CURVES -> look.open(tool)
             EditorTool.VOICE, EditorTool.BEATS -> Unit // audio-only tools
-            EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.ANIMATION -> frame.open(tool)
+            EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.ANIMATION, EditorTool.MOTION_BLUR -> frame.open(tool)
             EditorTool.TRANSITION -> Unit // opened from a junction marker
             EditorTool.MASK, EditorTool.CHROMA -> mask.open(tool)
             EditorTool.KEYFRAME_EASING -> keyframes.onOpenEasing()
@@ -745,7 +753,7 @@ class EditorViewModel @Inject constructor(
         const val PREVIEW_REBUILD_DEBOUNCE_MS = 150L
         val CLIP_TOOLS = setOf(
             EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.ADJUST, EditorTool.HSL, EditorTool.CURVES,
-            EditorTool.VOLUME, EditorTool.FADE, EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS,
+            EditorTool.VOLUME, EditorTool.FADE, EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.MOTION_BLUR,
             EditorTool.ANIMATION,
         )
         val AUDIO_TOOLS = setOf(EditorTool.VOLUME, EditorTool.FADE, EditorTool.SPEED, EditorTool.VOICE, EditorTool.BEATS)

@@ -126,15 +126,29 @@ class ExportService : Service() {
     }
 
     private fun done(state: ExportJobState.Done): Notification {
-        val audio = state.job.kind == ExportKind.AUDIO
-        val mime = if (audio) "audio/mp4" else "video/mp4"
+        val kind = state.job.kind
+        val mime = kind.media.mime
         val text = getString(
             R.string.export_notif_done_text,
             state.job.displayName(), formatDurationMs(state.job.durationMs), Formatter.formatShortFileSize(this, state.sizeBytes),
-            getString(if (audio) R.string.export_album_music else R.string.export_album_movies),
+            getString(
+                when (kind) {
+                    ExportKind.AUDIO -> R.string.export_album_music
+                    ExportKind.GIF -> R.string.export_album_pictures
+                    ExportKind.VIDEO -> R.string.export_album_movies
+                },
+            ),
         )
         val builder = base()
-            .setContentTitle(getString(if (audio) R.string.export_notif_done_audio else R.string.export_notif_done_video))
+            .setContentTitle(
+                getString(
+                    when (kind) {
+                        ExportKind.AUDIO -> R.string.export_notif_done_audio
+                        ExportKind.GIF -> R.string.export_notif_done_gif
+                        ExportKind.VIDEO -> R.string.export_notif_done_video
+                    },
+                ),
+            )
             .setContentText(text)
             .setAutoCancel(true)
         state.uri?.toUri()?.let { uri ->

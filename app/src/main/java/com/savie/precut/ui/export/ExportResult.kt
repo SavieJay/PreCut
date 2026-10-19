@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import android.text.format.Formatter
 import androidx.compose.ui.platform.LocalContext
+import com.savie.precut.export.ExportKind
 import com.savie.precut.R
 import com.savie.precut.export.ExportFailure
 import com.savie.precut.ui.components.AccentTextButton
@@ -77,7 +78,16 @@ internal fun ColumnScope.Done(state: ExportUiState.Done, info: ExportInfo?, acti
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(painterResource(R.drawable.ic_check_circle), contentDescription = null, tint = SnapGuide)
-            Text(stringResource(if (state.audio) R.string.export_done_audio else R.string.export_done), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(
+                    when (state.kind) {
+                        ExportKind.AUDIO -> R.string.export_done_audio
+                        ExportKind.GIF -> R.string.export_done_gif
+                        ExportKind.VIDEO -> R.string.export_done
+                    },
+                ),
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
         state.uri?.let { uri ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -19,7 +19,7 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 
 /**
- * Where each kind of file is saved: Movies, Music or Pictures, in a PreCut album. The folder
+ * Where each kind of file is saved: Movies, Music or Pictures (photos and GIFs), in a PreCut album. The folder
  * names are Android's fixed `Environment.DIRECTORY_*` values, written out so this also loads
  * in unit tests.
  */
@@ -27,6 +27,7 @@ enum class SavedMedia(val mime: String, val extension: String, val directory: St
     VIDEO("video/mp4", "mp4", "Movies"),
     AUDIO("audio/mp4", "m4a", "Music"),
     IMAGE("image/jpeg", "jpg", "Pictures"),
+    GIF("image/gif", "gif", "Pictures"),
 }
 
 interface MediaSaver {
@@ -61,7 +62,7 @@ class MediaStoreSaver @Inject constructor(
         val collection = when (media) {
             SavedMedia.VIDEO -> MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
             SavedMedia.AUDIO -> MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-            SavedMedia.IMAGE -> MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            SavedMedia.IMAGE, SavedMedia.GIF -> MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         }
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)

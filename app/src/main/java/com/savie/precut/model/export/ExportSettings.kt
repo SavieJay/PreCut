@@ -24,7 +24,29 @@ data class ExportSettings(
     val codec: ExportCodec = ExportCodec.H264,
     /** Keep HDR10/HLG sources as HDR (only offered when the phone can encode it). */
     val keepHdr: Boolean = false,
+    /** Size and frame rate when exporting a GIF. */
+    val gif: GifSettings = GifSettings(),
 )
+
+/** GIF sizes by the frame's short side: GIFs are big, so they stay small. */
+@Serializable
+enum class GifSize(val shortSidePx: Int) { SMALL(320), MEDIUM(480) }
+
+/** A GIF export: [size] and [frameRate] (10 or 15 fps). */
+@Serializable
+data class GifSettings(val size: GifSize = GifSize.MEDIUM, val frameRate: Int = 15)
+
+val GIF_FRAME_RATES = listOf(10, 15)
+
+/** GIFs longer than this get big; the export sheet says so. */
+const val GIF_LONG_MS = 15_000L
+
+/**
+ * A rough GIF size: 0.15 bytes per pixel per frame. A 480p, 15 fps, 11 s test export came to
+ * 0.06; real camera footage (noise everywhere) needs more, and storage checks double it anyway.
+ */
+fun GifSettings.estimatedBytes(size: OutputSize, durationMs: Long): Long =
+    (size.width.toLong() * size.height * frameRate * durationMs / 1_000.0 * 0.15).roundToLong()
 
 /** Frame rates offered; an export can't go above its sources (frames are only dropped). */
 val EXPORT_FRAME_RATES = listOf(24, 25, 30, 50, 60)

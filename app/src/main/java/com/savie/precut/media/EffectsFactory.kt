@@ -18,6 +18,7 @@ import com.savie.precut.media.look.LutCache
 import com.savie.precut.media.frame.CanvasEffect
 import com.savie.precut.media.frame.CanvasPatterns
 import com.savie.precut.media.frame.LiveFrames
+import com.savie.precut.media.motion.MotionBlurEffect
 import com.savie.precut.media.motion.TransitionEffect
 import com.savie.precut.media.layer.OverlayLayersEffect
 import com.savie.precut.model.ClipType
@@ -67,6 +68,8 @@ class EffectsFactory @Inject constructor(
         // On the placed frame, so the canvas zooms, spins and fades with the clip.
         visual.transition?.let { add(TransitionEffect(it)) }
         visual.effect?.let { add(VideoEffectGl(it.effect, timeOriginUs = it.startUs)) }
+        // Last, so movement from keyframes, animations and effects blurs too.
+        if (visual.motionBlur > 0f) add(MotionBlurEffect(visual.motionBlur))
     }
 
     /** The picture of an image canvas, sized to cover the frame; runs on the effects thread. */

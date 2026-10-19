@@ -98,6 +98,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMo
                 override fun onSettings(settings: ExportSettings) = viewModel.onExportSettings(settings)
                 override fun onExportVideo() = Unit
                 override fun onAudioOnly() = Unit
+                override fun onGif() = Unit
                 override fun onSaveFrame() = Unit
                 override fun onDismiss() { dialog = null }
             },

@@ -81,6 +81,8 @@ data class Clip(
     val keyframes: List<ClipKeyframe> = emptyList(),
     /** This clip's own video effect (Phase 11); it moves and trims with the clip. */
     val effect: EffectSettings? = null,
+    /** Motion blur strength, 0 (off) .. 1 (a 100 ms shutter); see `MotionBlur`. */
+    val motionBlur: Float = 0f,
     /** Into the next clip; ignored on the last clip. */
     val transitionOut: ClipTransition? = null,
     val animationIn: ClipAnimation? = null,

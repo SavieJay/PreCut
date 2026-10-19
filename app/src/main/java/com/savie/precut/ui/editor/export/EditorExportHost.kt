@@ -53,6 +53,7 @@ fun EditorExportHost(state: EditorUiState.Ready, viewModel: EditorViewModel, nav
     navigator.shouldAsk = { needsNotificationPrompt(context) && !settings.values.value.notificationsAsked }
     val export = viewModel.export
     val open by export.open.collectAsStateWithLifecycle()
+    var gifOptions by remember { mutableStateOf(false) }
     if (open) {
         val current by export.settings.collectAsStateWithLifecycle()
         val capabilities by export.capabilities.collectAsStateWithLifecycle()
@@ -67,10 +68,26 @@ fun EditorExportHost(state: EditorUiState.Ready, viewModel: EditorViewModel, nav
                 override fun onSettings(settings: ExportSettings) = export.onSettings(settings)
                 override fun onExportVideo() = export.onExport(ExportKind.VIDEO)
                 override fun onAudioOnly() = export.onExport(ExportKind.AUDIO)
+                override fun onGif() {
+                    gifOptions = true
+                }
                 override fun onSaveFrame() = export.onSaveFrame()
                 override fun onDismiss() = export.onClose()
             },
         )
+        if (gifOptions) {
+            GifExportDialog(
+                gif = current.gif,
+                outputSize = state.project.outputSize(current.gif.size.shortSidePx),
+                durationMs = state.project.totalDurationMs(),
+                onChange = { export.onSettings(current.copy(gif = it)) },
+                onExport = {
+                    gifOptions = false
+                    export.onExport(ExportKind.GIF)
+                },
+                onDismiss = { gifOptions = false },
+            )
+        }
     }
     val permission = rememberLauncherForActivityResult(RequestPermission()) { navigator.proceed() }
     if (navigator.pending != null) {

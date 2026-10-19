@@ -32,7 +32,7 @@ sealed interface ExportUiState {
     data class Exporting(val percent: Int?) : ExportUiState
     data object Saving : ExportUiState
     /** [uri] is null when the file was saved but can't be opened or shared directly. */
-    data class Done(val uri: String?, val audio: Boolean = false) : ExportUiState
+    data class Done(val uri: String?, val kind: ExportKind = ExportKind.VIDEO) : ExportUiState
     data class Failed(
         val reason: ExportFailure,
         val detail: String? = null,
@@ -48,7 +48,7 @@ data class ExportInfo(
     val durationMs: Long,
     val coverPath: String?,
     val settings: ExportSettings = ExportSettings(),
-    val audio: Boolean = false,
+    val kind: ExportKind = ExportKind.VIDEO,
 )
 
 /**
@@ -121,7 +121,7 @@ class ExportViewModel @Inject constructor(
     private suspend fun loadInfo() {
         val project = repository.load(projectId) ?: return
         val cover = repository.observeProjects().first().firstOrNull { it.id == projectId }?.coverPath
-        _info.value = ExportInfo(project.name, project.createdAt, project.totalDurationMs(), cover, settings, kind == ExportKind.AUDIO)
+        _info.value = ExportInfo(project.name, project.createdAt, project.totalDurationMs(), cover, settings, kind)
         _cacheBytes.value = storage.cacheBytes()
     }
 
@@ -129,7 +129,7 @@ class ExportViewModel @Inject constructor(
         // Another project's export isn't this screen's.
         is ExportJobState.Running -> if (job.projectId == projectId) ExportUiState.Exporting(percent) else ExportUiState.Idle
         is ExportJobState.Saving -> if (job.projectId == projectId) ExportUiState.Saving else ExportUiState.Idle
-        is ExportJobState.Done -> if (job.projectId == projectId) ExportUiState.Done(uri, job.kind == ExportKind.AUDIO) else ExportUiState.Idle
+        is ExportJobState.Done -> if (job.projectId == projectId) ExportUiState.Done(uri, job.kind) else ExportUiState.Idle
         is ExportJobState.Failed -> if (job == null || job.projectId == projectId) ExportUiState.Failed(reason, detail, neededBytes, freeBytes) else ExportUiState.Idle
         ExportJobState.Idle -> ExportUiState.Idle
     }

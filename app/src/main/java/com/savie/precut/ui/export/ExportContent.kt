@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.savie.precut.export.ExportKind
 import com.savie.precut.R
 import com.savie.precut.model.export.ExportResolution
 import com.savie.precut.ui.components.OutlinedPreCutButton
@@ -39,6 +42,7 @@ import com.savie.precut.ui.components.projectDisplayName
 import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.Ink3
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.PreCutTheme
 import com.savie.precut.ui.theme.TextSecondary
 import com.savie.precut.ui.theme.tabular
@@ -63,11 +67,14 @@ data class ExportRecovery(val resolution: ExportResolution, val lower: ExportRes
 /** EX-02 progress (ring around the cover), EX-04 done (cover, Open, Share) and failures. */
 @Composable
 fun ExportContent(state: ExportUiState, info: ExportInfo?, actions: ExportActions, recovery: ExportRecovery? = null) {
-    Column(Modifier.fillMaxSize().background(Ink0).statusBarsPadding().navigationBarsPadding()) {
-        when (state) {
-            ExportUiState.Idle, is ExportUiState.Exporting, ExportUiState.Saving -> Progress(state, info, actions)
-            is ExportUiState.Done -> Done(state, info, actions)
-            is ExportUiState.Failed -> Failed(state, recovery, actions)
+    // No Scaffold here, so the light text and icon colour is provided explicitly (else Compose's black).
+    CompositionLocalProvider(LocalContentColor provides TextPrimary) {
+        Column(Modifier.fillMaxSize().background(Ink0).statusBarsPadding().navigationBarsPadding()) {
+            when (state) {
+                ExportUiState.Idle, is ExportUiState.Exporting, ExportUiState.Saving -> Progress(state, info, actions)
+                is ExportUiState.Done -> Done(state, info, actions)
+                is ExportUiState.Failed -> Failed(state, recovery, actions)
+            }
         }
     }
 }
@@ -111,7 +118,11 @@ private fun ColumnScope.Progress(state: ExportUiState, info: ExportInfo?, action
                 textAlign = TextAlign.Center,
             )
             info?.let {
-                val quality = if (it.audio) formatDurationMs(it.durationMs) else stringResource(R.string.export_quality, stringResource(it.settings.resolution.label()), it.settings.frameRate, formatDurationMs(it.durationMs))
+                val quality = when (it.kind) {
+                    ExportKind.AUDIO -> formatDurationMs(it.durationMs)
+                    ExportKind.GIF -> stringResource(R.string.export_quality_gif, it.settings.gif.size.shortSidePx, it.settings.gif.frameRate, formatDurationMs(it.durationMs))
+                    ExportKind.VIDEO -> stringResource(R.string.export_quality, stringResource(it.settings.resolution.label()), it.settings.frameRate, formatDurationMs(it.durationMs))
+                }
                 Text(quality, style = MaterialTheme.typography.bodyMedium.tabular(), color = TextSecondary)
             }
             Text(stringResource(R.string.export_keep_open), style = MaterialTheme.typography.bodyMedium, color = TextSecondary, textAlign = TextAlign.Center)
