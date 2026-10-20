@@ -9,6 +9,7 @@ import com.savie.precut.data.ShareInbox
 import com.savie.precut.ui.editor.EditorScreen
 import com.savie.precut.ui.export.ExportScreen
 import com.savie.precut.ui.home.HomeScreen
+import com.savie.precut.ui.settings.LicencesScreen
 import com.savie.precut.ui.settings.SettingsScreen
 
 @Composable
@@ -32,7 +33,10 @@ fun AppNavHost(shareInbox: ShareInbox) {
             )
         }
         composable<SettingsRoute> {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(onBack = { navController.popBackStack() }, onLicences = { navController.navigate(LicencesRoute) })
+        }
+        composable<LicencesRoute> {
+            LicencesScreen(onBack = { navController.popBackStack() })
         }
         composable<ExportRoute> {
             ExportScreen(

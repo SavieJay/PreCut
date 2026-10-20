@@ -45,11 +45,11 @@ import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
 import java.util.Locale
 
-private enum class SettingsDialog { PHOTO, RATIO, EXPORT, LICENCES }
+private enum class SettingsDialog { PHOTO, RATIO, EXPORT }
 
 /** H-09: new-project defaults, default export settings, the preview cache and About. */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val values by viewModel.values.collectAsStateWithLifecycle()
     val storage by viewModel.storageInfo.collectAsStateWithLifecycle()
     val capabilities by viewModel.capabilities.collectAsStateWithLifecycle()
@@ -79,7 +79,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMo
             SettingRow(R.drawable.ic_palette, stringResource(R.string.settings_luts), pluralStringResource(R.plurals.settings_luts_count, storage.lutCount, storage.lutCount))
             Header(R.string.settings_about)
             SettingRow(R.drawable.ic_info, stringResource(R.string.settings_about_app), stringResource(R.string.settings_version, viewModel.version))
-            SettingRow(R.drawable.ic_description, stringResource(R.string.settings_licences), null, chevron = true) { dialog = SettingsDialog.LICENCES }
+            SettingRow(R.drawable.ic_description, stringResource(R.string.settings_licences), null, chevron = true, onClick = onLicences)
         }
     }
     when (dialog) {
@@ -103,7 +103,6 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMo
                 override fun onDismiss() { dialog = null }
             },
         )
-        SettingsDialog.LICENCES -> InfoDialog(stringResource(R.string.settings_licences), stringResource(R.string.settings_licences_text)) { dialog = null }
         null -> Unit
     }
 }

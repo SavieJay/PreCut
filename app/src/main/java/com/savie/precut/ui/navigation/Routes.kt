@@ -14,3 +14,6 @@ data class ExportRoute(val projectId: String, val settings: String = "", val kin
 
 @Serializable
 data object SettingsRoute
+
+@Serializable
+data object LicencesRoute

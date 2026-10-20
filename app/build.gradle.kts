@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -7,6 +9,17 @@ plugins {
     alias(libs.plugins.room)
 }
 
+// Release signing (Phase 15): the upload key's details live in the gitignored keystore.properties
+// (storeFile, storePassword, keyAlias, keyPassword). Without it, release builds come out unsigned.
+val keystore = providers.fileContents(rootProject.layout.projectDirectory.file("keystore.properties")).asText.orNull
+    ?.let { text -> Properties().apply { load(text.reader()) } }
+
+// versionCode counts commits, so every build from a newer commit can be uploaded over the last.
+val commitCount = providers.exec {
+    commandLine("git", "rev-list", "--count", "HEAD")
+    isIgnoreExitValue = true
+}.standardOutput.asText.map { it.trim().toIntOrNull() ?: 1 }
+
 android {
     namespace = "com.savie.precut"
     compileSdk = 37
@@ -15,14 +28,26 @@ android {
         applicationId = "com.savie.precut"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = commitCount.get()
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = rootProject.file(keystore.getProperty("storeFile"))
+                storePassword = keystore.getProperty("storePassword")
+                keyAlias = keystore.getProperty("keyAlias")
+                keyPassword = keystore.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

@@ -45,13 +45,3 @@ internal fun <T> ChoiceDialog(title: String, options: List<T>, selected: T, labe
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
-
-@Composable
-internal fun InfoDialog(title: String, text: String, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = { Text(text) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) } },
-    )
-}
