@@ -1,5 +1,6 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.effect.EffectSettings
 
 import com.savie.precut.model.frame.ChromaKey
@@ -83,6 +84,8 @@ data class Clip(
     val effect: EffectSettings? = null,
     /** Motion blur strength, 0 (off) .. 1 (a 100 ms shutter); see `MotionBlur`. */
     val motionBlur: Float = 0f,
+    /** How an overlay mixes with what's under it; main-track clips ignore it. */
+    val blendMode: BlendMode = BlendMode.NORMAL,
     /** Into the next clip; ignored on the last clip. */
     val transitionOut: ClipTransition? = null,
     val animationIn: ClipAnimation? = null,

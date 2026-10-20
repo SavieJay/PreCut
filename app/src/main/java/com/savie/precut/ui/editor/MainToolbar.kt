@@ -17,7 +17,10 @@ fun OverlayToolbarFor(viewModel: EditorViewModel) {
         remember(viewModel) {
             object : OverlayToolbarActions {
                 override fun onAnimation() = viewModel.onToolSelected(EditorTool.ANIMATION)
+                override fun onEffects() = viewModel.onToolSelected(EditorTool.EFFECTS)
                 override fun onOpacity() = viewModel.onToolSelected(EditorTool.OPACITY)
+                override fun onBlend() = viewModel.onToolSelected(EditorTool.BLEND)
+                override fun onMotionBlur() = viewModel.onToolSelected(EditorTool.MOTION_BLUR)
                 override fun onMask() = viewModel.onToolSelected(EditorTool.MASK)
                 override fun onChroma() = viewModel.onToolSelected(EditorTool.CHROMA)
                 override fun onFilters() = viewModel.onToolSelected(EditorTool.FILTER)

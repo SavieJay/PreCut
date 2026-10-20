@@ -1,5 +1,8 @@
 package com.savie.precut.media
 
+import com.savie.precut.model.effect.EffectType
+import com.savie.precut.model.effect.EffectSettings
+import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.look.ClipLook
@@ -365,12 +368,25 @@ class CompositionSpecTest {
     }
 
     @Test
-    fun motionBlur_onMainClipsOnly() {
+    fun motionBlurAndEffect_reachOverlays() {
+        val effect = EffectSettings(EffectType.entries.first())
         val p = project(videoClip("a").copy(motionBlur = 0.6f)).copy(
-            overlays = listOf(OverlayClip(videoClip("o").copy(motionBlur = 0.6f), 0L)),
+            overlays = listOf(OverlayClip(videoClip("o").copy(motionBlur = 0.4f, effect = effect), 0L)),
         )
         val spec = compositionSpecOf(p)
         assertEquals(0.6f, spec.items.single().visual.motionBlur)
-        assertEquals(0f, spec.overlayLanes.single().items.single().item.visual.motionBlur)
+        val overlay = spec.overlayLanes.single().items.single().item.visual
+        assertEquals(0.4f, overlay.motionBlur)
+        assertEquals(effect, overlay.effect?.effect)
+    }
+
+    @Test
+    fun blendMode_onOverlaysOnly() {
+        val p = project(videoClip("a").copy(blendMode = BlendMode.SCREEN)).copy(
+            overlays = listOf(OverlayClip(videoClip("o").copy(blendMode = BlendMode.MULTIPLY), 0L)),
+        )
+        val spec = compositionSpecOf(p)
+        assertEquals(BlendMode.NORMAL, spec.items.single().visual.blendMode)
+        assertEquals(BlendMode.MULTIPLY, spec.overlayLanes.single().items.single().item.visual.blendMode)
     }
 }

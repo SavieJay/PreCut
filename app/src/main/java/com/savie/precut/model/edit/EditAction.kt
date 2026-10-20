@@ -1,5 +1,6 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.Clip
@@ -150,6 +151,9 @@ sealed interface EditAction {
 
     /** Motion blur strength, clamped to 0..1. */
     data class SetMotionBlur(val clipId: String, val strength: Float) : FrameEdit
+
+    /** An overlay's blend mode. */
+    data class SetBlendMode(val clipId: String, val mode: BlendMode) : FrameEdit
 
     /** Sets or (null) removes a clip's mask (P-03). */
     data class SetMask(val clipId: String, val mask: ClipMask?) : FrameEdit

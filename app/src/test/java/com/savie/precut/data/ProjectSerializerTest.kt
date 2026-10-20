@@ -1,5 +1,6 @@
 package com.savie.precut.data
 
+import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.frame.CanvasKind
 import com.savie.precut.model.frame.CanvasPattern
 import com.savie.precut.model.frame.ClipCanvas
@@ -69,6 +70,7 @@ class ProjectSerializerTest {
         assertNull(clip?.speedCurve)
         assertNull(clip?.reversedFrom)
         assertEquals(0f, clip?.motionBlur)
+        assertEquals(BlendMode.NORMAL, clip?.blendMode)
         assertEquals(emptyList<Any>(), ProjectSerializer.decode(json)?.overlays)
 
         val framed = project(

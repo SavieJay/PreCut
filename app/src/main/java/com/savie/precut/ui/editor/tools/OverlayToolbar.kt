@@ -7,7 +7,10 @@ import com.savie.precut.R
 /** What the overlay toolbar can do with the selected overlay. */
 interface OverlayToolbarActions {
     fun onAnimation()
+    fun onEffects()
     fun onOpacity()
+    fun onBlend()
+    fun onMotionBlur()
     fun onMask()
     fun onChroma()
     fun onFilters()
@@ -23,7 +26,10 @@ interface OverlayToolbarActions {
 fun OverlayToolbar(actions: OverlayToolbarActions, modifier: Modifier = Modifier) {
     ToolRow(modifier) {
         ToolButton(R.drawable.ic_animation, R.string.tool_animation, onClick = actions::onAnimation)
+        ToolButton(R.drawable.ic_flare, R.string.tool_effects, onClick = actions::onEffects)
         ToolButton(R.drawable.ic_opacity, R.string.tool_opacity, onClick = actions::onOpacity)
+        ToolButton(R.drawable.ic_blend, R.string.tool_blend, onClick = actions::onBlend)
+        ToolButton(R.drawable.ic_motion_blur, R.string.tool_motion_blur, onClick = actions::onMotionBlur)
         ToolButton(R.drawable.ic_masks, R.string.tool_mask, onClick = actions::onMask)
         ToolButton(R.drawable.ic_background_replace, R.string.tool_chroma, onClick = actions::onChroma)
         ToolButton(R.drawable.ic_filter, R.string.tool_filters, onClick = actions::onFilters)

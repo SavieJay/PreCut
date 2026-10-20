@@ -634,4 +634,15 @@
     <string name="tool_motion_blur">Motion blur</string>
     <string name="motion_blur_strength">Strength</string>
     <string name="motion_blur_hint">Blends each frame with the ones just before it. It shows while playing and in the export; a paused frame stays sharp.</string>
+    <string name="tool_blend">Blend</string>
+    <string name="blend_hint">How the overlay mixes with what\'s under it.</string>
+    <string name="blend_normal">Normal</string>
+    <string name="blend_multiply">Multiply</string>
+    <string name="blend_screen">Screen</string>
+    <string name="blend_overlay">Overlay</string>
+    <string name="blend_darken">Darken</string>
+    <string name="blend_lighten">Lighten</string>
+    <string name="blend_add">Add</string>
+    <string name="blend_soft_light">Soft light</string>
+    <string name="blend_difference">Difference</string>
 </resources>

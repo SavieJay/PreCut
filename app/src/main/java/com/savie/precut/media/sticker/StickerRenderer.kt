@@ -60,23 +60,24 @@ class StickerRenderer @Inject constructor(@ApplicationContext private val contex
         return bitmap
     }
 
-    /** A GIF sticker's frames at [heightPx]; null for a still sticker or an unreadable file. */
+    /** An animated (GIF or WebP) sticker's frames at [heightPx]; null for a still sticker or an unreadable file. */
     fun frames(sticker: Sticker, heightPx: Float): StickerFrames? {
         if (!sticker.animated || sticker.kind == StickerKind.EMOJI) return null
         val height = heightPx.roundToInt().coerceIn(1, MAX_SIDE)
         val key = "${sticker.value}|$height"
         animations.get(key)?.let { return it.first }
         val bytes = read(sticker.value) ?: return null
+        val (w, h) = animationSize(bytes) ?: return null
         val bitmaps = mutableListOf<Bitmap>()
         val delays = mutableListOf<Int>()
         var budget = FRAME_BUDGET_BYTES
-        val info = GifDecoder.decode(bytes, MAX_FRAMES) { pixels, delayMs ->
+        val info = decodeAnimation(bytes, MAX_FRAMES) { pixels, delayMs ->
             if (budget <= 0) {
                 // Out of memory budget: hold the last frame longer instead.
                 if (delays.isNotEmpty()) delays[delays.lastIndex] += delayMs
-                return@decode
+                return@decodeAnimation
             }
-            bitmaps += scaledFrame(pixels, bytes, height) ?: return@decode
+            bitmaps += scaledFrame(pixels, w, h, height) ?: return@decodeAnimation
             delays += delayMs
             budget -= bitmaps.last().allocationByteCount
         } ?: return null
@@ -86,13 +87,30 @@ class StickerRenderer @Inject constructor(@ApplicationContext private val contex
         return frames
     }
 
-    /** A GIF's size and whether it has more than one frame (import checks); null when not a GIF. */
-    fun gifInfo(bytes: ByteArray): GifInfo? = GifDecoder.decode(bytes, maxFrames = 2) { _, _ -> }
+    /** An animation's size and frame count, up to 2 (import checks); null when not an animated GIF or WebP. */
+    fun animationInfo(bytes: ByteArray): AnimationInfo? = decodeAnimation(bytes, maxFrames = 2) { _, _ -> }
 
-    private fun scaledFrame(pixels: IntArray, bytes: ByteArray, height: Int): Bitmap? {
-        // The size is in the GIF's screen descriptor (bytes 6–9, little-endian).
-        val w = (bytes[6].toInt() and 0xFF) or ((bytes[7].toInt() and 0xFF) shl 8)
-        val h = (bytes[8].toInt() and 0xFF) or ((bytes[9].toInt() and 0xFF) shl 8)
+    private fun decodeAnimation(bytes: ByteArray, maxFrames: Int, onFrame: (IntArray, Int) -> Unit): AnimationInfo? =
+        if (GifDecoder.isGif(bytes)) GifDecoder.decode(bytes, maxFrames, onFrame)
+        else WebpAnimation.decode(bytes, maxFrames, ::webpFrame, onFrame)
+
+    /** The canvas size: the GIF's screen descriptor (bytes 6–9, little-endian), or the WebP's `VP8X`. */
+    private fun animationSize(bytes: ByteArray): Pair<Int, Int>? = when {
+        GifDecoder.isGif(bytes) && bytes.size >= 10 ->
+            ((bytes[6].toInt() and 0xFF) or ((bytes[7].toInt() and 0xFF) shl 8)) to ((bytes[8].toInt() and 0xFF) or ((bytes[9].toInt() and 0xFF) shl 8))
+        else -> WebpAnimation.canvasSize(bytes)
+    }
+
+    /** One WebP animation frame, a standalone still WebP, as straight-alpha ARGB. */
+    private fun webpFrame(bytes: ByteArray): IntArray? {
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        bitmap.recycle()
+        return pixels
+    }
+
+    private fun scaledFrame(pixels: IntArray, w: Int, h: Int, height: Int): Bitmap? {
         if (w * h != pixels.size) return null
         val full = Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888)
         val width = max(1, (w.toFloat() / h * height).roundToInt()).coerceAtMost(MAX_SIDE)

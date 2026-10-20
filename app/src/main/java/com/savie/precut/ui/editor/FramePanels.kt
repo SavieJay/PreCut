@@ -6,6 +6,7 @@ import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.frame.ClipCanvas
+import com.savie.precut.ui.editor.tools.BlendTool
 import com.savie.precut.ui.editor.tools.CanvasActions
 import com.savie.precut.ui.editor.tools.CanvasTool
 import com.savie.precut.ui.editor.tools.EditTool
@@ -23,6 +24,7 @@ fun FramePanels(clip: Clip, tool: EditorTool, viewModel: EditorViewModel) {
         EditorTool.TRANSFORM -> TransformTool(clip.fit, clip.transform, onFit = frame::onFit, onReset = frame::onResetTransform, onDone = close)
         EditorTool.OPACITY -> OpacityTool(clip.opacity, onLive = frame::onOpacityLive, onChanged = frame::onOpacityDone, onDone = close)
         EditorTool.MOTION_BLUR -> MotionBlurTool(clip.motionBlur, onChanged = frame::onMotionBlur, onApplyAll = frame::onMotionBlurApplyAll, onDone = close)
+        EditorTool.BLEND -> BlendTool(clip.blendMode, onPicked = frame::onBlendMode, onDone = close)
         EditorTool.CANVAS -> {
             val actions = remember(frame) {
                 object : CanvasActions {

@@ -34,10 +34,10 @@ class EditorEffects(private val host: EditorHost, private val favouriteStore: Ef
         host.update { it.copy(activeTool = EditorTool.EFFECTS, selectedTextId = null, selectedAudioId = null, audioMenuOpen = false) }
     }
 
-    /** A main-track clip (overlays are drawn by their own pass, without clip effects) or an effect layer. */
+    /** A clip (main track or overlay) or an effect layer. */
     fun target(ready: EditorUiState.Ready): EffectTarget {
         ready.selectedLayerId?.takeIf { id -> ready.project.effectLayers.any { it.id == id } }?.let { return EffectTarget.Layer(it) }
-        ready.selectedClipId?.takeIf { id -> ready.project.clips.any { it.id == id } }?.let { return EffectTarget.Clip(it) }
+        ready.selectedClipId?.takeIf { ready.project.clipById(it) != null }?.let { return EffectTarget.Clip(it) }
         return EffectTarget.New
     }
 

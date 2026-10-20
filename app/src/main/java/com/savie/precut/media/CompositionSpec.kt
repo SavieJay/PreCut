@@ -1,5 +1,6 @@
 package com.savie.precut.media
 
+import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.OutputSize
@@ -137,6 +138,8 @@ data class VisualSpec(
     val effect: ClipEffectSpec? = null,
     /** Motion blur strength (0..1) blended over the placed frame; 0 is off. */
     val motionBlur: Float = 0f,
+    /** How an overlay mixes with what's under it (always [BlendMode.NORMAL] on the main track). */
+    val blendMode: BlendMode = BlendMode.NORMAL,
 )
 
 /** Where a clip sits in composition time, for effects that change over the clip. */
@@ -412,8 +415,8 @@ private fun itemSpecOf(clip: Clip, originalAudioMuted: Boolean, live: Boolean, m
         lookKeyframes = keyframes.takeIf { clip.animatesLook() }.orEmpty(),
         keyframesStartUs = if (clip.animatesLook()) motion.time.startUs else 0L,
         effect = clip.effect?.let { ClipEffectSpec(it, motion.time.startUs) },
-        // Overlays are drawn by their own renderer, which doesn't run clip effects.
-        motionBlur = if (overlay) 0f else clip.motionBlur,
+        motionBlur = clip.motionBlur,
+        blendMode = if (overlay) clip.blendMode else BlendMode.NORMAL,
     )
     return when (clip.type) {
         ClipType.VIDEO -> ItemSpec.Video(

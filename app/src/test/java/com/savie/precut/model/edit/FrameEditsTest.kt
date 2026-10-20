@@ -1,5 +1,6 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.frame.CanvasKind
 import com.savie.precut.model.frame.CanvasPattern
 import com.savie.precut.model.frame.ClipCanvas
@@ -75,6 +76,11 @@ class FrameEditsTest {
         val blur = ClipCanvas(kind = CanvasKind.BLUR, blur = 3)
         val all = EditReducer.reduce(base, BatchEdits.canvas(base, blur))
         assertTrue(all.clips.all { it.canvas == blur })
+    }
+
+    @Test
+    fun blendMode_isSet() {
+        assertEquals(BlendMode.SCREEN, first(EditAction.SetBlendMode("a", BlendMode.SCREEN)).blendMode)
     }
 
     @Test

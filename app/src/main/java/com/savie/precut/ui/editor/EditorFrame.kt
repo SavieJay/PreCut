@@ -1,6 +1,7 @@
 package com.savie.precut.ui.editor
 
 import com.savie.precut.media.MediaImporter
+import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.edit.clipShownAt
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.frame.LiveFrames
@@ -42,7 +43,7 @@ class EditorFrame(
     private val importer: MediaImporter,
 ) {
 
-    /** Opens EDIT, TRANSFORM, OPACITY or CANVAS on the target clip. */
+    /** Opens a frame tool ([FRAME_TOOLS]) on the target clip. */
     fun open(tool: EditorTool) {
         val clipId = host.targetClipId() ?: return
         host.update {
@@ -132,9 +133,11 @@ class EditorFrame(
 
     fun onMotionBlurApplyAll() {
         val ready = host.ready ?: return
-        val strength = selected()?.motionBlur ?: return
-        host.applyEdit(BatchEdits.motionBlur(ready.project, strength))
+        val clip = selected() ?: return
+        host.applyEdit(BatchEdits.motionBlur(ready.project, clip.motionBlur, overlays = ready.project.overlays.any { it.id == clip.id }))
     }
+
+    fun onBlendMode(mode: BlendMode) = edit { EditAction.SetBlendMode(it.id, mode) }
 
     // Canvas
 
@@ -184,6 +187,6 @@ class EditorFrame(
         val LIVE_TOOLS = setOf(EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.MASK)
 
         /** Tools that keep the clip's transform frame on the preview. */
-        val FRAME_TOOLS = setOf(EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.MOTION_BLUR)
+        val FRAME_TOOLS = setOf(EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.MOTION_BLUR, EditorTool.BLEND)
     }
 }

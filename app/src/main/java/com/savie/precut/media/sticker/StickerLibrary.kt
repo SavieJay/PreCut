@@ -35,7 +35,16 @@ class StickerLibrary @Inject constructor(
     /** "My images", newest first. */
     fun images(): List<LibraryImage> =
         libraryDir.listFiles().orEmpty().filter { it.isFile }.sortedByDescending { it.lastModified() }
-            .map { LibraryImage(it, it.extension == "gif") }
+            .map { LibraryImage(it, animated = it.extension == "gif" || (it.extension == "webp" && isAnimatedWebp(it))) }
+
+    /** The `VP8X` header (the first 30 bytes) says whether a WebP is animated. */
+    private fun isAnimatedWebp(file: File): Boolean = try {
+        val header = ByteArray(WEBP_HEADER_BYTES)
+        val read = file.inputStream().use { it.read(header) }
+        WebpAnimation.isAnimated(header.copyOf(maxOf(read, 0)))
+    } catch (_: IOException) {
+        false
+    }
 
     /** Copies a picked picture into "My images"; null when it isn't a readable image. */
     fun import(source: Uri): LibraryImage? {
@@ -46,9 +55,9 @@ class StickerLibrary @Inject constructor(
         } catch (_: SecurityException) {
             null
         } ?: return null
-        val gif = renderer.gifInfo(bytes)
+        val animation = renderer.animationInfo(bytes)
         val extension = when {
-            gif != null -> "gif"
+            GifDecoder.isGif(bytes) && animation != null -> "gif"
             else -> {
                 val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
@@ -63,7 +72,7 @@ class StickerLibrary @Inject constructor(
         val file = File(libraryDir.apply { mkdirs() }, "${UUID.randomUUID()}.$extension")
         return try {
             file.writeBytes(bytes)
-            LibraryImage(file, animated = (gif?.frameCount ?: 0) > 1)
+            LibraryImage(file, animated = (animation?.frameCount ?: 0) > 1)
         } catch (_: IOException) {
             file.delete()
             null
@@ -113,6 +122,7 @@ class StickerLibrary @Inject constructor(
     }
 
     private companion object {
+        const val WEBP_HEADER_BYTES = 30
         const val PREFS = "stickers"
         const val KEY_RECENT = "recent_emoji"
         const val SEPARATOR = "\n"

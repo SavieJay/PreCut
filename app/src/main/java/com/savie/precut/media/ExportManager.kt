@@ -16,6 +16,7 @@ import com.savie.precut.media.export.gif.GifTranscoder
 import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.model.export.videoBitrate
 import com.savie.precut.model.outputSize
+import com.savie.precut.model.totalDurationMs
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
@@ -95,7 +96,7 @@ class ExportManager @Inject constructor(
                     val target = File(state.file.parentFile, state.file.nameWithoutExtension + ".gif")
                     try {
                         withContext(Dispatchers.Default) {
-                            GifTranscoder().transcode(state.file, target, gif.frameRate) { f -> trySend(ExportState.Running(VIDEO_SHARE + (f * (100 - VIDEO_SHARE)).toInt())) }
+                            GifTranscoder().transcode(state.file, target, gif.frameRate, project.totalDurationMs()) { f -> trySend(ExportState.Running(VIDEO_SHARE + (f * (100 - VIDEO_SHARE)).toInt())) }
                         }
                         send(ExportState.Success(target))
                     } catch (e: CancellationException) {

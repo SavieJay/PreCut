@@ -80,4 +80,59 @@ void main() {
   gl_FragColor = texture2D(uTexSampler, mat2(uMap.xy, uMap.zw) * vUv + uOffset);
 }
 """
+
+    /** [COPY_2D] with straight alpha turned premultiplied (so blending and averaging don't darken edges). */
+    const val PREMULTIPLY = """#version 100
+precision mediump float;
+uniform sampler2D uTexSampler;
+uniform vec4 uMap;
+uniform vec2 uOffset;
+varying vec2 vUv;
+void main() {
+  vec4 c = texture2D(uTexSampler, mat2(uMap.xy, uMap.zw) * vUv + uOffset);
+  gl_FragColor = vec4(c.rgb * c.a, c.a);
+}
+"""
+
+    /**
+     * A premultiplied layer [uLayer] over the frame so far [uBackdrop] with blend mode [uMode]
+     * (`BlendMode.id`; the same formulas as `BlendMode.mix`), then mixed with the backdrop by the
+     * layer's alpha.
+     */
+    const val BLEND = """#version 100
+precision mediump float;
+uniform sampler2D uBackdrop;
+uniform sampler2D uLayer;
+uniform float uMode;
+varying vec2 vUv;
+// "Where x > edge" is written 1.0 - step(x, edge).
+vec3 screen(vec3 b, vec3 s) { return b + s - b * s; }
+vec3 hardLight(vec3 b, vec3 s) {
+  return mix(b * 2.0 * s, screen(b, 2.0 * s - 1.0), 1.0 - step(s, vec3(0.5)));
+}
+vec3 softLight(vec3 b, vec3 s) {
+  vec3 d = mix(((16.0 * b - 12.0) * b + 4.0) * b, sqrt(b), 1.0 - step(b, vec3(0.25)));
+  vec3 dark = b - (1.0 - 2.0 * s) * b * (1.0 - b);
+  vec3 light = b + (2.0 * s - 1.0) * (d - b);
+  return mix(dark, light, 1.0 - step(s, vec3(0.5)));
+}
+vec3 blend(vec3 b, vec3 s) {
+  if (uMode < 0.5) return s;
+  if (uMode < 1.5) return b * s;
+  if (uMode < 2.5) return screen(b, s);
+  if (uMode < 3.5) return hardLight(s, b);
+  if (uMode < 4.5) return min(b, s);
+  if (uMode < 5.5) return max(b, s);
+  if (uMode < 6.5) return min(vec3(1.0), b + s);
+  if (uMode < 7.5) return softLight(b, s);
+  return abs(b - s);
+}
+void main() {
+  vec4 backdrop = texture2D(uBackdrop, vUv);
+  vec4 layer = texture2D(uLayer, vUv);
+  if (layer.a <= 0.0) { gl_FragColor = backdrop; return; }
+  vec3 s = clamp(layer.rgb / layer.a, 0.0, 1.0);
+  gl_FragColor = vec4(mix(backdrop.rgb, blend(backdrop.rgb, s), layer.a), layer.a + backdrop.a * (1.0 - layer.a));
+}
+"""
 }

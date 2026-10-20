@@ -18,10 +18,10 @@ import java.io.IOException
 class GifTranscoder {
 
     /**
-     * Writes [target] from [source], exported at [frameRate]; [onProgress] gets 0..1. Throws
-     * [IOException] when the video can't be read.
+     * Writes [target] from [source], exported at [frameRate]; the last frame lasts until [endMs]
+     * (the project's length). [onProgress] gets 0..1. Throws [IOException] when the video can't be read.
      */
-    suspend fun transcode(source: File, target: File, frameRate: Int, onProgress: (Float) -> Unit) {
+    suspend fun transcode(source: File, target: File, frameRate: Int, endMs: Long, onProgress: (Float) -> Unit) {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         try {
@@ -40,7 +40,7 @@ class GifTranscoder {
             // Portrait exports are stored as landscape frames to be turned on display.
             val rotation = if (format.containsKey(MediaFormat.KEY_ROTATION)) format.getInteger(MediaFormat.KEY_ROTATION) else 0
             target.outputStream().buffered().use { out ->
-                decode(extractor, decoder, Stream(format, durationUs, rotation, 1_000L / frameRate.coerceIn(1, 60)), out, onProgress)
+                decode(extractor, decoder, Stream(format, durationUs, rotation, 1_000L / frameRate.coerceIn(1, 60), endMs), out, onProgress)
             }
         } finally {
             codec?.let {
@@ -56,7 +56,7 @@ class GifTranscoder {
     }
 
     /** What the decode loop needs to know about the video. */
-    private class Stream(val format: MediaFormat, val durationUs: Long, val rotationDegrees: Int, val frameMs: Long)
+    private class Stream(val format: MediaFormat, val durationUs: Long, val rotationDegrees: Int, val frameMs: Long, val endMs: Long)
 
     private suspend fun decode(
         extractor: MediaExtractor,
@@ -111,8 +111,7 @@ class GifTranscoder {
             if (ended) break
         }
         val gif = encoder ?: throw IOException("No frames decoded")
-        // The last frame lasts one frame at the GIF's own rate.
-        held?.let { (pixels, _) -> gif.addFrame(pixels, stream.frameMs) }
+        held?.let { (pixels, timeUs) -> gif.addFrame(pixels, lastFrameMs(timeUs, stream.endMs, stream.frameMs)) }
         gif.finish()
     }
 
@@ -149,11 +148,14 @@ class GifTranscoder {
 
     private data class Colours(val bt709: Boolean, val fullRange: Boolean)
 
-    private companion object {
-        const val TIMEOUT_US = 10_000L
+    internal companion object {
+        private const val TIMEOUT_US = 10_000L
+
+        /** The last frame lasts until the project's end, and at least one frame at the GIF's rate. */
+        fun lastFrameMs(frameUs: Long, endMs: Long, frameMs: Long): Long = maxOf(frameMs, endMs - frameUs / 1_000)
 
         /** The stream's colour standard and range, else Android's rule: BT.601 up to PAL size, BT.709 above. */
-        fun colours(output: MediaFormat, input: MediaFormat, image: Image): Colours {
+        private fun colours(output: MediaFormat, input: MediaFormat, image: Image): Colours {
             fun int(key: String): Int? = when {
                 output.containsKey(key) -> output.getInteger(key)
                 input.containsKey(key) -> input.getInteger(key)

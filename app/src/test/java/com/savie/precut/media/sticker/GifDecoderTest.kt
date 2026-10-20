@@ -23,7 +23,7 @@ class GifDecoderTest {
             frames += pixels.copyOf()
             delays += delay
         }
-        assertEquals(GifInfo(24, 16, 4), info)
+        assertEquals(AnimationInfo(24, 16, 4), info)
         assertEquals(listOf(250, 250, 250, 250), delays)
         frames.forEachIndexed { f, pixels ->
             val reference = IntArray(24 * 16) { i ->

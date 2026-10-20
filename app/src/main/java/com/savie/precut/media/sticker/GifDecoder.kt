@@ -1,7 +1,7 @@
 package com.savie.precut.media.sticker
 
-/** A decoded GIF's size and frame count. */
-data class GifInfo(val width: Int, val height: Int, val frameCount: Int)
+/** A decoded animation's (GIF or WebP) size and frame count. */
+data class AnimationInfo(val width: Int, val height: Int, val frameCount: Int)
 
 /**
  * Decodes an animated GIF (87a/89a) into whole composited frames (S-01 GIF stickers): local and
@@ -20,7 +20,7 @@ object GifDecoder {
         bytes.size >= 6 && bytes[0] == 'G'.code.toByte() && bytes[1] == 'I'.code.toByte() && bytes[2] == 'F'.code.toByte()
 
     /** Null when [bytes] aren't a readable GIF; stops after [maxFrames] frames. */
-    fun decode(bytes: ByteArray, maxFrames: Int = Int.MAX_VALUE, onFrame: (pixels: IntArray, delayMs: Int) -> Unit): GifInfo? {
+    fun decode(bytes: ByteArray, maxFrames: Int = Int.MAX_VALUE, onFrame: (pixels: IntArray, delayMs: Int) -> Unit): AnimationInfo? {
         if (!isGif(bytes)) return null
         return try {
             Reader(bytes).decode(maxFrames, onFrame)
@@ -45,7 +45,7 @@ object GifDecoder {
             }
         }
 
-        fun decode(maxFrames: Int, onFrame: (IntArray, Int) -> Unit): GifInfo? {
+        fun decode(maxFrames: Int, onFrame: (IntArray, Int) -> Unit): AnimationInfo? {
             val width = u16()
             val height = u16()
             if (width !in 1..MAX_SIDE || height !in 1..MAX_SIDE) return null
@@ -99,7 +99,7 @@ object GifDecoder {
                     else -> return null
                 }
             }
-            return if (frames == 0) null else GifInfo(width, height, frames)
+            return if (frames == 0) null else AnimationInfo(width, height, frames)
         }
 
         /** The image's colour indices (missing pixels are 0). */

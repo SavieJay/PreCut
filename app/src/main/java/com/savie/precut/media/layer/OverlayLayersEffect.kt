@@ -14,27 +14,34 @@ import androidx.media3.effect.GlEffect
 import androidx.media3.effect.GlShaderProgram
 import com.savie.precut.media.ItemSpec
 import com.savie.precut.media.OverlayItemSpec
+import com.savie.precut.media.ClipEffectSpec
 import com.savie.precut.media.TransitionLayerSpec
+import com.savie.precut.media.effect.EffectShaderProgram
 import com.savie.precut.media.frame.CanvasShaderProgram
 import com.savie.precut.media.frame.LiveFrames
 import com.savie.precut.media.look.LookKeyframes
 import com.savie.precut.media.look.LookShaderProgram
 import com.savie.precut.media.look.LookUniforms
 import com.savie.precut.media.look.LutCache
+import com.savie.precut.media.motion.MotionBlurShaderProgram
 import com.savie.precut.media.sourceUsAt
 import com.savie.precut.media.speedStepsOf
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.motion.MotionMath
 import com.savie.precut.model.motion.TransitionType
 import com.savie.precut.model.frame.Affine
+import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.frame.LayerOrientation
 import com.savie.precut.model.look.ClipLook
 
 /**
  * Draws picture-in-picture layers over the composed main video, bottom layer first. Each video
  * layer decodes its own file ([VideoFrameSource]); each layer is graded with its look, mirrored,
- * turned and cropped, then placed with its transform, animation and opacity on the frame — the
- * same programs and order as a main clip, so a clip looks the same on either track.
+ * turned and cropped, given its effect (on its own picture, so the effect stays inside it), then
+ * placed with its transform, animation and opacity — the same programs as a main clip. A layer
+ * with motion blur or a blend mode is placed on its own transparent frame first, blurred, and
+ * mixed in with its [BlendMode]. During an overlapping transition the incoming main-track clip
+ * is drawn as a whole frame with its effect and motion blur after placement, as on the main track.
  *
  * Runs as a composition-level effect, so preview and export draw overlays identically, and the
  * player keeps a single video input (Media3 1.11's multi-input preview stalls at clip cuts).
@@ -67,11 +74,15 @@ internal class OverlayLayersShaderProgram(
     private val copyYuv: GlProgram
     private val copy2d: GlProgram
     private val mixer: GlProgram
-    private val layers = specs.map(::Layer)
+    private val premultiply: GlProgram
+    private val blender: GlProgram
+    private val layers = specs.map { Layer(it, mainTrack = false) }
     /** Each overlapping transition's incoming clip, drawn like a layer, with its type. */
-    private val transitions = transitionSpecs.map { Layer(OverlayItemSpec(0L, it.item, it.startUs, it.endUs)) to it.type }
-    /** The incoming clip's whole frame during a transition. */
-    private var incoming = Target.NONE
+    private val transitions = transitionSpecs.map { Layer(OverlayItemSpec(0L, it.item, it.startUs, it.endUs), mainTrack = true) to it.type }
+    /** The frame being built, off screen, while a shown layer has a blend mode (it reads what's under it). */
+    private var frame = Target.NONE
+    /** A copy of [frame] for a blend mode to read while writing [frame]. */
+    private var backdrop = Target.NONE
     private var width = 1
     private var height = 1
 
@@ -80,6 +91,8 @@ internal class OverlayLayersShaderProgram(
             copyYuv = program(LayerShaders.COPY_YUV)
             copy2d = program(LayerShaders.COPY_2D)
             mixer = program(LayerShaders.TRANSITION)
+            premultiply = program(LayerShaders.PREMULTIPLY)
+            blender = program(LayerShaders.BLEND)
         } catch (e: GlUtil.GlException) {
             throw VideoFrameProcessingException(e)
         }
@@ -101,25 +114,23 @@ internal class OverlayLayersShaderProgram(
             val transition = transitions.firstNotNullOfOrNull { (layer, type) ->
                 layer.render(presentationTimeUs)?.let { picture -> Triple(layer, picture, type) }
             }
-            transition?.let { (layer, picture, _) ->
-                // The incoming clip as a whole frame (placed on its canvas), off screen.
-                incoming = incoming.sized(width, height)
-                GlUtil.focusFramebufferUsingCurrentContext(incoming.fbo, width, height)
-                layer.place(picture, presentationTimeUs)
-            }
+            val incoming = transition?.let { (layer, picture, _) -> layer.wholeFrame(picture, presentationTimeUs) }
 
-            GlUtil.focusFramebufferUsingCurrentContext(binding[0], width, height)
-            if (transition != null) {
-                mix(inputTexId, incoming.texture, transition.first.progress(presentationTimeUs), transition.third)
+            // A blend mode reads what's under its layer, so the frame is then built off screen.
+            val blending = shown.any { (layer, _) -> layer.blendMode != BlendMode.NORMAL }
+            if (blending) frame = frame.sized(width, height)
+            val target = if (blending) frame.fbo else binding[0]
+            GlUtil.focusFramebufferUsingCurrentContext(target, width, height)
+            if (transition != null && incoming != null) {
+                mix(inputTexId, incoming, transition.first.progress(presentationTimeUs), transition.third)
             } else {
                 draw(copy2d, inputTexId, Affine.IDENTITY)
             }
-            if (shown.isEmpty()) return
-            GLES20.glEnable(GLES20.GL_BLEND)
-            // The layers are written with straight alpha.
-            GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
-            shown.forEach { (layer, picture) -> layer.place(picture, presentationTimeUs) }
-            GLES20.glDisable(GLES20.GL_BLEND)
+            shown.forEach { (layer, picture) -> layer.composite(picture, presentationTimeUs, target) }
+            if (blending) {
+                GlUtil.focusFramebufferUsingCurrentContext(binding[0], width, height)
+                draw(copy2d, frame.texture, Affine.IDENTITY)
+            }
         } catch (e: GlUtil.GlException) {
             throw VideoFrameProcessingException(e, presentationTimeUs)
         }
@@ -134,10 +145,13 @@ internal class OverlayLayersShaderProgram(
         layers.forEach { it.release() }
         transitions.forEach { (layer, _) -> layer.release() }
         try {
-            incoming = incoming.delete()
+            frame = frame.delete()
+            backdrop = backdrop.delete()
             copyYuv.delete()
             copy2d.delete()
             mixer.delete()
+            premultiply.delete()
+            blender.delete()
         } catch (e: GlUtil.GlException) {
             throw VideoFrameProcessingException(e)
         }
@@ -177,8 +191,11 @@ internal class OverlayLayersShaderProgram(
     /** A picture ready to place: [textureId] of [width] × [height]. */
     private class Picture(val textureId: Int, val width: Int, val height: Int)
 
-    /** One overlay: its decoder or bitmap, intermediate textures and programs, made on first use. */
-    private inner class Layer(private val spec: OverlayItemSpec) {
+    /**
+     * One overlay (or, with [mainTrack], a transition's incoming clip): its decoder or bitmap,
+     * intermediate textures and programs, made on first use.
+     */
+    private inner class Layer(private val spec: OverlayItemSpec, private val mainTrack: Boolean) {
         private val item = spec.item
         private val orientation = LayerOrientation(item.visual.mirrored, item.visual.rotationDegrees, item.visual.crop)
         private var video: VideoFrameSource? = null
@@ -189,8 +206,17 @@ internal class OverlayLayersShaderProgram(
         private var oriented = Target.NONE
         /** An image layer's oriented picture never changes, so it's made once. */
         private var stillReady = false
+        private var effected = Target.NONE
+        /** The placed layer on its own frame: as placed, premultiplied, blurred. */
+        private var own = Target.NONE
+        private var premultiplied = Target.NONE
+        private var blurred = Target.NONE
         private var look: LookShaderProgram? = null
         private var canvas: CanvasShaderProgram? = null
+        private var effect: EffectShaderProgram? = null
+        private var blur: MotionBlurShaderProgram? = null
+
+        val blendMode: BlendMode get() = item.visual.blendMode
         private val steps = (item as? ItemSpec.Video)?.let(::speedStepsOf)
 
         /** Eased 0..1 through the layer's time range (for transitions). */
@@ -208,7 +234,7 @@ internal class OverlayLayersShaderProgram(
             val source = when (item) {
                 is ItemSpec.Video -> videoUpright(timeUs - spec.startUs) ?: return null
                 is ItemSpec.Image -> {
-                    if (stillReady) return oriented.picture()
+                    if (stillReady) return withEffect(oriented.picture(), timeUs)
                     imageUpright() ?: return null
                 }
             }
@@ -230,7 +256,86 @@ internal class OverlayLayersShaderProgram(
             GlUtil.focusFramebufferUsingCurrentContext(oriented.fbo, w, h)
             draw(copy2d, picture.textureId, orientation.map())
             if (item is ItemSpec.Image) stillReady = true
-            return oriented.picture()
+            return withEffect(oriented.picture(), timeUs)
+        }
+
+        /** An overlay's effect runs on its own picture; a main-track clip's on the whole frame ([wholeFrame]). */
+        private fun withEffect(picture: Picture, timeUs: Long): Picture {
+            if (mainTrack) return picture
+            return item.visual.effect?.let { applyEffect(it, picture, timeUs) } ?: picture
+        }
+
+        private fun applyEffect(spec: ClipEffectSpec, picture: Picture, timeUs: Long): Picture {
+            val program = effect ?: EffectShaderProgram(spec.effect, spec.startUs, startUs = null, endUs = null).also { effect = it }
+            effected = effected.sized(picture.width, picture.height)
+            GlUtil.focusFramebufferUsingCurrentContext(effected.fbo, picture.width, picture.height)
+            program.configure(picture.width, picture.height)
+            program.drawFrame(picture.textureId, timeUs)
+            return effected.picture()
+        }
+
+        /** The incoming clip of a transition as a whole frame: placed on its canvas, then its effect and motion blur. */
+        fun wholeFrame(picture: Picture, timeUs: Long): Int {
+            own = own.sized(width, height)
+            GlUtil.focusFramebufferUsingCurrentContext(own.fbo, width, height)
+            place(picture, timeUs)
+            var result = own.picture()
+            item.visual.effect?.let { result = applyEffect(it, result, timeUs) }
+            return if (item.visual.motionBlur > 0f) withMotionBlur(result.textureId, timeUs) else result.textureId
+        }
+
+        /**
+         * Puts the layer on [target] (focused): straight on when plain; with motion blur or a blend
+         * mode, first on its own transparent frame, premultiplied, so averaging and mixing keep
+         * its edges clean.
+         */
+        fun composite(picture: Picture, timeUs: Long, target: Int) {
+            val blurs = item.visual.motionBlur > 0f
+            if (!blurs && blendMode == BlendMode.NORMAL) {
+                GLES20.glEnable(GLES20.GL_BLEND)
+                // Placed layers are written with straight alpha.
+                GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+                place(picture, timeUs)
+                GLES20.glDisable(GLES20.GL_BLEND)
+                return
+            }
+            own = own.sized(width, height)
+            GlUtil.focusFramebufferUsingCurrentContext(own.fbo, width, height)
+            GlUtil.clearFocusedBuffers()
+            place(picture, timeUs)
+            premultiplied = premultiplied.sized(width, height)
+            GlUtil.focusFramebufferUsingCurrentContext(premultiplied.fbo, width, height)
+            draw(premultiply, own.texture, Affine.IDENTITY)
+            val layer = if (blurs) withMotionBlur(premultiplied.texture, timeUs) else premultiplied.texture
+            if (blendMode == BlendMode.NORMAL) {
+                GlUtil.focusFramebufferUsingCurrentContext(target, width, height)
+                GLES20.glEnable(GLES20.GL_BLEND)
+                GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+                draw(copy2d, layer, Affine.IDENTITY)
+                GLES20.glDisable(GLES20.GL_BLEND)
+            } else {
+                // The blend reads what's under the layer from a copy, since it writes the frame itself.
+                backdrop = backdrop.sized(width, height)
+                GlUtil.focusFramebufferUsingCurrentContext(backdrop.fbo, width, height)
+                draw(copy2d, frame.texture, Affine.IDENTITY)
+                GlUtil.focusFramebufferUsingCurrentContext(target, width, height)
+                blender.use()
+                blender.setSamplerTexIdUniform("uBackdrop", backdrop.texture, 0)
+                blender.setSamplerTexIdUniform("uLayer", layer, 1)
+                blender.setFloatUniform("uMode", blendMode.id.toFloat())
+                blender.bindAttributesAndUniforms()
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+            }
+        }
+
+        /** [texture] (a whole frame) averaged with the layer's earlier frames; returns the result's texture. */
+        private fun withMotionBlur(texture: Int, timeUs: Long): Int {
+            val program = blur ?: MotionBlurShaderProgram(item.visual.motionBlur).also { blur = it }
+            blurred = blurred.sized(width, height)
+            GlUtil.focusFramebufferUsingCurrentContext(blurred.fbo, width, height)
+            program.configure(width, height)
+            program.drawFrame(texture, timeUs)
+            return blurred.texture
         }
 
         /** Places [picture] on the frame (blending is set up by the caller). */
@@ -292,6 +397,13 @@ internal class OverlayLayersShaderProgram(
             upright = upright.delete()
             graded = graded.delete()
             oriented = oriented.delete()
+            effected = effected.delete()
+            own = own.delete()
+            premultiplied = premultiplied.delete()
+            blurred = blurred.delete()
+            // Its history is several whole frames, so it goes too.
+            blur?.release()
+            blur = null
         }
 
         fun release() {
@@ -301,6 +413,8 @@ internal class OverlayLayersShaderProgram(
             look = null
             canvas?.release()
             canvas = null
+            effect?.release()
+            effect = null
         }
     }
 

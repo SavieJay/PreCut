@@ -35,6 +35,7 @@ internal fun Project.applyFrameEdit(action: EditAction.FrameEdit): Project = whe
     is EditAction.SetOpacity -> updateFrame(action.clipId) { it.copy(opacity = action.opacity.coerceIn(0f, 1f)) }
     is EditAction.SetCanvas -> updateFrame(action.clipId) { it.copy(canvas = action.canvas.normalized()) }
     is EditAction.SetMotionBlur -> updateFrame(action.clipId) { it.copy(motionBlur = action.strength.coerceIn(0f, 1f)) }
+    is EditAction.SetBlendMode -> updateFrame(action.clipId) { it.copy(blendMode = action.mode) }
     is EditAction.SetMask -> updateFrame(action.clipId) { it.copy(mask = action.mask?.normalized()) }
     is EditAction.SetChroma -> updateFrame(action.clipId) {
         it.copy(chroma = action.chroma?.let { key -> key.copy(intensity = key.intensity.coerceIn(0f, 1f), shadow = key.shadow.coerceIn(0f, 1f)) })
