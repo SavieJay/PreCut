@@ -10,7 +10,7 @@ import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
-import androidx.media3.effect.FrameDropEffect
+import com.savie.precut.media.export.FrameRateLimitEffect
 import com.savie.precut.model.DEFAULT_SHORT_SIDE_PX
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.Project
@@ -48,7 +48,7 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
             )
         // Overlays go on the main video, layers grade the result, and text and the cover go on top, ungraded.
         // A lower frame rate drops frames first, so later passes do less work.
-        val videoEffects = listOfNotNull(output?.frameRate?.let { FrameDropEffect.createDefaultFrameDropEffect(it.toFloat()) }) +
+        val videoEffects = listOfNotNull(output?.frameRate?.let { FrameRateLimitEffect(it) }) +
             listOfNotNull(effectsFactory.overlayLayersEffect(spec.overlayLanes, spec.transitions, spec.outputSize)) +
             effectsFactory.lookLayerEffects(spec.lookLayers) +
             effectsFactory.effectLayerEffects(spec.effectLayers) +

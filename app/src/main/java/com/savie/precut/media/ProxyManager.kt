@@ -2,6 +2,7 @@ package com.savie.precut.media
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -150,6 +151,7 @@ class ProxyManager @Inject constructor(
                     finish(uri, if (partial.renameTo(target)) ProxyState.Ready(Uri.fromFile(target).toString()) else ProxyState.Failed)
 
                 override fun onError(composition: Composition, exportResult: ExportResult, exportException: ExportException) {
+                    Log.w(TAG, "Proxy failed for $uri", exportException)
                     partial.delete()
                     finish(uri, ProxyState.Failed)
                 }
@@ -190,6 +192,7 @@ class ProxyManager @Inject constructor(
         withContext(ioDispatcher) { Uri.parse(fileUri).path?.let { File(it).exists() } == true }
 
     private companion object {
+        const val TAG = "ProxyManager"
         const val DIR = "proxies"
         const val PROGRESS_POLL_MS = 500L
     }
