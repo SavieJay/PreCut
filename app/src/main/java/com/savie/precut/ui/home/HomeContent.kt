@@ -6,6 +6,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.data.ProjectSummary
+import com.savie.precut.ui.components.TonalButton
 import com.savie.precut.ui.theme.AccentFill
 import com.savie.precut.ui.theme.OnAccent
 import com.savie.precut.ui.theme.PreCutType
@@ -56,6 +58,7 @@ fun HomeContent(
     snackbarHostState: SnackbarHostState,
     onNewProject: () -> Unit,
     onCamera: (video: Boolean) -> Unit,
+    onAutoCut: () -> Unit,
     actions: ProjectActions,
     onSettings: () -> Unit = {},
 ) {
@@ -86,7 +89,7 @@ fun HomeContent(
         when {
             isImporting -> ImportingMedia(modifier)
             projects == null -> Box(modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            projects.isEmpty() -> EmptyProjects(onNewProject, modifier)
+            projects.isEmpty() -> EmptyProjects(onNewProject, onAutoCut, modifier)
             else -> LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(2),
                 state = gridState,
@@ -96,7 +99,10 @@ fun HomeContent(
                 modifier = modifier,
             ) {
                 item(span = StaggeredGridItemSpan.FullLine) {
-                    Text(stringResource(R.string.home_drafts_count, projects.size), style = PreCutType.section, color = TextSecondary)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.home_drafts_count, projects.size), style = PreCutType.section, color = TextSecondary, modifier = Modifier.weight(1f))
+                        TonalButton(stringResource(R.string.autocut_title), onAutoCut, icon = R.drawable.ic_beats)
+                    }
                 }
                 items(projects, key = { it.id }) { project ->
                     ProjectCard(

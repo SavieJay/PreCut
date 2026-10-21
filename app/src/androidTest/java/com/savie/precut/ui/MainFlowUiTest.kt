@@ -68,7 +68,7 @@ class MainFlowUiTest {
         var projects by mutableStateOf<List<ProjectSummary>>(emptyList())
         compose.setContent {
             PreCutTheme {
-                HomeContent(false, projects, SnackbarHostState(), onNewProject = { newProject++ }, onCamera = {}, actions = calls.recorder<ProjectActions>())
+                HomeContent(false, projects, SnackbarHostState(), onNewProject = { newProject++ }, onCamera = {}, onAutoCut = {}, actions = calls.recorder<ProjectActions>())
             }
         }
         compose.onNodeWithText("Start your first video").assertIsDisplayed()

@@ -57,6 +57,7 @@ internal fun Project.applyAudioEdit(action: EditAction.AudioEdit): Project = whe
     is EditAction.SetVoiceEffect -> updateAudio(action.audioId) { it.copy(voiceEffect = action.effect) }
     is EditAction.ToggleBeat -> updateAudio(action.audioId) { it.toggledBeat(action.atTimelineMs) }
     is EditAction.ClearBeats -> updateAudio(action.audioId) { it.copy(beatsMs = emptyList()) }
+    is EditAction.SetBeats -> updateAudio(action.audioId) { it.copy(beatsMs = action.beatsMs.distinct().sorted()) }
 }
 
 private fun Project.audioById(id: String) = audioClips.firstOrNull { it.id == id }

@@ -9,6 +9,8 @@ import com.savie.precut.data.AppMediaJanitor
 import com.savie.precut.data.db.AppDatabase
 import com.savie.precut.data.db.ProjectDao
 import com.savie.precut.media.AndroidMediaImporter
+import com.savie.precut.media.audio.AndroidBeatDetector
+import com.savie.precut.media.audio.BeatDetector
 import com.savie.precut.media.AndroidMediaProbe
 import com.savie.precut.media.CaptureFiles
 import com.savie.precut.media.CaptureStore
@@ -53,6 +55,9 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindMediaImporter(impl: AndroidMediaImporter): MediaImporter
+
+    @Binds
+    abstract fun bindBeatDetector(impl: AndroidBeatDetector): BeatDetector
 
     @Binds
     abstract fun bindVideoExporter(impl: ExportManager): VideoExporter

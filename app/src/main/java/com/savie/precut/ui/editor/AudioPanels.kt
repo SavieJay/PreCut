@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.SpeedScale
 import com.savie.precut.model.edit.BEAT_TOLERANCE_MS
@@ -12,6 +13,7 @@ import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.model.timelineEndMs
 import com.savie.precut.ui.editor.tools.AudioToolbar
 import com.savie.precut.ui.editor.tools.AudioToolbarActions
+import com.savie.precut.ui.editor.tools.BeatsActions
 import com.savie.precut.ui.editor.tools.BeatsTool
 import com.savie.precut.ui.editor.tools.FadeTool
 import com.savie.precut.ui.editor.tools.AUDIO_SPEED_PRESETS
@@ -36,9 +38,17 @@ fun AudioPanels(audio: AudioClip, activeTool: EditorTool?, positionMs: () -> Lon
             beatCount = audio.beatsMs.size,
             beatAtPlayhead = rememberBeatAtPlayhead(audio, positionMs),
             playheadMs = positionMs(),
-            onToggleBeat = controller::onToggleBeat,
-            onClear = controller::onClearBeats,
-            onDone = close,
+            detecting = controller.detectingBeats.collectAsStateWithLifecycle().value,
+            actions = remember(controller, close) {
+                object : BeatsActions {
+                    override fun onToggleBeat() = controller.onToggleBeat()
+                    override fun onClear() = controller.onClearBeats()
+                    override fun onDetect(every: Int) = controller.onDetectBeats(every)
+                    override fun onStopDetect() = controller.onStopBeatDetection()
+                    override fun onCutToBeats() = controller.onCutToBeats()
+                    override fun onDone() = close()
+                }
+            },
         )
         else -> AudioToolbar(
             canSplit = rememberCanSplit(positionMs, audio.timelineStartMs, audio.timelineEndMs()),

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -27,9 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.StrokeCap
 import com.savie.precut.R
 import com.savie.precut.ui.components.FilledButton
+import com.savie.precut.ui.components.TonalButton
 import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.AccentContainer
 import com.savie.precut.ui.theme.Ink0
@@ -39,7 +40,7 @@ import com.savie.precut.ui.theme.TextSecondary
 
 /** H-01: illustration, "Start your first video" and a full-width New project button. */
 @Composable
-fun EmptyProjects(onNewProject: () -> Unit, modifier: Modifier = Modifier) {
+fun EmptyProjects(onNewProject: () -> Unit, onAutoCut: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxSize()) {
         Column(
             Modifier.weight(1f).fillMaxWidth().padding(horizontal = 32.dp),
@@ -62,7 +63,13 @@ fun EmptyProjects(onNewProject: () -> Unit, modifier: Modifier = Modifier) {
             onClick = onNewProject,
             icon = R.drawable.ic_add,
             large = true,
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 56.dp).fillMaxWidth().height(64.dp),
+            modifier = Modifier.padding(horizontal = 24.dp).fillMaxWidth().height(64.dp),
+        )
+        TonalButton(
+            stringResource(R.string.autocut_title),
+            onAutoCut,
+            Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 44.dp).fillMaxWidth(),
+            icon = R.drawable.ic_beats,
         )
     }
 }

@@ -212,6 +212,26 @@ source, reversed_ = display_size(f"{OUT}/../in/rotated.mp4"), display_size(path(
 check("reverse keeps rotation", (source[0] < source[1]) == (reversed_[0] < reversed_[1]),
       f"source shows {source[0]}x{source[1]}, reversed shows {reversed_[0]}x{reversed_[1]}")
 
+# Beat detection on the phone: a 120 BPM click track whose clicks start at 0.25 s.
+with open(path("beats.json")) as f:
+    found = json.load(f)
+beats = found["beatsMs"]
+truth = [250 + 500 * k for k in range(4, 39)]  # after the first 2 s, as the unit tests
+hits = sum(1 for t in truth if any(abs(b - t) <= 30 for b in beats))
+offsets = sorted(b - min(truth, key=lambda t: abs(t - b)) for b in beats)
+check("beat detection", abs(found["bpm"] - 120) <= 2.4 and hits >= 0.9 * len(truth),
+      f"{found['bpm']:.1f} BPM, {hits}/{len(truth)} clicks found within 30 ms, median offset {offsets[len(offsets) // 2] if offsets else 'n/a'} ms")
+
+# AutoCut: four frame-coded clips cut to the clicks; each cut (a jump in the picture) should sit on a beat.
+with open(path("autocut_beats.json")) as f:
+    cut_beats = json.load(f)["beatsMs"]
+v = path("autocut.mp4")
+t, fr = frame_times(v), small_frames(v)
+step, moved = picture_steps(t, fr)
+cuts = [time for time, _ in moved]
+off = [round(c * 1000) for c in cuts if not any(abs(c * 1000 - b) <= 1000 / 30 + 1 for b in cut_beats)]
+check("AutoCut cuts land on beats", len(cuts) == 3 and not off, f"cuts at {cuts}; not on a beat: {off}; beats {cut_beats[:5]}")
+
 # Proxy keyframes: at most 0.2 s apart.
 out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-skip_frame", "nokey", "-show_entries",
                       "frame=pts_time", "-of", "csv=p=0", path("proxy.mp4")], capture_output=True, text=True).stdout

@@ -125,6 +125,21 @@ fun EditorScreen(
             EditorEvent.ReverseNotForPhotos -> resources.getString(R.string.reverse_not_for_photos)
             EditorEvent.ReverseFailed -> resources.getString(R.string.reverse_failed)
             EditorEvent.ReverseUnsupported -> resources.getString(R.string.reverse_unsupported)
+            EditorEvent.BeatsUnreadable -> resources.getString(R.string.beats_unreadable)
+            EditorEvent.NoBeatsFound -> resources.getString(R.string.beats_none_found)
+            EditorEvent.NothingCutToBeats -> resources.getString(R.string.beats_nothing_to_cut)
+            is EditorEvent.CutToBeats -> {
+                val text = if (event.leftAlone == 0) {
+                    resources.getQuantityString(R.plurals.beats_cut_done, event.cut, event.cut)
+                } else {
+                    resources.getQuantityString(R.plurals.beats_cut_done_some_left, event.leftAlone, event.cut, event.leftAlone)
+                }
+                scope.launch {
+                    val result = snackbarHostState.showSnackbar(text, actionLabel = resources.getString(R.string.action_undo))
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
+                }
+                return@ObserveAsEvents
+            }
             EditorEvent.FrozeFrame, EditorEvent.ClipReversed, EditorEvent.ClipUnreversed -> {
                 val text = when (event) {
                     EditorEvent.FrozeFrame -> R.string.freeze_added

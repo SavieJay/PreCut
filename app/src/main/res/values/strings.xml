@@ -254,7 +254,30 @@
     <string name="speed_curve">Curve</string>
     <string name="fade_limit">Up to %1$s each (half the clip)</string>
     <string name="cover_in_export_detail">Shows for one frame at the start of the export</string>
-    <string name="beats_hint">Tap while playing to mark beats. Text and audio snap to them.</string>
+    <string name="beats_hint">Detect finds the beats, or tap while playing to mark them. Clips, text and audio snap to them.</string>
+    <string name="autocut_title">AutoCut</string>
+    <string name="autocut_body">Pick your clips and photos, then a song from your phone. PreCut finds the song\'s beats and cuts each clip to them, taking videos from their middle. You can change everything afterwards.</string>
+    <string name="autocut_pace">Cut on</string>
+    <string name="autocut_choose_clips">Choose clips</string>
+    <string name="autocut_music_unreadable">Couldn\'t read that song. Try another audio file.</string>
+    <string name="autocut_no_beats">No steady beat found in the song: your clips are in order, uncut.</string>
+    <string name="beats_detect">Detect</string>
+    <string name="beats_detecting">Detecting</string>
+    <string name="beats_every_1">Every beat</string>
+    <string name="beats_every_2">Every 2nd</string>
+    <string name="beats_every_4">Every 4th</string>
+    <string name="beats_cut_clips">Cut clips to the beat</string>
+    <string name="beats_unreadable">Couldn\'t read this audio to find its beats</string>
+    <string name="beats_none_found">No steady beat found. Mark beats by hand while playing.</string>
+    <string name="beats_nothing_to_cut">No clip could end on a beat. Add beats after the clips start.</string>
+    <plurals name="beats_cut_done">
+        <item quantity="one">%1$d clip now ends on a beat</item>
+        <item quantity="other">%1$d clips now end on beats</item>
+    </plurals>
+    <plurals name="beats_cut_done_some_left">
+        <item quantity="one">%1$d clips end on beats; %2$d was too short or has a speed curve</item>
+        <item quantity="other">%1$d clips end on beats; %2$d were too short or have speed curves</item>
+    </plurals>
     <string name="color_title">Text colour</string>
     <string name="text_edit">Edit text</string>
     <string name="text_rotate_scale">Rotate and scale</string>

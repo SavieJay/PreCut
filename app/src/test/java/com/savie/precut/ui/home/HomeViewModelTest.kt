@@ -11,9 +11,11 @@ import com.savie.precut.media.ImportedAudio
 import com.savie.precut.media.ImportedMedia
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.SharedMediaStore
+import com.savie.precut.media.audio.BeatDetector
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
 import com.savie.precut.model.MediaInfo
+import com.savie.precut.model.audio.BeatResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,10 +51,61 @@ class HomeViewModelTest {
     private val shareInbox = ShareInbox()
     private val captures = FakeCaptures()
     private var importer = FakeImporter(ImportResult(emptyList(), 0))
+    private val beats = FakeBeats()
 
-    private fun viewModel(result: ImportResult, cleaner: UnusedMediaCleaner = NoOpCleaner): HomeViewModel {
-        importer = FakeImporter(result)
-        return HomeViewModel(importer, repository, clock, cleaner, captures, shareInbox, FakeSharedMedia, settings)
+    private fun viewModel(result: ImportResult, cleaner: UnusedMediaCleaner = NoOpCleaner, song: ImportedAudio? = null): HomeViewModel {
+        importer = FakeImporter(result, song)
+        return HomeViewModel(importer, repository, clock, cleaner, captures, shareInbox, FakeSharedMedia, settings, beats)
+    }
+
+    private val twoVideos = ImportResult(
+        imported = listOf(
+            ImportedMedia("content://v1", MediaInfo(ClipType.VIDEO, 5_000L, 1920, 1080, 0)),
+            ImportedMedia("content://v2", MediaInfo(ClipType.VIDEO, 5_000L, 1920, 1080, 0)),
+        ),
+        failedCount = 0,
+    )
+    private val song = ImportedAudio("content://song", 20_000L, "Song")
+
+    @Test
+    fun autoCut_addsTheSong_marksBeats_andCutsEachClipFromItsMiddle() = runTest(dispatcher) {
+        beats.result = BeatResult((500L..20_000L step 500L).toList(), 120f, List(40) { 1f })
+        val vm = viewModel(twoVideos, song = song)
+        vm.events.test {
+            vm.onAutoCut(listOf("content://v1", "content://v2"), "content://song", every = 2)
+            val project = requireNotNull(repository.load((awaitItem() as HomeEvent.OpenEditor).projectId))
+            val music = project.audioClips.single()
+            assertEquals("content://song", music.uri)
+            assertEquals(0L, music.timelineStartMs)
+            // Every 2nd beat: 0.5 s, 1.5 s, 2.5 s...
+            assertEquals(listOf(500L, 1_500L, 2_500L), music.beatsMs.take(3))
+            assertEquals(listOf(500L, 1_000L), project.clips.map { it.trimEndMs - it.trimStartMs })
+            assertEquals(2_250L, project.clips[0].trimStartMs)
+        }
+        assertFalse(vm.uiState.value.isImporting)
+    }
+
+    @Test
+    fun autoCut_withoutBeats_keepsTheClips_andSaysSo() = runTest(dispatcher) {
+        beats.result = BeatResult.NONE
+        val vm = viewModel(twoVideos, song = song)
+        vm.events.test {
+            vm.onAutoCut(listOf("content://v1", "content://v2"), "content://song", every = 1)
+            assertEquals(HomeEvent.AutoCutNoBeats, awaitItem())
+            val project = requireNotNull(repository.load((awaitItem() as HomeEvent.OpenEditor).projectId))
+            assertEquals(listOf(5_000L, 5_000L), project.clips.map { it.trimEndMs })
+            assertEquals(1, project.audioClips.size)
+        }
+    }
+
+    @Test
+    fun autoCut_withAnUnreadableSong_createsNothing() = runTest(dispatcher) {
+        val vm = viewModel(twoVideos, song = null)
+        vm.events.test {
+            vm.onAutoCut(listOf("content://v1"), "content://bad", every = 1)
+            assertEquals(HomeEvent.AutoCutMusicUnreadable, awaitItem())
+        }
+        assertTrue(repository.loadAll().isEmpty())
     }
 
     @Test
@@ -196,13 +249,18 @@ class HomeViewModelTest {
         assertEquals(listOf("file:///captures/2.mp4"), captures.discarded)
     }
 
-    private class FakeImporter(private val result: ImportResult) : MediaImporter {
+    private class FakeImporter(private val result: ImportResult, private val song: ImportedAudio? = null) : MediaImporter {
         var received: List<String> = emptyList()
         override suspend fun import(uris: List<String>): ImportResult {
             received = uris
             return result
         }
-        override suspend fun importAudio(uri: String): ImportedAudio? = null
+        override suspend fun importAudio(uri: String): ImportedAudio? = song
+    }
+
+    private class FakeBeats : BeatDetector {
+        var result: BeatResult? = BeatResult.NONE
+        override suspend fun detect(uri: String): BeatResult? = result
     }
 
     private class FakeCaptures : CaptureStore {

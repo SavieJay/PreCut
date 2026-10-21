@@ -293,4 +293,7 @@ sealed interface EditAction {
     data class ToggleBeat(val audioId: String, val atTimelineMs: Long) : AudioEdit
 
     data class ClearBeats(val audioId: String) : AudioEdit
+
+    /** Replaces the beats with [beatsMs] (source time), e.g. detected ones. */
+    data class SetBeats(val audioId: String, val beatsMs: List<Long>) : AudioEdit
 }

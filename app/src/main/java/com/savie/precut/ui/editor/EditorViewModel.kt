@@ -24,6 +24,7 @@ import com.savie.precut.media.ProxyState
 import com.savie.precut.media.PreviewState
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.VoiceRecorder
+import com.savie.precut.media.audio.BeatDetector
 import com.savie.precut.media.WaveformLoader
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.ClipType
@@ -163,6 +164,14 @@ sealed interface EditorEvent {
     data object ReverseFailed : EditorEvent
     data object ReverseUnsupported : EditorEvent
     data object ReverseNotForPhotos : EditorEvent
+    /** The music's sound couldn't be read for beat detection. */
+    data object BeatsUnreadable : EditorEvent
+    /** Silence, or no steady rhythm. */
+    data object NoBeatsFound : EditorEvent
+    /** Shown with Undo: [cut] clips now end on beats, [leftAlone] couldn't. */
+    data class CutToBeats(val cut: Int, val leftAlone: Int) : EditorEvent
+    /** No main-track clip could be put on a beat (no beats, or none after the clips start). */
+    data object NothingCutToBeats : EditorEvent
     /** The screen should open the photo picker for an overlay. */
     data object PickOverlay : EditorEvent
     data object KeepOneMainClip : EditorEvent
@@ -181,6 +190,7 @@ class EditorViewModel @Inject constructor(
     val waveforms: WaveformLoader,
     private val clock: Clock,
     voiceRecorder: VoiceRecorder,
+    beatDetector: BeatDetector,
     private val probe: MediaProbe,
     @ApplicationScope private val appScope: CoroutineScope,
     private val captures: CaptureStore,
@@ -258,7 +268,7 @@ class EditorViewModel @Inject constructor(
     }
 
     /** Audio lanes, extract, voiceover and audio-clip tools. */
-    val audio = EditorAudio(host, importer, previewController, voiceRecorder)
+    val audio = EditorAudio(host, importer, previewController, voiceRecorder, beatDetector)
 
     /** Multi-select mode and its batch edits. */
     val selection = EditorSelection(host)

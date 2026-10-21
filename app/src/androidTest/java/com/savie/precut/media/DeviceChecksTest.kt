@@ -13,6 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.savie.precut.media.export.FrameGrabber
 import com.savie.precut.media.frame.LiveFrames
+import com.savie.precut.media.audio.AndroidBeatDetector
 import com.savie.precut.media.look.LutCache
 import com.savie.precut.media.reverse.ClipReverser
 import com.savie.precut.media.reverse.ReverseResult
@@ -25,6 +26,7 @@ import com.savie.precut.model.ClipType
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.export.ExportResolution
+import com.savie.precut.model.edit.autoCutProject
 import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.model.totalDurationMs
 import kotlinx.coroutines.CoroutineScope
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -208,6 +211,24 @@ class DeviceChecksTest {
         reversed.delete()
     }
 
+    /** Beats of a 120 BPM click track (clicks from 0.25 s), as the app finds them on this phone. */
+    @Test
+    fun beatDetection() = runBlocking {
+        val result = checkNotNull(AndroidBeatDetector(context, Dispatchers.IO).detect(Uri.fromFile(File(input, CLICKS)).toString())) { "Unreadable" }
+        File(output, "beats.json").writeText(JSONObject().put("beatsMs", JSONArray(result.beatsMs)).put("bpm", result.bpm.toDouble()).toString())
+    }
+
+    /** AutoCut of four copies of the frame-coded video to the click track: every cut should sit on a beat. */
+    @Test
+    fun autoCut() = runBlocking {
+        val clicks = Uri.fromFile(File(input, CLICKS)).toString()
+        val beats = checkNotNull(AndroidBeatDetector(context, Dispatchers.IO).detect(clicks)) { "Unreadable" }.beatsMs
+        val music = AudioClip(id = "m", uri = clicks, sourceDurationMs = 20_000, trimEndMs = 20_000)
+        val project = autoCutProject(project("autocut", clips = (1..4).map { video("c$it", 0, 10_000) }), music, beats)
+        export(project)
+        File(output, "autocut_beats.json").writeText(JSONObject().put("beatsMs", JSONArray(project.audioClips.single().beatsMs)).toString())
+    }
+
     private suspend fun export(project: Project) {
         val result = withTimeout(EXPORT_TIMEOUT_MS) {
             exporter.export(project, ExportSettings(resolution = ExportResolution.P720)).last()
@@ -267,6 +288,7 @@ class DeviceChecksTest {
         const val LONG = "long.mp4" // 1280x720, 30 fps, 60 s, blue, silent
         const val TONE = "tone.m4a" // 10 s, 1 kHz
         const val ROTATED = "rotated.mp4" // video.mp4 flagged to display turned 90°
+        const val CLICKS = "clicks.m4a" // 20 s, a 1 kHz click every 0.5 s from 0.25 s (120 BPM)
         const val VIDEO_MS = 10_000L
         const val LONG_MS = 60_000L
         const val RED = 0xFFFF0000.toInt()

@@ -48,6 +48,16 @@ Run `tools/device_checks.sh` with the phone connected. It exports test projects 
 | Export 1080p while switching to another app | Notification progress continues; the video is saved; Open and Share work | |
 | HDR video (if your phone records HDR) exported with HDR on | Plays as HDR in the gallery (or note that the option is disabled) | |
 
+## 4b. Beats and AutoCut (Phase 17)
+| Check | Expected | Result |
+|---|---|---|
+| Add a song → Beats → Every beat → Detect | Yellow beat dots appear on the beat of the song within a few seconds | |
+| Same with Every 2nd and Every 4th | Fewer dots, on the strong beats (bar starts in most songs) | |
+| Beats → Cut clips to the beat, then play | Each clip changes on a beat; Undo restores all clips in one step | |
+| Projects → AutoCut → Every 2nd → pick 5 clips and a song | A new project opens with the song and clips cut to its beats; everything is editable | |
+| AutoCut with a podcast or speech-only audio | Opens with clips uncut, and says no steady beat was found | |
+| The automated checks (section 1) | "beat detection" and "AutoCut cuts land on beats" PASS | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

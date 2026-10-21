@@ -4,11 +4,13 @@ import com.savie.precut.model.clipById
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.PreviewController
 import com.savie.precut.media.VoiceRecorder
+import com.savie.precut.media.audio.BeatDetector
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.AudioKind
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.VoiceEffect
 import com.savie.precut.model.edit.EditAction
+import com.savie.precut.model.edit.beatCutPlan
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,9 +31,15 @@ class EditorAudio(
     private val importer: MediaImporter,
     private val preview: PreviewController,
     private val recorder: VoiceRecorder,
+    private val beatDetector: BeatDetector,
 ) {
     private val _recording = MutableStateFlow<RecordingState?>(null)
     val recording: StateFlow<RecordingState?> = _recording.asStateFlow()
+
+    /** Beat detection is running on the selected music clip. */
+    private val _detectingBeats = MutableStateFlow(false)
+    val detectingBeats: StateFlow<Boolean> = _detectingBeats.asStateFlow()
+    private var detectJob: Job? = null
 
     private var replacingAudioId: String? = null
     private var recordingTicker: Job? = null
@@ -190,6 +198,42 @@ class EditorAudio(
     fun onToggleBeat() = edit { EditAction.ToggleBeat(it.id, host.positionMs) }
 
     fun onClearBeats() = edit { EditAction.ClearBeats(it.id) }
+
+    /** Finds the selected clip's beats and keeps every [every]th (replacing the marked ones; one undo step). */
+    fun onDetectBeats(every: Int) {
+        val audio = selected() ?: return
+        detectJob?.cancel()
+        _detectingBeats.value = true
+        detectJob = host.scope.launch {
+            try {
+                val result = beatDetector.detect(audio.uri)
+                when {
+                    result == null -> host.send(EditorEvent.BeatsUnreadable)
+                    result.beatsMs.isEmpty() -> host.send(EditorEvent.NoBeatsFound)
+                    else -> host.applyEdit(EditAction.SetBeats(audio.id, result.every(every)))
+                }
+            } finally {
+                _detectingBeats.value = false
+            }
+        }
+    }
+
+    /** Stops a running detection (its panel closed). */
+    fun onStopBeatDetection() {
+        detectJob?.cancel()
+    }
+
+    /** Ends each main-track clip on the selected music clip's next beat ([beatCutPlan]; one undo step). */
+    fun onCutToBeats() {
+        val audio = selected() ?: return
+        val plan = host.ready?.project?.beatCutPlan(audio.id) ?: return
+        if (plan.cut == 0) {
+            host.send(EditorEvent.NothingCutToBeats)
+            return
+        }
+        host.applyEdit(plan.edit)
+        host.send(EditorEvent.CutToBeats(plan.cut, plan.leftAlone))
+    }
 
     fun onSplit() = edit { EditAction.SplitAudio(it.id, host.positionMs, host.newId()) }
 

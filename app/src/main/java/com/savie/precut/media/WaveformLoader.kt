@@ -1,23 +1,17 @@
 package com.savie.precut.media
 
 import android.content.Context
-import android.media.MediaCodec
-import android.media.MediaExtractor
-import android.media.MediaFormat
-import android.net.Uri
 import android.util.LruCache
 import com.savie.precut.di.IoDispatcher
+import com.savie.precut.media.audio.PcmDecoder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,72 +40,17 @@ class WaveformLoader @Inject constructor(
         }
     }
 
-    private suspend fun decode(uri: String): FloatArray? {
-        val extractor = MediaExtractor()
-        var codec: MediaCodec? = null
-        try {
-            extractor.setDataSource(context, Uri.parse(uri), null)
-            val track = (0 until extractor.trackCount).firstOrNull {
-                extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
-            } ?: return null
-            val format = extractor.getTrackFormat(track)
-            extractor.selectTrack(track)
-            val decoder = MediaCodec.createDecoderByType(requireNotNull(format.getString(MediaFormat.KEY_MIME)))
-            codec = decoder
-            decoder.configure(format, null, null, 0)
-            decoder.start()
-            return drain(extractor, decoder, format)
-        } catch (_: IOException) {
-            return null
-        } catch (_: RuntimeException) {
-            return null // unsupported codec, revoked permission, corrupt file
-        } finally {
-            codec?.release()
-            extractor.release()
-        }
-    }
-
-    private suspend fun drain(extractor: MediaExtractor, decoder: MediaCodec, inputFormat: MediaFormat): FloatArray {
-        var sampleRate = inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
-        var channels = inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-        var accumulator = PeakAccumulator(framesPerBucket(sampleRate), channels)
-        val info = MediaCodec.BufferInfo()
-        var shorts = ShortArray(8192)
-        var inputDone = false
-        while (true) {
-            currentCoroutineContext().ensureActive()
-            if (!inputDone) {
-                val inIndex = decoder.dequeueInputBuffer(TIMEOUT_US)
-                if (inIndex >= 0) {
-                    val buffer = requireNotNull(decoder.getInputBuffer(inIndex))
-                    val size = extractor.readSampleData(buffer, 0)
-                    if (size < 0) {
-                        decoder.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                        inputDone = true
-                    } else {
-                        decoder.queueInputBuffer(inIndex, 0, size, extractor.sampleTime, 0)
-                        extractor.advance()
-                    }
-                }
-            }
-            val outIndex = decoder.dequeueOutputBuffer(info, TIMEOUT_US)
-            if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                // The decoder's real output rate/channels (it may differ from the container's).
-                sampleRate = decoder.outputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
-                channels = decoder.outputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-                accumulator = PeakAccumulator(framesPerBucket(sampleRate), channels)
-            } else if (outIndex >= 0) {
-                val output = requireNotNull(decoder.getOutputBuffer(outIndex))
-                val pcm = output.order(ByteOrder.nativeOrder()).asShortBuffer()
-                val count = info.size / 2
-                if (shorts.size < count) shorts = ShortArray(count)
-                pcm.get(shorts, 0, count)
-                accumulator.add(shorts, count)
-                decoder.releaseOutputBuffer(outIndex, false)
-                if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
-            }
-        }
-        return accumulator.result()
+    private suspend fun decode(uri: String): FloatArray? = try {
+        var accumulator: PeakAccumulator? = null
+        val found = PcmDecoder.decode(
+            context, uri,
+            onFormat = { sampleRate, channels -> accumulator = PeakAccumulator(framesPerBucket(sampleRate), channels) },
+        ) { samples, count, _ -> accumulator?.add(samples, count) }
+        if (found) accumulator?.result() else null
+    } catch (_: IOException) {
+        null
+    } catch (_: RuntimeException) {
+        null // unsupported codec, revoked permission, corrupt file
     }
 
     private fun framesPerBucket(sampleRate: Int) = (sampleRate * BUCKET_MS / 1000).toInt().coerceAtLeast(1)
@@ -141,6 +80,5 @@ class WaveformLoader @Inject constructor(
 
     companion object {
         const val BUCKET_MS = 20L
-        private const val TIMEOUT_US = 10_000L
     }
 }
