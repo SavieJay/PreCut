@@ -58,6 +58,7 @@ fun FullScreenPreview(
     onScrubEnd: () -> Unit,
     onSeek: (Long) -> Unit,
     onClose: () -> Unit,
+    onSurfaceReady: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
     val state = previewState.value
@@ -101,7 +102,7 @@ fun FullScreenPreview(
             .pinchToZoom(zoom, onTap = { controls = !controls }),
     ) {
         val landscape = maxWidth > maxHeight
-        PreviewSurface(player, Modifier.fillMaxSize().zoomed(zoom), textureView = true)
+        PreviewSurface(player, Modifier.fillMaxSize().zoomed(zoom), textureView = true, onSurfaceReady = onSurfaceReady)
         if (!controls) return@BoxWithConstraints
         Box(Modifier.fillMaxWidth().height(if (landscape) 96.dp else 120.dp).background(Brush.verticalGradient(listOf(TopScrim, Color.Transparent))))
         IconButton(

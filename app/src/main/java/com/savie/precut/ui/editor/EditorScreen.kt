@@ -262,6 +262,7 @@ fun EditorScreen(
                 onScrubEnd = viewModel::onScrubEnd,
                 onSeek = viewModel::onSeek,
                 onClose = { viewModel.onFullScreen(false) },
+                onSurfaceReady = viewModel::onFullScreenSurfaceReady,
             )
         }
     }

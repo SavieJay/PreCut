@@ -372,6 +372,9 @@ class EditorViewModel @Inject constructor(
 
     fun onFullScreen(open: Boolean) = updateReady { it.copy(fullScreen = open) }
 
+    /** The full-screen view has the picture: a paused frame is drawn again there. */
+    fun onFullScreenSurfaceReady() = previewController.redrawPaused()
+
     /** The Filter panel's "Import .cube": the screen opens the file picker. */
     fun onPickLut() {
         viewModelScope.launch { _events.send(EditorEvent.PickLut) }

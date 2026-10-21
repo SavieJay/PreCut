@@ -173,6 +173,20 @@ class PreviewController @Inject constructor(
         publishState()
     }
 
+    /**
+     * Shows the paused frame again, e.g. on a newly attached surface (a paused player draws nothing
+     * there). ExoPlayer ignores a seek to the same millisecond, so this goes 1 ms aside and back.
+     */
+    fun redrawPaused() {
+        if (!hasMedia || compositionPlayer.isPlaying) return
+        val position = compositionPlayer.currentPosition
+        val duration = compositionPlayer.duration.takeIf { it != C.TIME_UNSET } ?: 0L
+        val aside = if (position + 1 < duration) position + 1 else (position - 1).coerceAtLeast(0L)
+        if (aside != position) compositionPlayer.seekTo(aside)
+        compositionPlayer.seekTo(position)
+        publishState()
+    }
+
     /** Starts redrawing the paused frame on demand ([redraw]), e.g. while a clip is transformed. */
     fun beginLiveRedraw() {
         if (!hasMedia || redrawBaseMs != null) return
