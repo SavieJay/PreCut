@@ -189,6 +189,29 @@ check("high speed length", abs(video_len - total) <= FRAME + 0.01 and abs(audio_
 check("high speed cut", grey is not None and abs(grey - (total - 1.0)) <= FRAME + 0.001,
       f"plain clip starts at {grey} s, expected {total - 1.0:.3f}")
 
+# Reverse: 3 s (90 frames) of video.mp4 backwards, so the picture steps back one source frame each frame.
+def display_size(video):
+    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height:stream_side_data=rotation",
+                          "-of", "default=nw=1", video], capture_output=True, text=True).stdout
+    values = dict(line.split("=", 1) for line in out.split() if "=" in line)
+    w, h = int(values["width"]), int(values["height"])
+    return (h, w) if abs(int(float(values.get("rotation", "0")))) % 180 == 90 else (w, h)
+
+
+v = path("reverse.mp4")
+times, frames = frame_times(v), small_frames(v, 32, 32)
+middle = (16 * 32 + 16) * 3
+levels = [f[middle + 1] for f in frames]
+diffs = [b - a for a, b in zip(levels, levels[1:])]
+usual = [-d for d in diffs if -8 <= d <= -2]
+step = sum(usual) / len(usual) if usual else 0
+wrong = [(round(times[i + 1], 3), round(d / step) % 50 if step else None) for i, d in enumerate(diffs) if not step or round(d / step) % 50 != 49]
+check("reverse frame order", step > 0 and not wrong and 89 <= len(times) <= 91,
+      f"{len(times)} frames, each one source frame back; wrong steps: {wrong[:6]}")
+source, reversed_ = display_size(f"{OUT}/../in/rotated.mp4"), display_size(path("reverse_rotated.mp4"))
+check("reverse keeps rotation", (source[0] < source[1]) == (reversed_[0] < reversed_[1]),
+      f"source shows {source[0]}x{source[1]}, reversed shows {reversed_[0]}x{reversed_[1]}")
+
 # Proxy keyframes: at most 0.2 s apart.
 out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-skip_frame", "nokey", "-show_entries",
                       "frame=pts_time", "-of", "csv=p=0", path("proxy.mp4")], capture_output=True, text=True).stdout

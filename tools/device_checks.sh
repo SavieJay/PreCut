@@ -20,6 +20,7 @@ if [ "$1" != "--skip-run" ]; then
   [ -f "$WORK/in/long.mp4" ] || ffmpeg -v error -y \
     -f lavfi -i "color=c=0x0000ff:s=1280x720:r=30:d=60" -f lavfi -i "anullsrc=r=48000:cl=stereo" \
     -c:v libx264 -pix_fmt yuv420p -g 30 -c:a aac -b:a 64k -t 60 "$WORK/in/long.mp4"
+  [ -f "$WORK/in/rotated.mp4" ] || ffmpeg -v error -y -display_rotation 90 -i "$WORK/in/video.mp4" -c copy "$WORK/in/rotated.mp4"
   [ -f "$WORK/in/tone.m4a" ] || ffmpeg -v error -y \
     -f lavfi -i "sine=f=1000:d=10:sample_rate=48000" -c:a aac -b:a 128k "$WORK/in/tone.m4a"
 

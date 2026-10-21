@@ -14,6 +14,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.savie.precut.media.export.FrameGrabber
 import com.savie.precut.media.frame.LiveFrames
 import com.savie.precut.media.look.LutCache
+import com.savie.precut.media.reverse.ClipReverser
+import com.savie.precut.media.reverse.ReverseResult
 import com.savie.precut.media.sticker.StickerRenderer
 import com.savie.precut.media.text.TextFonts
 import com.savie.precut.model.AspectRatio
@@ -188,6 +190,24 @@ class DeviceChecksTest {
         file.copyTo(File(output, "proxy.mp4"), overwrite = true)
     }
 
+    /** 3 s of the frame-coded video, reversed: every frame should step one source frame back. */
+    @Test
+    fun reverseOrder() = runBlocking { reverse("reverse", VIDEO) }
+
+    /** The same from a copy flagged to show rotated: the reversed clip must keep showing that way. */
+    @Test
+    fun reverseKeepsRotation() = runBlocking { reverse("reverse_rotated", ROTATED) }
+
+    private suspend fun reverse(name: String, file: String) {
+        val reverser = ClipReverser(context, Dispatchers.IO, proxies)
+        val result = withTimeout(EXPORT_TIMEOUT_MS) { reverser.reverse(Uri.fromFile(File(input, file)).toString(), 0, 3_000, 720) {} }
+        assertTrue("Reverse of $file: $result", result is ReverseResult.Done)
+        val reversed = File(checkNotNull(Uri.parse((result as ReverseResult.Done).uri).path) { "No path in ${result.uri}" })
+        reversed.copyTo(File(output, "$name.mp4"), overwrite = true)
+        // Not left in the app's reversed-clip cache, so the next run reverses again.
+        reversed.delete()
+    }
+
     private suspend fun export(project: Project) {
         val result = withTimeout(EXPORT_TIMEOUT_MS) {
             exporter.export(project, ExportSettings(resolution = ExportResolution.P720)).last()
@@ -246,6 +266,7 @@ class DeviceChecksTest {
         const val VIDEO = "video.mp4" // 1280x720, 30 fps, 10 s, grey with a 440 Hz tone
         const val LONG = "long.mp4" // 1280x720, 30 fps, 60 s, blue, silent
         const val TONE = "tone.m4a" // 10 s, 1 kHz
+        const val ROTATED = "rotated.mp4" // video.mp4 flagged to display turned 90°
         const val VIDEO_MS = 10_000L
         const val LONG_MS = 60_000L
         const val RED = 0xFFFF0000.toInt()

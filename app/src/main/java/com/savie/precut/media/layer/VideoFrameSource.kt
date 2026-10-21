@@ -12,6 +12,7 @@ import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.util.GlUtil
 import androidx.media3.common.util.UnstableApi
+import com.savie.precut.media.frameRate
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -265,7 +266,7 @@ internal class VideoFrameSource private constructor(
                 }
                 extractor.selectTrack(track)
                 val rotation = if (format.containsKey(MediaFormat.KEY_ROTATION)) format.getInteger(MediaFormat.KEY_ROTATION) else 0
-                val fps = frameRateOf(format)
+                val fps = format.frameRate()
                 val width = format.getInteger(MediaFormat.KEY_WIDTH)
                 val height = format.getInteger(MediaFormat.KEY_HEIGHT)
                 val standard = if (format.containsKey(MediaFormat.KEY_COLOR_STANDARD)) format.getInteger(MediaFormat.KEY_COLOR_STANDARD) else 0
@@ -295,15 +296,5 @@ internal class VideoFrameSource private constructor(
             extractor.release()
             return null
         }
-    }
-}
-
-/** The track's frame rate, stored as an int or a float depending on the extractor; 30 when absent. */
-private fun frameRateOf(format: MediaFormat): Float {
-    if (!format.containsKey(MediaFormat.KEY_FRAME_RATE)) return 30f
-    return try {
-        format.getInteger(MediaFormat.KEY_FRAME_RATE).toFloat()
-    } catch (_: ClassCastException) {
-        format.getFloat(MediaFormat.KEY_FRAME_RATE)
     }
 }

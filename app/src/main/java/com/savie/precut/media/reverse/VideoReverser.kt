@@ -6,14 +6,17 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMuxer
 import android.view.Surface
+import com.savie.precut.media.frameRate
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import java.io.File
+import kotlin.math.roundToInt
 
 /**
  * Reverses the video of an all-keyframe file: each frame is read from the last to the first and
  * decoded straight onto an encoder's input surface with a new, rising timestamp. The result is
- * muxed with the already reversed [audio].
+ * muxed with the already reversed [audio], with the source's rotation (Transformer stores portrait
+ * video as landscape frames to be turned on display).
  */
 internal class VideoReverser {
 
@@ -55,20 +58,29 @@ internal class VideoReverser {
     ) {
         val width = input.getInteger(MediaFormat.KEY_WIDTH)
         val height = input.getInteger(MediaFormat.KEY_HEIGHT)
-        val frameRate = if (input.containsKey(MediaFormat.KEY_FRAME_RATE)) input.getInteger(MediaFormat.KEY_FRAME_RATE) else DEFAULT_FRAME_RATE
+        val frameRate = input.frameRate(DEFAULT_FRAME_RATE.toFloat()).roundToInt().coerceIn(1, MAX_FRAME_RATE)
+        val rotation = if (input.containsKey(MediaFormat.KEY_ROTATION)) input.getInteger(MediaFormat.KEY_ROTATION) else 0
+        // The frames are encoded as stored; the turn goes into the file, not into the pixels.
+        input.setInteger(MediaFormat.KEY_ROTATION, 0)
         val output = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height).apply {
             setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
             setInteger(MediaFormat.KEY_BIT_RATE, (width.toLong() * height * frameRate * BITS_PER_PIXEL).toInt())
             setInteger(MediaFormat.KEY_FRAME_RATE, frameRate)
             setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, 1f)
         }
-        val encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
-        val decoder = MediaCodec.createDecoderByType(input.getString(MediaFormat.KEY_MIME) ?: MediaFormat.MIMETYPE_VIDEO_AVC)
-        val muxer = MediaMuxer(target.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+        // Made inside the try, so whatever was made is released when a later step fails.
+        var createdEncoder: MediaCodec? = null
+        var createdDecoder: MediaCodec? = null
+        var createdMuxer: MediaMuxer? = null
         var muxerStarted = false
         var completed = false
         var surface: Surface? = null
         try {
+            val encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC).also { createdEncoder = it }
+            val decoder = MediaCodec.createDecoderByType(input.getString(MediaFormat.KEY_MIME) ?: MediaFormat.MIMETYPE_VIDEO_AVC).also { createdDecoder = it }
+            val muxer = MediaMuxer(target.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4).also { createdMuxer = it }
+            // The muxer takes 0, 90, 180 or 270.
+            muxer.setOrientationHint(((rotation / 90 % 4) + 4) % 4 * 90)
             encoder.configure(output, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             surface = encoder.createInputSurface()
             encoder.start()
@@ -138,19 +150,20 @@ internal class VideoReverser {
             }
             completed = true
         } finally {
-            decoder.release()
-            encoder.release()
+            createdDecoder?.release()
+            createdEncoder?.release()
             surface?.release()
             // After a failure the file is discarded, so a muxer error mustn't hide the first one.
             if (muxerStarted) {
-                if (completed) muxer.stop() else runCatching { muxer.stop() }
+                if (completed) createdMuxer?.stop() else runCatching { createdMuxer?.stop() }
             }
-            muxer.release()
+            createdMuxer?.release()
         }
     }
 
     private companion object {
         const val DEFAULT_FRAME_RATE = 30
+        const val MAX_FRAME_RATE = 240
         /** About 12 Mbps at 1080p30. */
         const val BITS_PER_PIXEL = 0.2f
     }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -34,7 +35,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.IOException
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -77,6 +77,7 @@ class ClipReverser @Inject constructor(
         return try {
             val intra = File(work, "intra.mp4")
             allKeyframes(uri, startMs, endMs, shortSidePx, intra) { onProgress(it * INTRA_SHARE) }
+            onProgress(INTRA_SHARE)
             withContext(ioDispatcher) {
                 val audio = AudioReverser(work).reverse(intra)
                 onProgress(INTRA_SHARE + AUDIO_SHARE)
@@ -88,12 +89,11 @@ class ClipReverser @Inject constructor(
             throw e // also an IllegalStateException; it must not read as a failure
         } catch (e: ReverseUnsupportedException) {
             ReverseResult.Unsupported
-        } catch (e: IOException) {
-            ReverseResult.Failed(e)
-        } catch (e: ExportException) {
-            ReverseResult.Failed(e)
-        } catch (e: IllegalStateException) {
-            // MediaCodec reports codec failures as IllegalStateException (CodecException).
+        } catch (e: Exception) {
+            // Codecs, extractors and muxers fail in many ways across phones (CodecException,
+            // IllegalArgumentException, a float where an int was expected...): a failed reverse
+            // says so, it never takes the app down.
+            Log.w(TAG, "Reverse failed", e)
             ReverseResult.Failed(e)
         } finally {
             // NonCancellable: this cleanup must run when the user cancels, too.
@@ -163,6 +163,7 @@ class ClipReverser @Inject constructor(
         MessageDigest.getInstance("SHA-1").digest("$uri|$startMs|$endMs".toByteArray()).joinToString("") { "%02x".format(it) }
 
     private companion object {
+        const val TAG = "ClipReverser"
         const val DIR = "reversed"
         const val PROGRESS_POLL_MS = 250L
         const val INTRA_BITRATE = 25_000_000
