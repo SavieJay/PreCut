@@ -15,6 +15,7 @@ To edit, PreCut works with files on your device:
 - **Your projects.** PreCut saves drafts, covers, preview copies and other working files in its own storage on your phone.
 - **Exports.** Videos, GIFs, audio and photos you export are saved to your phone's gallery or music folders, where other apps can see them like any other media.
 - **Notifications.** PreCut shows a notification while an export runs, so you can follow or cancel it.
+- **Crash reports.** If PreCut closes unexpectedly, it saves a short report (the error, your phone model, Android and app versions, and PreCut's own recent log lines) in its own storage. It stays there unless you share it yourself from Settings → Crash reports.
 
 When you share an export, Android's share sheet sends it to the app you choose. What happens next is up to that app.
 

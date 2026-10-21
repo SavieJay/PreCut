@@ -53,6 +53,7 @@ fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, viewModel: Settin
     val values by viewModel.values.collectAsStateWithLifecycle()
     val storage by viewModel.storageInfo.collectAsStateWithLifecycle()
     val capabilities by viewModel.capabilities.collectAsStateWithLifecycle()
+    val crashes by viewModel.crashes.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var dialog by remember { mutableStateOf<SettingsDialog?>(null) }
     Column(Modifier.fillMaxSize().background(Ink0).statusBarsPadding().navigationBarsPadding()) {
@@ -80,6 +81,7 @@ fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, viewModel: Settin
             Header(R.string.settings_about)
             SettingRow(R.drawable.ic_info, stringResource(R.string.settings_about_app), stringResource(R.string.settings_version, viewModel.version))
             SettingRow(R.drawable.ic_description, stringResource(R.string.settings_licences), null, chevron = true, onClick = onLicences)
+            CrashReportsRow(crashes, viewModel::newestCrashReport, viewModel::onDeleteCrashReports)
         }
     }
     when (dialog) {
@@ -113,7 +115,7 @@ private fun Header(title: Int) {
 }
 
 @Composable
-private fun SettingRow(
+internal fun SettingRow(
     icon: Int,
     title: String,
     value: String?,

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only camera captures are shared (with the camera app, to write into). -->
+<!-- Camera captures (shared with the camera app, to write into) and crash reports (shared by the user from Settings). -->
 <paths>
     <files-path name="captures" path="captures/" />
+    <files-path name="crashes" path="crashes/" />
 </paths>

@@ -619,6 +619,16 @@
     <string name="settings_about_app">About PreCut</string>
     <string name="settings_version">Version %1$s</string>
     <string name="settings_licences">Open-source licences</string>
+    <string name="settings_crash_reports">Crash reports</string>
+    <string name="settings_crash_none">None. If PreCut closes unexpectedly, a report is kept here for you to share.</string>
+    <plurals name="settings_crash_saved">
+        <item quantity="one">%1$d saved, newest %2$s</item>
+        <item quantity="other">%1$d saved, newest %2$s</item>
+    </plurals>
+    <string name="settings_crash_share">Share</string>
+    <string name="settings_crash_delete">Delete</string>
+    <string name="crash_share_title">Share crash report</string>
+    <string name="crash_share_subject">PreCut crash report</string>
     <string name="licences_libraries">Libraries and icons</string>
     <string name="licences_fonts">Fonts</string>
     <string name="licence_apache">Apache License 2.0</string>

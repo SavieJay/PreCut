@@ -1,12 +1,14 @@
 package com.savie.precut.ui.settings
 
 import android.content.Context
-import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.AppSettings
 import com.savie.precut.data.AppStorage
 import com.savie.precut.data.SettingsValues
+import com.savie.precut.di.IoDispatcher
+import com.savie.precut.diagnostics.CrashLog
+import com.savie.precut.diagnostics.appVersion
 import com.savie.precut.media.export.ExportCapabilitiesProbe
 import com.savie.precut.media.look.LutCache
 import com.savie.precut.model.AspectRatio
@@ -15,14 +17,20 @@ import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.model.export.fittedTo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 /** What the Settings screen (H-09) shows besides the settings themselves. */
 data class StorageInfo(val cacheBytes: Long? = null, val clearing: Boolean = false, val lutCount: Int = 0)
+
+/** Saved crash reports: how many, and when the newest was written (null for none). */
+data class CrashInfo(val count: Int = 0, val newestMs: Long? = null)
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -30,7 +38,8 @@ class SettingsViewModel @Inject constructor(
     private val storage: AppStorage,
     private val luts: LutCache,
     private val probe: ExportCapabilitiesProbe,
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     val values: StateFlow<SettingsValues> = settings.values
@@ -41,18 +50,18 @@ class SettingsViewModel @Inject constructor(
     private val _capabilities = MutableStateFlow(ExportCapabilities.BASIC)
     val capabilities: StateFlow<ExportCapabilities> = _capabilities.asStateFlow()
 
-    /** "1.0 (1)". */
-    val version: String = runCatching {
-        val info = context.packageManager.getPackageInfo(context.packageName, 0)
-        val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong()
-        "${info.versionName} ($code)"
-    }.getOrDefault("")
+    private val _crashes = MutableStateFlow(CrashInfo())
+    val crashes: StateFlow<CrashInfo> = _crashes.asStateFlow()
+
+    /** "1.0.0 (19)". */
+    val version: String = appVersion(context)
 
     init {
         viewModelScope.launch {
             _storage.value = StorageInfo(storage.cacheBytes(), lutCount = luts.customLuts().size)
             _capabilities.value = probe.capabilities
         }
+        refreshCrashes()
     }
 
     fun onPhotoDuration(ms: Long) = settings.update { it.copy(photoDurationMs = ms) }
@@ -60,6 +69,25 @@ class SettingsViewModel @Inject constructor(
     fun onAspectRatio(ratio: AspectRatio) = settings.update { it.copy(aspectRatio = ratio) }
 
     fun onExportSettings(export: ExportSettings) = settings.update { it.copy(export = export.fittedTo(_capabilities.value)) }
+
+    /** The newest crash report, to share; null when there's none. */
+    suspend fun newestCrashReport(): File? = withContext(ioDispatcher) { CrashLog.reports(context).firstOrNull() }
+
+    fun onDeleteCrashReports() {
+        viewModelScope.launch {
+            withContext(ioDispatcher) { CrashLog.deleteAll(context) }
+            refreshCrashes()
+        }
+    }
+
+    private fun refreshCrashes() {
+        viewModelScope.launch {
+            _crashes.value = withContext(ioDispatcher) {
+                val reports = CrashLog.reports(context)
+                CrashInfo(reports.size, reports.firstOrNull()?.lastModified())
+            }
+        }
+    }
 
     fun onClearCache() {
         if (_storage.value.clearing) return
