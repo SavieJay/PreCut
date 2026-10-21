@@ -232,6 +232,14 @@ cuts = [time for time, _ in moved]
 off = [round(c * 1000) for c in cuts if not any(abs(c * 1000 - b) <= 1000 / 30 + 1 for b in cut_beats)]
 check("AutoCut cuts land on beats", len(cuts) == 3 and not off, f"cuts at {cuts}; not on a beat: {off}; beats {cut_beats[:5]}")
 
+# Template fill: slots of 1.0, 1.5 and 0.8 s, each filled from the start of the frame-coded video.
+v = path("template_fill.mp4")
+t, fr = frame_times(v), small_frames(v)
+step, moved = picture_steps(t, fr)
+cuts = [time for time, _ in moved]
+on_time = len(cuts) == 2 and abs(cuts[0] - 1.0) <= 1 / 30 + 0.001 and abs(cuts[1] - 2.5) <= 1 / 30 + 0.001
+check("template slots start on time", on_time and len(t) == 99, f"slots change at {cuts} (expected 1.0, 2.5), {len(t)} frames (expected 99)")
+
 # Proxy keyframes: at most 0.2 s apart.
 out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-skip_frame", "nokey", "-show_entries",
                       "frame=pts_time", "-of", "csv=p=0", path("proxy.mp4")], capture_output=True, text=True).stdout

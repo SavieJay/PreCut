@@ -58,6 +58,16 @@ Run `tools/device_checks.sh` with the phone connected. It exports test projects 
 | AutoCut with a podcast or speech-only audio | Opens with clips uncut, and says no steady beat was found | |
 | The automated checks (section 1) | "beat detection" and "AutoCut cuts land on beats" PASS | |
 
+## 4c. Templates (Phase 18A)
+| Check | Expected | Result |
+|---|---|---|
+| Editor → ⋮ → Save as template; name it, pick a category, leave all clips Replaceable → Save | "Saved to Projects → Templates"; the sheet closes | |
+| Projects → Templates | The card shows the thumbnail; within a minute (preview rendering) its page plays the preview on a loop | |
+| Template → Use template → pick as many clips as it has | A new project opens with your clips in the slots, keeping the template's looks, animations, transitions, texts and timing | |
+| Use template with fewer clips, and with a video shorter than a slot | Clips repeat; the short video plays slower to fill its slot (or a message says the timing shifts) | |
+| Delete the template, then open the project made from it | The project still has everything (stickers, music and other fixed media included) | |
+| The automated checks (section 1) | "template slots start on time" PASS | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

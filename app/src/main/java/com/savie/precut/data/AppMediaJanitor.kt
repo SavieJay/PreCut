@@ -6,8 +6,7 @@ import com.savie.precut.di.IoDispatcher
 import com.savie.precut.media.ProxyManager
 import com.savie.precut.media.ProxyRules
 import com.savie.precut.model.Project
-import com.savie.precut.model.ProjectCover
-import com.savie.precut.model.sticker.StickerKind
+import com.savie.precut.model.mediaUris
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -42,16 +41,8 @@ class AppMediaJanitor @Inject constructor(
     }
 
     companion object {
-        /** Every media Uri a project points at. */
-        fun mediaUris(project: Project): List<String> {
-            val clips = project.clips + project.overlays.map { it.clip }
-            return clips.map { it.uri } + project.audioClips.map { it.uri } +
-                listOfNotNull((project.cover as? ProjectCover.Image)?.uri) +
-                clips.mapNotNull { it.canvas.imageUri } +
-                // A reversed clip's original is restored when it's reversed back.
-                clips.mapNotNull { it.reversedFrom?.uri } +
-                project.textOverlays.mapNotNull { overlay -> overlay.sticker?.takeIf { it.kind != StickerKind.EMOJI }?.value }
-        }
+        /** Every media Uri a project points at ([Project.mediaUris]). */
+        fun mediaUris(project: Project): List<String> = project.mediaUris()
 
         /** Files in [dirs] whose Uri (per [uriOf]) isn't in [referenced]. */
         fun unusedFiles(dirs: List<File>, referenced: Set<String>, uriOf: (File) -> String): List<File> =

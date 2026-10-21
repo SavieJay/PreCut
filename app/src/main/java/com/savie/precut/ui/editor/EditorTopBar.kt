@@ -18,6 +18,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -48,6 +50,7 @@ import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.TextDisabled
 import com.savie.precut.ui.theme.TextPrimary
+import com.savie.precut.ui.theme.Ink2
 import com.savie.precut.ui.theme.TextSecondary
 
 /** Top bar actions. */
@@ -59,6 +62,7 @@ interface EditorTopBarActions {
     fun onUndo()
     fun onRedo()
     fun onExport()
+    fun onSaveAsTemplate()
 }
 
 /**
@@ -105,6 +109,27 @@ fun EditorTopBar(
         BarIcon(R.drawable.ic_undo, stringResource(R.string.action_undo), enabled = canUndo, onClick = actions::onUndo)
         BarIcon(R.drawable.ic_redo, stringResource(R.string.action_redo), enabled = canRedo, onClick = actions::onRedo)
         AccentPill(stringResource(R.string.action_export), enabled = canExport, onClick = actions::onExport, modifier = Modifier.padding(start = 4.dp))
+        MoreMenu(canExport, actions)
+    }
+}
+
+/** ⋮: Save as template (needs a playable project, like Export). */
+@Composable
+private fun MoreMenu(enabled: Boolean, actions: EditorTopBarActions) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        BarIcon(R.drawable.ic_more_vert, stringResource(R.string.action_more)) { open = true }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Ink2) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.template_save_title)) },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_template), contentDescription = null) },
+                enabled = enabled,
+                onClick = {
+                    open = false
+                    actions.onSaveAsTemplate()
+                },
+            )
+        }
     }
 }
 

@@ -255,6 +255,50 @@
     <string name="fade_limit">Up to %1$s each (half the clip)</string>
     <string name="cover_in_export_detail">Shows for one frame at the start of the export</string>
     <string name="beats_hint">Detect finds the beats, or tap while playing to mark them. Clips, text and audio snap to them.</string>
+    <string name="action_more">More</string>
+    <string name="home_tab_drafts">Drafts</string>
+    <string name="home_tab_templates">Templates</string>
+    <string name="templates_all">All</string>
+    <string name="templates_empty">No templates yet. In the editor, open ⋮ → Save as template to turn a project into one you can fill with new clips.</string>
+    <string name="template_save_title">Save as template</string>
+    <string name="template_name">Template name</string>
+    <string name="template_replaceable">Clips to replace with new media</string>
+    <string name="template_texts">Texts to change</string>
+    <string name="template_clip_n">Clip %1$d · %2$s</string>
+    <string name="template_overlay_n">Overlay %1$d · %2$s</string>
+    <string name="template_save_hint">Everything else (other clips, stickers, music, effects and styles) is copied into the template as it is.</string>
+    <string name="template_save">Save template</string>
+    <string name="template_saving">Saving</string>
+    <string name="template_saved">Saved to Projects → Templates</string>
+    <string name="template_save_failed">Couldn\'t save the template. Check your free space.</string>
+    <string name="template_use">Use template</string>
+    <string name="template_using">Making your video</string>
+    <string name="template_missing">This template is no longer here.</string>
+    <string name="template_delete_title">Delete template?</string>
+    <string name="template_delete_body">Projects made from it keep everything they use.</string>
+    <string name="template_category_travel">Travel</string>
+    <string name="template_category_social">Social</string>
+    <string name="template_category_business">Business</string>
+    <string name="template_category_celebration">Celebration</string>
+    <string name="template_category_slideshow">Slideshow</string>
+    <string name="template_category_vlog">Vlog</string>
+    <string name="template_category_other">Other</string>
+    <plurals name="template_slots">
+        <item quantity="one">%1$d clip</item>
+        <item quantity="other">%1$d clips</item>
+    </plurals>
+    <plurals name="template_details">
+        <item quantity="one">%1$d clip · %2$s · %3$s</item>
+        <item quantity="other">%1$d clips · %2$s · %3$s</item>
+    </plurals>
+    <plurals name="template_extra_ignored">
+        <item quantity="one">%1$d extra pick wasn\'t needed</item>
+        <item quantity="other">%1$d extra picks weren\'t needed</item>
+    </plurals>
+    <plurals name="template_clips_short">
+        <item quantity="one">%1$d video is shorter than its spot, so the timing shifts there</item>
+        <item quantity="other">%1$d videos are shorter than their spots, so the timing shifts there</item>
+    </plurals>
     <string name="autocut_title">AutoCut</string>
     <string name="autocut_body">Pick your clips and photos, then a song from your phone. PreCut finds the song\'s beats and cuts each clip to them, taking videos from their middle. You can change everything afterwards.</string>
     <string name="autocut_pace">Cut on</string>

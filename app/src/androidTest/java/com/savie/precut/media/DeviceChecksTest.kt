@@ -11,9 +11,9 @@ import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.savie.precut.media.audio.AndroidBeatDetector
 import com.savie.precut.media.export.FrameGrabber
 import com.savie.precut.media.frame.LiveFrames
-import com.savie.precut.media.audio.AndroidBeatDetector
 import com.savie.precut.media.look.LutCache
 import com.savie.precut.media.reverse.ClipReverser
 import com.savie.precut.media.reverse.ReverseResult
@@ -23,11 +23,16 @@ import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
+import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
-import com.savie.precut.model.export.ExportResolution
 import com.savie.precut.model.edit.autoCutProject
+import com.savie.precut.model.export.ExportResolution
 import com.savie.precut.model.export.ExportSettings
+import com.savie.precut.model.template.TemplateCategory
+import com.savie.precut.model.template.TemplatePick
+import com.savie.precut.model.template.fill
+import com.savie.precut.model.template.toTemplate
 import com.savie.precut.model.totalDurationMs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -227,6 +232,15 @@ class DeviceChecksTest {
         val project = autoCutProject(project("autocut", clips = (1..4).map { video("c$it", 0, 10_000) }), music, beats)
         export(project)
         File(output, "autocut_beats.json").writeText(JSONObject().put("beatsMs", JSONArray(project.audioClips.single().beatsMs)).toString())
+    }
+
+    /** A three-slot template (1.0 s, 1.5 s, 0.8 s) filled with the frame-coded video: each slot should start on time. */
+    @Test
+    fun templateFill() = runBlocking {
+        val recipe = project("template_fill", clips = listOf(video("a", 0, 1_000), video("b", 0, 1_500), video("c", 0, 800)))
+        val template = recipe.toTemplate("t", "Check", TemplateCategory.OTHER, setOf("a", "b", "c"), emptySet(), nowMs = 0)
+        val pick = TemplatePick(Uri.fromFile(File(input, VIDEO)).toString(), MediaInfo(ClipType.VIDEO, VIDEO_MS, 1280, 720, 0))
+        export(template.fill(List(3) { pick }, "template_fill", nowMs = 0).project.copy(name = "template_fill"))
     }
 
     private suspend fun export(project: Project) {

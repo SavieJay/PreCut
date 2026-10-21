@@ -1,63 +1,66 @@
 package com.savie.precut.ui.editor
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
+import com.savie.precut.data.AppSettings
+import com.savie.precut.data.EffectFavourites
 import com.savie.precut.data.ProjectRepository
+import com.savie.precut.data.TemplateMaker
 import com.savie.precut.di.ApplicationScope
+import com.savie.precut.di.IoDispatcher
 import com.savie.precut.media.Capture
 import com.savie.precut.media.CaptureStore
+import com.savie.precut.media.FreezeFrames
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.MediaProbe
+import com.savie.precut.media.MediaSaver
 import com.savie.precut.media.PreviewController
-import com.savie.precut.media.FreezeFrames
-import com.savie.precut.media.reverse.ClipReverser
-import com.savie.precut.model.speed.SpeedCurve
-import com.savie.precut.model.clipById
-import com.savie.precut.media.frame.LiveFrames
+import com.savie.precut.media.PreviewState
 import com.savie.precut.media.ProxyManager
-import com.savie.precut.media.look.LookThumbnailer
-import com.savie.precut.media.look.LutCache
 import com.savie.precut.media.ProxyRules
 import com.savie.precut.media.ProxyState
-import com.savie.precut.media.PreviewState
-import com.savie.precut.media.ThumbnailLoader
-import com.savie.precut.media.VoiceRecorder
-import com.savie.precut.media.audio.BeatDetector
-import com.savie.precut.media.WaveformLoader
-import com.savie.precut.model.AspectRatio
-import com.savie.precut.model.ClipType
-import com.savie.precut.model.Project
-import com.savie.precut.model.clipAt
-import com.savie.precut.model.clipFromMedia
-import com.savie.precut.model.insertIndexAt
-import com.savie.precut.model.withMediaSubstitutes
-import com.savie.precut.model.edit.BatchEdits
-import com.savie.precut.model.look.ClipLook
-import com.savie.precut.model.edit.EditAction
-import com.savie.precut.model.TextOverlay
 import com.savie.precut.media.TextOverlayRenderer
+import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.TtsSynthesizer
-import com.savie.precut.media.sticker.StickerLibrary
-import com.savie.precut.data.EffectFavourites
-import com.savie.precut.data.AppSettings
-import com.savie.precut.media.MediaSaver
+import com.savie.precut.media.VoiceRecorder
+import com.savie.precut.media.WaveformLoader
+import com.savie.precut.media.audio.BeatDetector
 import com.savie.precut.media.export.ExportCapabilitiesProbe
 import com.savie.precut.media.export.FrameGrabber
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.savie.precut.media.frame.LiveFrames
+import com.savie.precut.media.look.LookThumbnailer
+import com.savie.precut.media.look.LutCache
+import com.savie.precut.media.reverse.ClipReverser
+import com.savie.precut.media.sticker.StickerLibrary
 import com.savie.precut.media.text.TextFonts
-import com.savie.precut.di.IoDispatcher
-import kotlinx.coroutines.CoroutineDispatcher
 import com.savie.precut.media.textSpecFor
+import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.ClipType
 import com.savie.precut.model.OutputSize
-import android.graphics.Bitmap
-import com.savie.precut.model.edit.keyframed
+import com.savie.precut.model.Project
+import com.savie.precut.model.TextOverlay
+import com.savie.precut.model.clipAt
+import com.savie.precut.model.clipById
+import com.savie.precut.model.clipFromMedia
+import com.savie.precut.model.edit.BatchEdits
+import com.savie.precut.model.edit.EditAction
 import com.savie.precut.model.edit.EditReducer
+import com.savie.precut.model.edit.keyframed
+import com.savie.precut.model.insertIndexAt
+import com.savie.precut.model.look.ClipLook
+import com.savie.precut.model.speed.SpeedCurve
+import com.savie.precut.model.template.TemplateCategory
 import com.savie.precut.model.totalDurationMs
+import com.savie.precut.model.withMediaSubstitutes
 import com.savie.precut.ui.navigation.requireProjectId
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
@@ -66,17 +69,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
 import java.time.Clock
 import java.util.UUID
 import javax.inject.Inject
@@ -172,6 +176,9 @@ sealed interface EditorEvent {
     data class CutToBeats(val cut: Int, val leftAlone: Int) : EditorEvent
     /** No main-track clip could be put on a beat (no beats, or none after the clips start). */
     data object NothingCutToBeats : EditorEvent
+    /** The sheet closes; the template is in Projects → Templates. */
+    data object TemplateSaved : EditorEvent
+    data object TemplateSaveFailed : EditorEvent
     /** The screen should open the photo picker for an overlay. */
     data object PickOverlay : EditorEvent
     data object KeepOneMainClip : EditorEvent
@@ -191,6 +198,7 @@ class EditorViewModel @Inject constructor(
     private val clock: Clock,
     voiceRecorder: VoiceRecorder,
     beatDetector: BeatDetector,
+    private val templateMaker: TemplateMaker,
     private val probe: MediaProbe,
     @ApplicationScope private val appScope: CoroutineScope,
     private val captures: CaptureStore,
@@ -225,6 +233,10 @@ class EditorViewModel @Inject constructor(
 
     private val _events = Channel<EditorEvent>(Channel.BUFFERED)
     val events: Flow<EditorEvent> = _events.receiveAsFlow()
+
+    private val _savingTemplate = MutableStateFlow(false)
+    /** Save as template is writing the template (its preview video renders after, in the background). */
+    val savingTemplate: StateFlow<Boolean> = _savingTemplate.asStateFlow()
 
     val previewState: StateFlow<PreviewState> = previewController.state
 
@@ -381,6 +393,24 @@ class EditorViewModel @Inject constructor(
     fun onSeek(positionMs: Long) = previewController.seekTo(positionMs)
 
     fun onFullScreen(open: Boolean) = updateReady { it.copy(fullScreen = open) }
+
+    /** Saves the project as a template (Projects → Templates); [slotIds] take the user's media, [textIds] are meant to change. */
+    fun onSaveAsTemplate(title: String, category: TemplateCategory, slotIds: Set<String>, textIds: Set<String>) {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        if (_savingTemplate.value || slotIds.isEmpty()) return
+        _savingTemplate.value = true
+        viewModelScope.launch {
+            try {
+                templateMaker.save(ready.project, title, category, slotIds, textIds)
+                _events.send(EditorEvent.TemplateSaved)
+            } catch (e: IOException) {
+                Log.w(TAG, "Couldn't save the template", e)
+                _events.send(EditorEvent.TemplateSaveFailed)
+            } finally {
+                _savingTemplate.value = false
+            }
+        }
+    }
 
     /** The full-screen view has the picture: a paused frame is drawn again there. */
     fun onFullScreenSurfaceReady() = previewController.redrawPaused()
@@ -763,6 +793,7 @@ class EditorViewModel @Inject constructor(
     }
 
     private companion object {
+        const val TAG = "EditorViewModel"
         const val PREVIEW_REBUILD_DEBOUNCE_MS = 150L
         val CLIP_TOOLS = setOf(
             EditorTool.TRIM, EditorTool.SPEED, EditorTool.FILTER, EditorTool.ADJUST, EditorTool.HSL, EditorTool.CURVES,

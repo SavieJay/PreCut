@@ -23,12 +23,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.ui.components.ObserveAsEvents
 import com.savie.precut.ui.components.rememberCameraLaunchers
+import com.savie.precut.ui.templates.TemplatesTab
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
     onOpenEditor: (projectId: String) -> Unit,
     onOpenSettings: () -> Unit = {},
+    onOpenTemplate: (templateId: String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -40,6 +42,8 @@ fun HomeScreen(
     val picker = rememberLauncherForActivityResult(PickMultipleVisualMedia()) { uris ->
         viewModel.onMediaPicked(uris.map(Uri::toString))
     }
+
+    var tab by rememberSaveable { mutableStateOf(HomeTab.DRAFTS) }
 
     // AutoCut: pace (dialog), then clips, then a song.
     var autoCutDialog by rememberSaveable { mutableStateOf(false) }
@@ -87,6 +91,9 @@ fun HomeScreen(
         },
         onCamera = viewModel::onCameraRequested,
         onAutoCut = { autoCutDialog = true },
+        tab = tab,
+        onTab = { tab = it },
+        templates = { modifier -> TemplatesTab(onOpen = onOpenTemplate, modifier = modifier) },
         onSettings = onOpenSettings,
         actions = object : ProjectActions {
             override fun onOpen(projectId: String) = onOpenEditor(projectId)

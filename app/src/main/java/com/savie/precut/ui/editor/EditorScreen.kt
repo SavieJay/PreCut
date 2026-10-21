@@ -41,6 +41,7 @@ import com.savie.precut.R
 import com.savie.precut.ui.components.ObserveAsEvents
 import com.savie.precut.ui.editor.crop.CropTopBar
 import com.savie.precut.ui.editor.preview.FullScreenPreview
+import com.savie.precut.ui.editor.template.SaveTemplateSheet
 import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
 import com.savie.precut.ui.editor.export.EditorExportHost
@@ -59,6 +60,8 @@ fun EditorScreen(
     val player by viewModel.player.collectAsStateWithLifecycle()
     val canSplit by viewModel.canSplit.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    // Save as template's sheet; it closes when the template is saved (an event).
+    var templateSheet by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
 
@@ -125,6 +128,11 @@ fun EditorScreen(
             EditorEvent.ReverseNotForPhotos -> resources.getString(R.string.reverse_not_for_photos)
             EditorEvent.ReverseFailed -> resources.getString(R.string.reverse_failed)
             EditorEvent.ReverseUnsupported -> resources.getString(R.string.reverse_unsupported)
+            EditorEvent.TemplateSaved -> {
+                templateSheet = false
+                resources.getString(R.string.template_saved)
+            }
+            EditorEvent.TemplateSaveFailed -> resources.getString(R.string.template_save_failed)
             EditorEvent.BeatsUnreadable -> resources.getString(R.string.beats_unreadable)
             EditorEvent.NoBeatsFound -> resources.getString(R.string.beats_none_found)
             EditorEvent.NothingCutToBeats -> resources.getString(R.string.beats_nothing_to_cut)
@@ -214,6 +222,9 @@ fun EditorScreen(
                 viewModel.onRedo()
             }
             override fun onExport() = viewModel.export.onOpen()
+            override fun onSaveAsTemplate() {
+                templateSheet = true
+            }
         }
     }
     BackHandler(enabled = renaming) { renaming = false }
@@ -278,6 +289,15 @@ fun EditorScreen(
                 onSeek = viewModel::onSeek,
                 onClose = { viewModel.onFullScreen(false) },
                 onSurfaceReady = viewModel::onFullScreenSurfaceReady,
+            )
+        }
+        (uiState as? EditorUiState.Ready)?.takeIf { templateSheet }?.let { ready ->
+            SaveTemplateSheet(
+                project = ready.project,
+                thumbnails = viewModel.thumbnails,
+                saving = viewModel.savingTemplate.collectAsStateWithLifecycle().value,
+                onSave = viewModel::onSaveAsTemplate,
+                onDismiss = { templateSheet = false },
             )
         }
     }

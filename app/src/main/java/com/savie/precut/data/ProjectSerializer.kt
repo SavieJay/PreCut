@@ -32,8 +32,11 @@ object ProjectSerializer {
         null
     }
 
-    /** Phase 4–7 clips stored `"filter": "WARM"`; Phase 8 stores `"look": {"filterId": "basic.warm"}`. */
-    private fun migrate(root: JsonElement): JsonElement {
+    /**
+     * Upgrades an older draft's JSON before decoding (also a template's embedded project). Phase 4–7
+     * clips stored `"filter": "WARM"`; Phase 8 stores `"look": {"filterId": "basic.warm"}`.
+     */
+    internal fun migrate(root: JsonElement): JsonElement {
         if (root !is JsonObject) return root
         val clips = root["clips"] as? JsonArray ?: return root
         val migrated = JsonArray(

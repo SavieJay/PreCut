@@ -5,9 +5,11 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -61,6 +63,9 @@ fun HomeContent(
     onAutoCut: () -> Unit,
     actions: ProjectActions,
     onSettings: () -> Unit = {},
+    tab: HomeTab = HomeTab.DRAFTS,
+    onTab: (HomeTab) -> Unit = {},
+    templates: @Composable (Modifier) -> Unit = {},
 ) {
     var renaming by remember { mutableStateOf<ProjectSummary?>(null) }
     var deleting by remember { mutableStateOf<ProjectSummary?>(null) }
@@ -72,7 +77,7 @@ fun HomeContent(
         topBar = { HomeTopBar(cameraEnabled = !isImporting, onCamera = onCamera, onSettings = onSettings) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            AnimatedVisibility(!isImporting && !projects.isNullOrEmpty() && fabVisible, enter = scaleIn(), exit = scaleOut()) {
+            AnimatedVisibility(tab == HomeTab.DRAFTS && !isImporting && !projects.isNullOrEmpty() && fabVisible, enter = scaleIn(), exit = scaleOut()) {
                 FloatingActionButton(
                     onClick = onNewProject,
                     shape = RoundedCornerShape(16.dp),
@@ -85,33 +90,40 @@ fun HomeContent(
             }
         },
     ) { innerPadding ->
-        val modifier = Modifier.fillMaxSize().padding(innerPadding)
-        when {
-            isImporting -> ImportingMedia(modifier)
-            projects == null -> Box(modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            projects.isEmpty() -> EmptyProjects(onNewProject, onAutoCut, modifier)
-            else -> LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                state = gridState,
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalItemSpacing = 16.dp,
-                modifier = modifier,
-            ) {
-                item(span = StaggeredGridItemSpan.FullLine) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.home_drafts_count, projects.size), style = PreCutType.section, color = TextSecondary, modifier = Modifier.weight(1f))
-                        TonalButton(stringResource(R.string.autocut_title), onAutoCut, icon = R.drawable.ic_beats)
+        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+            HomeTabs(tab, onTab)
+            val modifier = Modifier.weight(1f).fillMaxWidth()
+            if (tab == HomeTab.TEMPLATES) {
+                templates(modifier)
+                return@Column
+            }
+            when {
+                isImporting -> ImportingMedia(modifier)
+                projects == null -> Box(modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                projects.isEmpty() -> EmptyProjects(onNewProject, onAutoCut, modifier)
+                else -> LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    state = gridState,
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalItemSpacing = 16.dp,
+                    modifier = modifier,
+                ) {
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.home_drafts_count, projects.size), style = PreCutType.section, color = TextSecondary, modifier = Modifier.weight(1f))
+                            TonalButton(stringResource(R.string.autocut_title), onAutoCut, icon = R.drawable.ic_beats)
+                        }
                     }
-                }
-                items(projects, key = { it.id }) { project ->
-                    ProjectCard(
-                        project = project,
-                        onOpen = { actions.onOpen(project.id) },
-                        onRename = { renaming = project },
-                        onDuplicate = { actions.onDuplicate(project.id) },
-                        onDelete = { deleting = project },
-                    )
+                    items(projects, key = { it.id }) { project ->
+                        ProjectCard(
+                            project = project,
+                            onOpen = { actions.onOpen(project.id) },
+                            onRename = { renaming = project },
+                            onDuplicate = { actions.onDuplicate(project.id) },
+                            onDelete = { deleting = project },
+                        )
+                    }
                 }
             }
         }

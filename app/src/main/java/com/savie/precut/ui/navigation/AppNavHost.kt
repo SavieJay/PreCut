@@ -11,6 +11,7 @@ import com.savie.precut.ui.export.ExportScreen
 import com.savie.precut.ui.home.HomeScreen
 import com.savie.precut.ui.settings.LicencesScreen
 import com.savie.precut.ui.settings.SettingsScreen
+import com.savie.precut.ui.templates.TemplateScreen
 
 @Composable
 fun AppNavHost(shareInbox: ShareInbox) {
@@ -24,6 +25,7 @@ fun AppNavHost(shareInbox: ShareInbox) {
             HomeScreen(
                 onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
+                onOpenTemplate = { navController.navigate(TemplateRoute(it)) },
             )
         }
         composable<EditorRoute> {
@@ -34,6 +36,13 @@ fun AppNavHost(shareInbox: ShareInbox) {
         }
         composable<SettingsRoute> {
             SettingsScreen(onBack = { navController.popBackStack() }, onLicences = { navController.navigate(LicencesRoute) })
+        }
+        composable<TemplateRoute> {
+            TemplateScreen(
+                onBack = { navController.popBackStack() },
+                // The new project replaces the template page: Back from the editor returns to Projects.
+                onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) { popUpTo<HomeRoute>() } },
+            )
         }
         composable<LicencesRoute> {
             LicencesScreen(onBack = { navController.popBackStack() })

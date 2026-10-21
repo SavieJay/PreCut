@@ -3,6 +3,7 @@ package com.savie.precut.model
 import com.savie.precut.model.effect.EffectLayer
 
 import com.savie.precut.model.look.LookLayer
+import com.savie.precut.model.template.TemplateRef
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -25,6 +26,8 @@ data class Project(
     val cover: ProjectCover? = null,
     /** Shows the cover as the first frame of the video, so apps pick it as the thumbnail. */
     val coverInExport: Boolean = false,
+    /** The template this project was made from, if any. */
+    val template: TemplateRef? = null,
     val createdAt: Long,
     val updatedAt: Long,
 )

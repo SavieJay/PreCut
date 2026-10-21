@@ -17,3 +17,6 @@ data object SettingsRoute
 
 @Serializable
 data object LicencesRoute
+
+@Serializable
+data class TemplateRoute(val templateId: String)
