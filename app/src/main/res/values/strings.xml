@@ -259,7 +259,7 @@
     <string name="home_tab_drafts">Drafts</string>
     <string name="home_tab_templates">Templates</string>
     <string name="templates_all">All</string>
-    <string name="templates_empty">No templates yet. In the editor, open ⋮ → Save as template to turn a project into one you can fill with new clips.</string>
+    <string name="templates_empty">No templates. In the editor, open ⋮ → Save as template to turn a project into one you can fill with new clips.</string>
     <string name="template_save_title">Save as template</string>
     <string name="template_name">Template name</string>
     <string name="template_replaceable">Clips to replace with new media</string>
@@ -272,6 +272,12 @@
     <string name="template_saved">Saved to Projects → Templates</string>
     <string name="template_save_failed">Couldn\'t save the template. Check your free space.</string>
     <string name="template_use">Use template</string>
+    <string name="template_use_with_song">Use with a song</string>
+    <string name="template_no_beats">No steady beat in the song: the clips keep the template\'s timing.</string>
+    <string name="template_favourite">Add to favourites</string>
+    <string name="template_unfavourite">Remove from favourites</string>
+    <string name="templates_favourites">Favourites</string>
+    <string name="templates_recent">Recent</string>
     <string name="template_using">Making your video</string>
     <string name="template_missing">This template is no longer here.</string>
     <string name="template_delete_title">Delete template?</string>

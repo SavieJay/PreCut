@@ -10,6 +10,7 @@ import com.savie.precut.di.IoDispatcher
 import com.savie.precut.media.SharedMediaStore
 import com.savie.precut.model.mapMediaUris
 import com.savie.precut.model.mediaUris
+import com.savie.precut.model.template.BuiltInTemplates
 import com.savie.precut.model.template.ProjectTemplate
 import com.savie.precut.model.template.SLOT_URI_PREFIX
 import com.savie.precut.model.totalDurationMs
@@ -22,14 +23,14 @@ import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** A template on the phone, with the pictures that show it. */
-data class StoredTemplate(val template: ProjectTemplate, val thumbnailUri: String?, val previewUri: String?) {
+/** A template on the phone, with the pictures that show it; [builtIn] ones come with the app (no pictures: a storyboard shows them). */
+data class StoredTemplate(val template: ProjectTemplate, val thumbnailUri: String?, val previewUri: String?, val builtIn: Boolean = false) {
     val slotCount: Int get() = template.slots.size
     val durationMs: Long get() = template.project.totalDurationMs()
 }
 
 interface TemplateStore {
-    /** Every readable template, newest first. */
+    /** Every readable template: the user's newest first, then the built-in ones. */
     suspend fun list(): List<StoredTemplate>
 
     suspend fun get(id: String): StoredTemplate?
@@ -59,10 +60,12 @@ class FileTemplateStore @Inject constructor(
     private val root get() = File(context.filesDir, DIR)
 
     override suspend fun list(): List<StoredTemplate> = withContext(ioDispatcher) {
-        root.listFiles().orEmpty().filter { it.isDirectory }.mapNotNull(::read).sortedByDescending { it.template.createdAt }
+        root.listFiles().orEmpty().filter { it.isDirectory }.mapNotNull(::read).sortedByDescending { it.template.createdAt } +
+            BuiltInTemplates.all.map(::builtIn)
     }
 
-    override suspend fun get(id: String): StoredTemplate? = withContext(ioDispatcher) { read(File(root, id)) }
+    override suspend fun get(id: String): StoredTemplate? =
+        BuiltInTemplates.byId(id)?.let(::builtIn) ?: withContext(ioDispatcher) { read(File(root, id)) }
 
     override suspend fun save(template: ProjectTemplate): StoredTemplate = withContext(ioDispatcher) {
         val dir = File(root, template.id).apply { mkdirs() }
@@ -87,15 +90,20 @@ class FileTemplateStore @Inject constructor(
     }
 
     override suspend fun delete(id: String) {
+        if (BuiltInTemplates.byId(id) != null) return
         withContext(ioDispatcher) { File(root, id).deleteRecursively() }
     }
 
     override suspend fun forUse(id: String): ProjectTemplate? {
+        // Built-in templates carry no media of their own.
+        BuiltInTemplates.byId(id)?.let { return it }
         val template = get(id)?.template ?: return null
         val own = Uri.fromFile(File(root, id)).toString()
         val copies = template.project.mediaUris().filter { it.startsWith(own) }.distinct().associateWith { projectMedia.copyIn(listOf(it)).firstOrNull() ?: it }
         return template.copy(project = template.project.mapMediaUris { copies[it] ?: it })
     }
+
+    private fun builtIn(template: ProjectTemplate) = StoredTemplate(template, thumbnailUri = null, previewUri = null, builtIn = true)
 
     private fun read(dir: File): StoredTemplate? {
         val text = File(dir, JSON).takeIf { it.isFile }?.readText() ?: return null

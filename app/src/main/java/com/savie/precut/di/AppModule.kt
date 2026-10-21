@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.savie.precut.data.FileTemplateStore
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.data.TemplateStore
+import com.savie.precut.data.PrefsTemplateHistory
+import com.savie.precut.data.TemplateHistory
 import com.savie.precut.data.RoomProjectRepository
 import com.savie.precut.data.UnusedMediaCleaner
 import com.savie.precut.data.AppMediaJanitor
@@ -63,6 +65,9 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindTemplateStore(impl: FileTemplateStore): TemplateStore
+
+    @Binds
+    abstract fun bindTemplateHistory(impl: PrefsTemplateHistory): TemplateHistory
 
     @Binds
     abstract fun bindVideoExporter(impl: ExportManager): VideoExporter

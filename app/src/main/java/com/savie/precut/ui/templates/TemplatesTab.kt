@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,8 +63,7 @@ fun TemplatesTab(onOpen: (templateId: String) -> Unit, modifier: Modifier = Modi
         )
         else -> Column(modifier) {
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PreCutChip(stringResource(R.string.templates_all), selected = state.category == null, onClick = { viewModel.onCategory(null) })
-                state.categories.forEach { PreCutChip(stringResource(it.label), selected = state.category == it, onClick = { viewModel.onCategory(it) }) }
+                state.filters.forEach { filter -> PreCutChip(filterLabel(filter), selected = state.filter == filter, onClick = { viewModel.onFilter(filter) }) }
             }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -79,11 +79,23 @@ fun TemplatesTab(onOpen: (templateId: String) -> Unit, modifier: Modifier = Modi
 }
 
 @Composable
+private fun filterLabel(filter: TemplateFilter): String = when (filter) {
+    TemplateFilter.All -> stringResource(R.string.templates_all)
+    TemplateFilter.Favourites -> stringResource(R.string.templates_favourites)
+    TemplateFilter.Recent -> stringResource(R.string.templates_recent)
+    is TemplateFilter.Category -> stringResource(filter.category.label)
+}
+
+@Composable
 private fun TemplateCard(stored: StoredTemplate, onClick: () -> Unit) {
     val size = stored.template.project.outputSize()
     Column(Modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.fillMaxWidth().aspectRatio(size.width.toFloat() / size.height).clip(RoundedCornerShape(12.dp)).background(Ink2)) {
-            stored.thumbnailUri?.let { AsyncImage(model = it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+            if (stored.thumbnailUri != null) {
+                AsyncImage(model = stored.thumbnailUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            } else {
+                TemplateStoryboard(stored.template, fontSize = 20.sp, modifier = Modifier.fillMaxSize())
+            }
             Text(
                 formatDurationMs(stored.durationMs),
                 style = MaterialTheme.typography.labelSmall,

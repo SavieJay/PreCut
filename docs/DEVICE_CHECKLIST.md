@@ -68,6 +68,15 @@ Run `tools/device_checks.sh` with the phone connected. It exports test projects 
 | Delete the template, then open the project made from it | The project still has everything (stickers, music and other fixed media included) | |
 | The automated checks (section 1) | "template slots start on time" PASS | |
 
+## 4d. Built-in templates and songs (Phase 18B)
+| Check | Expected | Result |
+|---|---|---|
+| Projects → Templates | 12 built-in cards with storyboards; chips for each category | |
+| Open Happy birthday → Use template → pick 6 photos | A birthday video with zooms, flashes, sparkles and the title in Pacifico | |
+| Product spotlight → Use with a song → pick 4 clips and a song | Cuts land on the song's beats, at about the template's pace; "Shop now" stays on the last clip | |
+| Star a template, use another | Favourites and Recent chips appear and show them | |
+| Use with a song and a podcast | The template's own timing stays; a message says no steady beat was found | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:
