@@ -46,7 +46,7 @@ interface EffectsActions {
 }
 
 /**
- * S-03: Favourites and the six categories of effects, then Intensity and Speed for the chosen
+ * S-03: Favourites and the categories of effects, then Intensity and Speed for the chosen
  * one. [current] is the target's effect (null: none yet); [editing] is false while adding a new
  * effect, which hides None; [forClip] shows Apply to all.
  */

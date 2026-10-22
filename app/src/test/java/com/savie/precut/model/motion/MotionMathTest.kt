@@ -60,6 +60,48 @@ class MotionMathTest {
     }
 
     @Test
+    fun edgeTransitions_leaveTheFrameAsItIsAtTheirEnds() {
+        TransitionType.entries.filter { !it.overlapping }.forEach { type ->
+            listOf(0f, 1f).forEach { progress ->
+                val look = MotionMath.transitionLook(type, progress)
+                val name = "$type at $progress"
+                listOf(look.colorMix, look.flash, look.blur, look.glitch, look.rgbSplit, look.offsetX, look.offsetY).forEach { assertEquals(name, 0f, it, eps) }
+                listOf(look.scale, look.stretchX, look.stretchY).forEach { assertEquals(name, 1f, it, eps) }
+                // A full turn is the frame as it is.
+                assertEquals(name, 0f, look.rotationDegrees % 360f, eps)
+            }
+        }
+    }
+
+    @Test
+    fun phase19EdgeTransitions_peakAtTheCut() {
+        // Flip narrows the frame to a line at the cut.
+        assertEquals(MotionMath.MIN_STRETCH, MotionMath.transitionLook(TransitionType.FLIP, 0.5f).stretchX, eps)
+        assertTrue(MotionMath.transitionLook(TransitionType.FLIP, 0.25f).stretchX in 0.1f..0.99f)
+        assertEquals(3f, MotionMath.transitionLook(TransitionType.STRETCH, 0.5f).stretchX, eps)
+        assertEquals(1f, MotionMath.transitionLook(TransitionType.RGB_SHIFT, 0.5f).rgbSplit, eps)
+        // Strobe: white at the cut, dark on the step before.
+        assertEquals(1f, MotionMath.transitionLook(TransitionType.STROBE, 0.5f).flash, eps)
+        assertEquals(0f, MotionMath.transitionLook(TransitionType.STROBE, 0.4f).flash, eps)
+    }
+
+    @Test
+    fun shakeTransition_neverShowsTheFramesEdges() {
+        (0..100).map { it / 100f }.forEach { progress ->
+            val look = MotionMath.transitionLook(TransitionType.SHAKE, progress)
+            // The zoom hides (1 - 1 / scale) / 2 of the frame on each side; the move must stay inside that.
+            val hidden = (1f - 1f / look.scale) / 2f
+            assertTrue("x at $progress", kotlin.math.abs(look.offsetX) <= hidden + eps)
+            assertTrue("y at $progress", kotlin.math.abs(look.offsetY) <= hidden + eps)
+        }
+    }
+
+    @Test
+    fun everyTransitionGroup_hasTransitions() {
+        TransitionCategory.entries.forEach { category -> assertTrue(category.name, TransitionType.entries.any { it.category == category }) }
+    }
+
+    @Test
     fun transitionAt_mapsHeadAndTailHalves() {
         // 1 s incoming transition (0.5 s at the start), 400 ms outgoing (0.2 s at the end) on a 3 s clip.
         val head = MotionMath.transitionAt(TransitionType.BLUR, 1_000L, TransitionType.FLASH, 400L, 0L, 3_000L)

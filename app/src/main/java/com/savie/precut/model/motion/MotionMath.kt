@@ -2,6 +2,7 @@ package com.savie.precut.model.motion
 
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
@@ -32,7 +33,9 @@ data class Pose(
 
 /**
  * What a transition does to a frame at one instant. [colorMix] blends towards [mixWhite] (white,
- * else black); [flash] adds white; [blur] and [glitch] are 0..1 strengths.
+ * else black); [flash] adds white; [blur], [glitch] and [rgbSplit] are 0..1 strengths. [stretchX]
+ * and [stretchY] multiply [scale] along one axis; [offsetX] and [offsetY] move the frame (frame
+ * fractions, y down).
  */
 data class TransitionLook(
     val colorMix: Float = 0f,
@@ -42,6 +45,11 @@ data class TransitionLook(
     val rotationDegrees: Float = 0f,
     val blur: Float = 0f,
     val glitch: Float = 0f,
+    val stretchX: Float = 1f,
+    val stretchY: Float = 1f,
+    val offsetX: Float = 0f,
+    val offsetY: Float = 0f,
+    val rgbSplit: Float = 0f,
 ) {
     companion object {
         val NONE = TransitionLook()
@@ -170,8 +178,26 @@ object MotionMath {
             TransitionType.GLITCH -> TransitionLook(glitch = peak)
             // A full turn: the outgoing clip turns the first half, the incoming one the second.
             TransitionType.SPIN -> TransitionLook(rotationDegrees = 360f * easeInOutCubic(p), scale = 1f - 0.35f * eased)
+            // Zoomed in just enough that the moved frame never shows its edges.
+            TransitionType.SHAKE -> TransitionLook(
+                scale = 1f + SHAKE_ZOOM * peak,
+                offsetX = SHAKE_DISTANCE * peak * sin(p * 14f * PI.toFloat()),
+                offsetY = 0.8f * SHAKE_DISTANCE * peak * sin(p * 18f * PI.toFloat() + 1f),
+                blur = 0.15f * peak,
+            )
+            TransitionType.RGB_SHIFT -> TransitionLook(rgbSplit = eased, scale = 1f + 0.06f * eased)
+            // A card turning over: the outgoing clip narrows to a line at the cut, the incoming one opens out.
+            TransitionType.FLIP -> TransitionLook(stretchX = abs(cos(PI.toFloat() * easeInOutCubic(p))).coerceAtLeast(MIN_STRETCH))
+            TransitionType.STRETCH -> TransitionLook(stretchX = 1f + 2f * eased, stretchY = 1f - 0.1f * eased, blur = 0.4f * eased)
+            // White on every other step, always on at the cut.
+            TransitionType.STROBE -> TransitionLook(flash = if ((p * STROBE_STEPS).toInt() % 2 == 1) peak.pow(0.5f) else 0f)
             // Overlapping ones are drawn by their own layer, not on the clips' edges.
-            TransitionType.DISSOLVE, TransitionType.SLIDE, TransitionType.PUSH, TransitionType.WIPE -> TransitionLook()
+            TransitionType.DISSOLVE, TransitionType.SLIDE, TransitionType.PUSH, TransitionType.WIPE,
+            TransitionType.SLIDE_RIGHT, TransitionType.SLIDE_UP, TransitionType.SLIDE_DOWN,
+            TransitionType.PUSH_RIGHT, TransitionType.PUSH_UP, TransitionType.PUSH_DOWN,
+            TransitionType.CIRCLE, TransitionType.CLOCK, TransitionType.BLINDS,
+            TransitionType.ZOOM_DISSOLVE, TransitionType.BLUR_DISSOLVE, TransitionType.PIXELATE, TransitionType.INK,
+            -> TransitionLook()
         }
     }
 
@@ -200,7 +226,17 @@ object MotionMath {
         return 1f + c3 * (t - 1f).pow(3) + c1 * (t - 1f).pow(2)
     }
 
-    private fun cos01(phase: Float): Float = kotlin.math.cos(2f * PI.toFloat() * phase)
+    private fun cos01(phase: Float): Float = cos(2f * PI.toFloat() * phase)
 
     private const val SHAKE_AMPLITUDE = 0.04f
+
+    /** Shake transition: how far the frame moves, and the zoom that keeps its edges out of view. */
+    private const val SHAKE_DISTANCE = 0.04f
+    private const val SHAKE_ZOOM = 0.1f
+
+    /** Flip's narrowest width: never quite 0, so the shader's scale stays invertible. */
+    const val MIN_STRETCH = 0.01f
+
+    /** Strobe steps across the whole transition: odd so the middle step (the cut) is on. */
+    private const val STROBE_STEPS = 11f
 }

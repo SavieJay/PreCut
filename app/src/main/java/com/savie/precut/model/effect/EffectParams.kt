@@ -59,6 +59,38 @@ object EffectParams {
             EffectType.SPLIT_3 -> floatArrayOf(1f, 3f, gap(i), 0f)
             EffectType.SPLIT_4 -> floatArrayOf(2f, 2f, gap(i), 0f)
             EffectType.SPLIT_9 -> floatArrayOf(3f, 3f, gap(i), 0f)
+            // Zoom at the beat; beats per second (72 BPM).
+            EffectType.HEARTBEAT -> floatArrayOf(lerp(0.03f, 0.14f, i), 1.2f, 0f, 0f)
+            // Share of cells with a piece of confetti or a snowflake / raindrop; how much it cools or darkens the frame.
+            EffectType.CONFETTI -> floatArrayOf(lerp(0.15f, 0.55f, i), 0f, 0f, 0f)
+            EffectType.SNOW -> floatArrayOf(lerp(0.12f, 0.5f, i), lerp(0.1f, 0.4f, i), 0f, 0f)
+            EffectType.RAIN -> floatArrayOf(lerp(0.15f, 0.5f, i), lerp(0.1f, 0.35f, i), 0f, 0f)
+            // Strength of the coloured lights.
+            EffectType.DISCO -> floatArrayOf(lerp(0.3f, 1f, i), 0f, 0f, 0f)
+            // Mix; colour-wheel turns per second.
+            EffectType.RAINBOW -> floatArrayOf(lerp(0.25f, 0.9f, i), 0.25f, 0f, 0f)
+            // Mix of the inverted picture; flips per second.
+            EffectType.INVERT_FLASH -> floatArrayOf(lerp(0.5f, 1f, i), 2f, 0f, 0f)
+            EffectType.LENS_FLARE -> floatArrayOf(lerp(0.3f, 1f, i), 0f, 0f, 0f)
+            // Glow strength, blur radius.
+            EffectType.DREAMY_GLOW -> floatArrayOf(lerp(0.2f, 0.9f, i), lerp(0.01f, 0.035f, i), 0f, 0f)
+            // Darkness outside the light; the light's radius (short side).
+            EffectType.SPOTLIGHT -> floatArrayOf(lerp(0.3f, 0.85f, i), 0.32f, 0f, 0f)
+            // Screen curve, lines across the height, line darkness.
+            EffectType.CRT -> floatArrayOf(lerp(0.08f, 0.3f, i), 240f, lerp(0.15f, 0.45f, i), 0f)
+            // Noise mix, rolling bar darkness.
+            EffectType.TV_STATIC -> floatArrayOf(lerp(0.12f, 0.6f, i), lerp(0.1f, 0.35f, i), 0f, 0f)
+            // Channel split at the corners (uv); pulses per second.
+            EffectType.CHROMATIC_PULSE -> floatArrayOf(lerp(0.008f, 0.04f, i), 2f, 0f, 0f)
+            // Mix of the recoloured picture.
+            EffectType.DUOTONE -> floatArrayOf(lerp(0.5f, 1f, i), 0f, 0f, 0f)
+            EffectType.THERMAL -> floatArrayOf(lerp(0.6f, 1f, i), 0f, 0f, 0f)
+            // Dots across the short side.
+            EffectType.HALFTONE -> floatArrayOf(lerp(90f, 30f, i), 0f, 0f, 0f)
+            // Mix of the drawing; pencil line strength.
+            EffectType.SKETCH -> floatArrayOf(lerp(0.5f, 1f, i), lerp(2f, 4f, i), 0f, 0f)
+            // Mix; noise.
+            EffectType.NIGHT_VISION -> floatArrayOf(lerp(0.6f, 1f, i), lerp(0.04f, 0.15f, i), 0f, 0f)
         }
     }
 

@@ -3,6 +3,7 @@ package com.savie.precut.ui.editor.tools
 import com.savie.precut.R
 import com.savie.precut.model.motion.AnimationType
 import com.savie.precut.model.motion.ComboType
+import com.savie.precut.model.motion.TransitionCategory
 import com.savie.precut.model.motion.TransitionType
 
 /** Tile icon and label for each transition (T-16). */
@@ -17,9 +18,27 @@ val TransitionType.tile: Pair<Int, Int>
         TransitionType.GLITCH -> R.drawable.ic_tr_glitch to R.string.transition_glitch
         TransitionType.SPIN -> R.drawable.ic_spin to R.string.transition_spin
         TransitionType.DISSOLVE -> R.drawable.ic_blur_circular to R.string.transition_dissolve
-        TransitionType.SLIDE -> R.drawable.ic_arrow_forward to R.string.transition_slide
-        TransitionType.PUSH -> R.drawable.ic_keyboard_double_arrow_right to R.string.transition_push
+        TransitionType.SLIDE -> R.drawable.ic_tr_slide_left to R.string.transition_slide
+        TransitionType.PUSH -> R.drawable.ic_tr_push_left to R.string.transition_push
         TransitionType.WIPE -> R.drawable.ic_swipe_right to R.string.transition_wipe
+        TransitionType.SHAKE -> R.drawable.ic_vibration to R.string.transition_shake
+        TransitionType.RGB_SHIFT -> R.drawable.ic_fx_rgb to R.string.transition_rgb_shift
+        TransitionType.FLIP -> R.drawable.ic_flip to R.string.transition_flip
+        TransitionType.STRETCH -> R.drawable.ic_tr_stretch to R.string.transition_stretch
+        TransitionType.STROBE -> R.drawable.ic_bolt to R.string.transition_strobe
+        TransitionType.SLIDE_RIGHT -> R.drawable.ic_tr_slide_right to R.string.transition_slide_right
+        TransitionType.SLIDE_UP -> R.drawable.ic_tr_slide_up to R.string.transition_slide_up
+        TransitionType.SLIDE_DOWN -> R.drawable.ic_tr_slide_down to R.string.transition_slide_down
+        TransitionType.PUSH_RIGHT -> R.drawable.ic_tr_push_right to R.string.transition_push_right
+        TransitionType.PUSH_UP -> R.drawable.ic_tr_push_up to R.string.transition_push_up
+        TransitionType.PUSH_DOWN -> R.drawable.ic_tr_push_down to R.string.transition_push_down
+        TransitionType.CIRCLE -> R.drawable.ic_tr_circle to R.string.transition_circle
+        TransitionType.CLOCK -> R.drawable.ic_tr_clock to R.string.transition_clock
+        TransitionType.BLINDS -> R.drawable.ic_tr_blinds to R.string.transition_blinds
+        TransitionType.ZOOM_DISSOLVE -> R.drawable.ic_open_in_full to R.string.transition_zoom_dissolve
+        TransitionType.BLUR_DISSOLVE -> R.drawable.ic_tr_blur_dissolve to R.string.transition_blur_dissolve
+        TransitionType.PIXELATE -> R.drawable.ic_grid_on to R.string.transition_pixelate
+        TransitionType.INK -> R.drawable.ic_tr_ink to R.string.transition_ink
     }
 
 /** Tile icon and label for each In/Out animation (T-17). */
@@ -46,4 +65,14 @@ val ComboType.tile: Pair<Int, Int>
         ComboType.SPIN_ZOOM -> R.drawable.ic_spin to R.string.combo_spin
         ComboType.BOUNCE -> R.drawable.ic_anim_bounce to R.string.combo_bounce
         ComboType.SHAKE -> R.drawable.ic_anim_waves to R.string.combo_shake
+    }
+
+/** Tab label for each group of transitions. */
+val TransitionCategory.label: Int
+    get() = when (this) {
+        TransitionCategory.BASIC -> R.string.transition_cat_basic
+        TransitionCategory.SLIDE -> R.string.transition_cat_slide
+        TransitionCategory.WIPE -> R.string.transition_cat_wipe
+        TransitionCategory.MOTION -> R.string.transition_cat_motion
+        TransitionCategory.GLITCH -> R.string.transition_cat_glitch
     }

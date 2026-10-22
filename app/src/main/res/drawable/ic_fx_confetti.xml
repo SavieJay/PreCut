@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PreCut's own icon (Phase 19): scattered paper pieces and dots, confetti. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M4.5,7.5l2.6,-1.2l1.1,2.4l-2.6,1.2zM15,4.5l2.8,0.6l-0.6,2.8l-2.8,-0.6zM10.5,12.5l2.5,1.5l-1.5,2.5l-2.5,-1.5zM17,13l2.6,-0.8l0.8,2.6l-2.6,0.8zM5,17l2.4,1.4l-1.4,2.4l-2.4,-1.4zM11,6.5m-1,0a1,1 0 1,0 2,0a1,1 0 1,0 -2,0M19.5,9m-1,0a1,1 0 1,0 2,0a1,1 0 1,0 -2,0M8,12m-1,0a1,1 0 1,0 2,0a1,1 0 1,0 -2,0M14,19.5m-1,0a1,1 0 1,0 2,0a1,1 0 1,0 -2,0"
+        android:fillColor="#FF000000" />
+</vector>

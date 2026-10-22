@@ -8,15 +8,24 @@ import org.junit.Test
 class EffectParamsTest {
 
     @Test
-    fun everyType_hasFourParamsAndAUniqueShaderBranch() {
+    fun everyType_hasFourParams_andEveryCategoryHasEffects() {
         EffectType.entries.forEach { type ->
             assertEquals(type.name, 4, EffectParams.of(EffectSettings(type)).size)
         }
-        val ids = EffectType.entries.map { it.shaderId }
-        assertEquals(ids.size, ids.toSet().size)
-        // The shader's branches are 1..28 in order; the last one is the split screen.
-        assertEquals((1..EffectType.entries.size).toList(), ids.sorted())
-        assertTrue(EffectType.entries.filter { it.category == EffectCategory.SPLIT }.all { it.shaderId >= EffectType.SPLIT_2.shaderId })
+        EffectCategory.entries.forEach { category -> assertTrue(category.name, EffectType.entries.any { it.category == category }) }
+    }
+
+    @Test
+    fun particleEffects_getDenserWithIntensity() {
+        listOf(EffectType.CONFETTI, EffectType.SNOW, EffectType.RAIN).forEach { type ->
+            fun density(i: Float) = EffectParams.of(EffectSettings(type, intensity = i))[0]
+            assertTrue(type.name, density(1f) > density(0.5f) && density(0.5f) > density(0f))
+            // A share of cells, so never more than all of them.
+            assertTrue(type.name, density(1f) <= 1f)
+        }
+        // Halftone: stronger means fewer, bigger dots.
+        fun dots(i: Float) = EffectParams.of(EffectSettings(EffectType.HALFTONE, intensity = i))[0]
+        assertTrue(dots(1f) < dots(0f))
     }
 
     @Test

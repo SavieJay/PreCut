@@ -27,8 +27,13 @@ import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.Project
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.edit.autoCutProject
+import com.savie.precut.model.effect.EffectLayer
+import com.savie.precut.model.effect.EffectSettings
+import com.savie.precut.model.effect.EffectType
 import com.savie.precut.model.export.ExportResolution
 import com.savie.precut.model.export.ExportSettings
+import com.savie.precut.model.motion.ClipTransition
+import com.savie.precut.model.motion.TransitionType
 import com.savie.precut.model.template.TemplateCategory
 import com.savie.precut.model.template.TemplatePick
 import com.savie.precut.model.template.fill
@@ -243,6 +248,34 @@ class DeviceChecksTest {
         export(template.fill(List(3) { pick }, "template_fill", nowMs = 0).project.copy(name = "template_fill"))
     }
 
+    /**
+     * Phase 19: every effect and every transition through the real preview on this phone's GPU (a
+     * frame each, so a shader the GPU can't compile fails here), then one export with all of them:
+     * the transitions between 1 s clips and the effects as layers over the whole video.
+     */
+    @Test
+    fun catalogue() = runBlocking {
+        EffectType.entries.forEach { type ->
+            val clip = video("e", 0, 2_000, PATTERN).copy(effect = EffectSettings(type))
+            grab(project("effect_${type.name.lowercase()}", listOf(clip)), 900)
+        }
+        TransitionType.entries.forEach { type ->
+            val clips = listOf(video("a", 0, 2_000, PATTERN).copy(transitionOut = ClipTransition(type, 600)), video("b", 2_000, 4_000))
+            // The middle of the transition: an overlapping one starts the second clip 600 ms early.
+            grab(project("transition_${type.name.lowercase()}", clips), if (type.overlapping) 1_700 else 2_000)
+        }
+        val clips = TransitionType.entries.mapIndexed { i, type ->
+            video("c$i", 0, 1_000, if (i % 2 == 0) PATTERN else VIDEO).copy(transitionOut = ClipTransition(type, 400))
+        } + video("last", 0, 1_000)
+        val all = project("catalogue", clips)
+        val share = all.totalDurationMs() / EffectType.entries.size
+        export(
+            all.copy(
+                effectLayers = EffectType.entries.mapIndexed { i, type -> EffectLayer("fx$i", i * share, (i + 1) * share, EffectSettings(type)) },
+            ),
+        )
+    }
+
     private suspend fun export(project: Project) {
         val result = withTimeout(EXPORT_TIMEOUT_MS) {
             exporter.export(project, ExportSettings(resolution = ExportResolution.P720)).last()
@@ -303,6 +336,7 @@ class DeviceChecksTest {
         const val TONE = "tone.m4a" // 10 s, 1 kHz
         const val ROTATED = "rotated.mp4" // video.mp4 flagged to display turned 90°
         const val CLICKS = "clicks.m4a" // 20 s, a 1 kHz click every 0.5 s from 0.25 s (120 BPM)
+        const val PATTERN = "pattern.mp4" // 1280x720, 30 fps, 10 s, ffmpeg's colour test pattern
         const val VIDEO_MS = 10_000L
         const val LONG_MS = 60_000L
         const val RED = 0xFFFF0000.toInt()

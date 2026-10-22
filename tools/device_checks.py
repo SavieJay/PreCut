@@ -6,7 +6,7 @@ import struct
 import subprocess
 import sys
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 OUT = sys.argv[1]
 FRAME = 1 / 30
@@ -246,6 +246,25 @@ out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-skip_f
 keys = [float(t.split(",")[0]) for t in out.split()]
 gap = max(b - a for a, b in zip(keys, keys[1:])) if len(keys) > 1 else float("inf")
 check("proxy keyframes", gap <= 0.2 + FRAME / 2, f"{len(keys)} keyframes, largest gap {gap:.3f} s")
+
+# Phase 19 catalogue: a preview frame per effect and transition (each compiled on this GPU, or the
+# test fails), and one export with all of them; the frames go on a sheet to look over.
+frames = sorted(f for f in os.listdir(OUT) if f.startswith(("effect_", "transition_")) and f.endswith(".png"))
+t = frame_times(path("catalogue.mp4"))
+expected = expected_ms("catalogue") / 1000
+check("catalogue export", abs(len(t) / 30 - expected) <= 2 * FRAME,
+      f"{len(t)} frames ({len(t) / 30:.2f} s, expected {expected:.2f} s); {len(frames)} preview frames")
+if frames:
+    tw, th, columns = 144, 256, 10
+    sheet = Image.new("RGB", (columns * tw, -(-len(frames) // columns) * (th + 14)), (12, 12, 14))
+    for i, name in enumerate(frames):
+        tile = Image.open(path(name)).convert("RGB")
+        tile.thumbnail((tw, th))
+        x, y = (i % columns) * tw, (i // columns) * (th + 14)
+        sheet.paste(tile, (x, y))
+        ImageDraw.Draw(sheet).text((x + 2, y + th), name.split("_preview")[0], fill=(220, 220, 220), font_size=10)
+    sheet.save(path("catalogue_sheet.png"))
+    print(f"      look over {path('catalogue_sheet.png')}")
 
 print(f"\n{sum(results)}/{len(results)} passed")
 sys.exit(0 if all(results) else 1)

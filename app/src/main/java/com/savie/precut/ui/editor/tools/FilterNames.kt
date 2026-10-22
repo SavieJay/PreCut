@@ -51,6 +51,26 @@ private val FILTER_NAMES: Map<String, Int> = mapOf(
     "nature.sunset" to R.string.filter_nature_sunset,
     "nature.forest" to R.string.filter_nature_forest,
     "nature.sky" to R.string.filter_nature_sky,
+    "life.honey" to R.string.filter_life_honey,
+    "portrait.natural" to R.string.filter_portrait_natural,
+    "portrait.warm_skin" to R.string.filter_portrait_warm_skin,
+    "portrait.porcelain" to R.string.filter_portrait_porcelain,
+    "portrait.rosy" to R.string.filter_portrait_rosy,
+    "portrait.golden" to R.string.filter_portrait_golden,
+    "portrait.matte" to R.string.filter_portrait_matte,
+    "movie.blockbuster" to R.string.filter_movie_blockbuster,
+    "movie.western" to R.string.filter_movie_western,
+    "movie.sci_fi" to R.string.filter_movie_sci_fi,
+    "movie.indie" to R.string.filter_movie_indie,
+    "movie.drama" to R.string.filter_movie_drama,
+    "movie.thriller" to R.string.filter_movie_thriller,
+    "retro.disposable" to R.string.filter_retro_disposable,
+    "night.neon" to R.string.filter_night_neon,
+    "night.city" to R.string.filter_night_city,
+    "night.moonlight" to R.string.filter_night_moonlight,
+    "night.cyber" to R.string.filter_night_cyber,
+    "night.amber" to R.string.filter_night_amber,
+    "nature.desert" to R.string.filter_nature_desert,
 )
 
 @StringRes
@@ -60,9 +80,12 @@ fun filterNameRes(filterId: String): Int? = FILTER_NAMES[filterId]
 fun FilterCategory.labelRes(): Int = when (this) {
     FilterCategory.BASIC -> R.string.filter_category_basic
     FilterCategory.LIFE -> R.string.filter_category_life
+    FilterCategory.PORTRAIT -> R.string.filter_category_portrait
     FilterCategory.FILM -> R.string.filter_category_film
+    FilterCategory.MOVIE -> R.string.filter_category_movie
     FilterCategory.RETRO -> R.string.filter_category_retro
     FilterCategory.MONO -> R.string.filter_category_mono
+    FilterCategory.NIGHT -> R.string.filter_category_night
     FilterCategory.FOOD -> R.string.filter_category_food
     FilterCategory.NATURE -> R.string.filter_category_nature
 }

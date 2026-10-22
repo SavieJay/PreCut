@@ -73,7 +73,8 @@ internal class OverlayLayersShaderProgram(
 
     private val copyYuv: GlProgram
     private val copy2d: GlProgram
-    private val mixer: GlProgram
+    /** One program per overlapping transition type, compiled on first use. */
+    private val mixers = mutableMapOf<TransitionType, GlProgram>()
     private val premultiply: GlProgram
     private val blender: GlProgram
     private val layers = specs.map { Layer(it, mainTrack = false) }
@@ -90,7 +91,6 @@ internal class OverlayLayersShaderProgram(
         try {
             copyYuv = program(LayerShaders.COPY_YUV)
             copy2d = program(LayerShaders.COPY_2D)
-            mixer = program(LayerShaders.TRANSITION)
             premultiply = program(LayerShaders.PREMULTIPLY)
             blender = program(LayerShaders.BLEND)
         } catch (e: GlUtil.GlException) {
@@ -149,7 +149,7 @@ internal class OverlayLayersShaderProgram(
             backdrop = backdrop.delete()
             copyYuv.delete()
             copy2d.delete()
-            mixer.delete()
+            mixers.values.forEach { it.delete() }
             premultiply.delete()
             blender.delete()
         } catch (e: GlUtil.GlException) {
@@ -167,19 +167,14 @@ internal class OverlayLayersShaderProgram(
     }
 
     private fun mix(outgoing: Int, incomingTexture: Int, progress: Float, type: TransitionType) {
+        val mixer = mixers.getOrPut(type) { program(LayerShaders.transition(type)) }
         mixer.use()
         mixer.setSamplerTexIdUniform("uA", outgoing, 0)
         mixer.setSamplerTexIdUniform("uB", incomingTexture, 1)
         mixer.setFloatUniform("uProgress", progress)
-        mixer.setFloatUniform(
-            "uType",
-            when (type) {
-                TransitionType.SLIDE -> 1f
-                TransitionType.PUSH -> 2f
-                TransitionType.WIPE -> 3f
-                else -> 0f
-            },
-        )
+        // Not every type reads these, and the GLSL compiler drops unread uniforms.
+        mixer.setFloatsUniformIfPresent("uAspect", floatArrayOf(width.toFloat() / height))
+        mixer.setFloatsUniformIfPresent("uTexel", floatArrayOf(1f / width, 1f / height))
         mixer.bindAttributesAndUniforms()
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
     }

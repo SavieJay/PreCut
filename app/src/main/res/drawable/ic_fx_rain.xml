@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PreCut's own icon (Phase 19): slanting raindrops. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M8,4l-2,5M14,4l-2,5M20,4l-2,5M5,12l-2,5M11,12l-2,5M17,12l-2,5M8,18.5l-1.2,3M14,18.5l-1.2,3"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

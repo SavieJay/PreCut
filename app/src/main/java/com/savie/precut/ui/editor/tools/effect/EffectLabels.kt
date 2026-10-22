@@ -36,6 +36,24 @@ fun EffectType.label(): Int = when (this) {
     EffectType.SPLIT_3 -> R.string.effect_split_3
     EffectType.SPLIT_4 -> R.string.effect_split_4
     EffectType.SPLIT_9 -> R.string.effect_split_9
+    EffectType.HEARTBEAT -> R.string.effect_heartbeat
+    EffectType.CONFETTI -> R.string.effect_confetti
+    EffectType.DISCO -> R.string.effect_disco
+    EffectType.RAINBOW -> R.string.effect_rainbow
+    EffectType.INVERT_FLASH -> R.string.effect_invert_flash
+    EffectType.LENS_FLARE -> R.string.effect_lens_flare
+    EffectType.DREAMY_GLOW -> R.string.effect_dreamy_glow
+    EffectType.SPOTLIGHT -> R.string.effect_spotlight
+    EffectType.CRT -> R.string.effect_crt
+    EffectType.TV_STATIC -> R.string.effect_tv_static
+    EffectType.CHROMATIC_PULSE -> R.string.effect_chromatic_pulse
+    EffectType.DUOTONE -> R.string.effect_duotone
+    EffectType.HALFTONE -> R.string.effect_halftone
+    EffectType.SKETCH -> R.string.effect_sketch
+    EffectType.THERMAL -> R.string.effect_thermal
+    EffectType.NIGHT_VISION -> R.string.effect_night_vision
+    EffectType.SNOW -> R.string.effect_snow
+    EffectType.RAIN -> R.string.effect_rain
 }
 
 @DrawableRes
@@ -68,13 +86,34 @@ fun EffectType.icon(): Int = when (this) {
     EffectType.SPLIT_3 -> R.drawable.ic_view_agenda
     EffectType.SPLIT_4 -> R.drawable.ic_grid_view
     EffectType.SPLIT_9 -> R.drawable.ic_apps
+    EffectType.HEARTBEAT -> R.drawable.ic_favorite
+    EffectType.CONFETTI -> R.drawable.ic_fx_confetti
+    EffectType.DISCO -> R.drawable.ic_fx_disco
+    EffectType.RAINBOW -> R.drawable.ic_fx_rainbow
+    EffectType.INVERT_FLASH -> R.drawable.ic_invert
+    EffectType.LENS_FLARE -> R.drawable.ic_fx_lens_flare
+    EffectType.DREAMY_GLOW -> R.drawable.ic_auto_fix_high
+    EffectType.SPOTLIGHT -> R.drawable.ic_fx_spotlight
+    EffectType.CRT -> R.drawable.ic_fx_crt
+    EffectType.TV_STATIC -> R.drawable.ic_grain
+    EffectType.CHROMATIC_PULSE -> R.drawable.ic_fx_rgb
+    EffectType.DUOTONE -> R.drawable.ic_palette
+    EffectType.HALFTONE -> R.drawable.ic_fx_halftone
+    EffectType.SKETCH -> R.drawable.ic_draw
+    EffectType.THERMAL -> R.drawable.ic_fx_thermal
+    EffectType.NIGHT_VISION -> R.drawable.ic_fx_night_vision
+    EffectType.SNOW -> R.drawable.ic_fx_snow
+    EffectType.RAIN -> R.drawable.ic_fx_rain
 }
 
 @StringRes
 fun EffectCategory.label(): Int = when (this) {
     EffectCategory.BASIC -> R.string.effects_cat_basic
+    EffectCategory.PARTY -> R.string.effects_cat_party
     EffectCategory.RETRO -> R.string.effects_cat_retro
     EffectCategory.GLITCH -> R.string.effects_cat_glitch
+    EffectCategory.ART -> R.string.effects_cat_art
+    EffectCategory.WEATHER -> R.string.effects_cat_weather
     EffectCategory.LIGHT -> R.string.effects_cat_light
     EffectCategory.LENS -> R.string.effects_cat_lens
     EffectCategory.SPLIT -> R.string.effects_cat_split

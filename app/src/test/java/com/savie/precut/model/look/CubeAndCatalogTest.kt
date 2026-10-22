@@ -39,7 +39,7 @@ class CubeAndCatalogTest {
     @Test
     fun catalog_hasUniqueIds_everyCategory_andBakesInRange() {
         val presets = FilterCatalog.presets
-        assertTrue(presets.size >= 40)
+        assertTrue(presets.size >= 60)
         assertEquals(presets.size, presets.map { it.id }.toSet().size)
         FilterCategory.entries.forEach { assertTrue(it.name, FilterCatalog.inCategory(it).isNotEmpty()) }
         presets.forEach { preset ->

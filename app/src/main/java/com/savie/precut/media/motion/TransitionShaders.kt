@@ -17,9 +17,9 @@ void main() {
 """
 
     /**
-     * The whole frame scaled and turned about its centre (black outside), blurred (a 24-tap
-     * spiral), glitched (shifted slices and split colour channels), then mixed towards black or
-     * white and flashed.
+     * The whole frame scaled (per axis, by `uScaleTurn.x` × `uStretch`), turned about its centre
+     * and moved by `uOffset` (black outside), blurred (a 24-tap spiral), glitched (shifted slices),
+     * its colour channels split, then mixed towards black or white and flashed.
      */
     const val FRAGMENT = """#version 100
 precision highp float;
@@ -28,6 +28,9 @@ uniform vec2 uSize;        // frame size in pixels
 uniform vec2 uScaleTurn;   // scale, clockwise radians
 uniform vec4 uAmounts;     // colour mix, mix to white (0/1), flash, blur
 uniform vec2 uGlitch;      // strength, seed
+uniform vec2 uStretch;     // extra scale along x and y
+uniform vec2 uOffset;      // move, in uv (y up)
+uniform float uSplit;      // colour channel split, 0..1
 varying vec2 vTexSamplingCoord;
 
 float hash(float n) { return fract(sin(n) * 43758.5453); }
@@ -51,8 +54,8 @@ vec4 blurred(vec2 uv, float radius) {
 }
 
 void main() {
-  // Undo the scale and the clockwise turn (counter-clockwise in y-up space) about the centre.
-  vec2 p = (vTexSamplingCoord - 0.5) * uSize / uScaleTurn.x;
+  // Undo the move, the scale and the clockwise turn (counter-clockwise in y-up space) about the centre.
+  vec2 p = (vTexSamplingCoord - 0.5 - uOffset) * uSize / (uScaleTurn.x * uStretch);
   float c = cos(uScaleTurn.y);
   float s = sin(uScaleTurn.y);
   vec2 uv = vec2(c * p.x - s * p.y, s * p.x + c * p.y) / uSize + 0.5;
@@ -65,8 +68,8 @@ void main() {
   }
   float radius = uAmounts.w * 0.04 * min(uSize.x, uSize.y);
   vec4 color = blurred(uv, radius);
-  if (glitch > 0.0) {
-    vec2 split = vec2(0.012 * glitch, 0.0);
+  if (glitch > 0.0 || uSplit > 0.0) {
+    vec2 split = vec2(0.012 * glitch + 0.03 * uSplit, 0.0);
     color.r = blurred(uv + split, radius).r;
     color.b = blurred(uv - split, radius).b;
   }

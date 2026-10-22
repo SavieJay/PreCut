@@ -46,7 +46,7 @@ internal class EffectShaderProgram(
 
     init {
         try {
-            program = GlProgram(LookShaders.VERTEX, EffectShaders.FRAGMENT)
+            program = GlProgram(LookShaders.VERTEX, EffectShaders.fragment(settings.type))
             program.setBufferAttribute("aFramePosition", GlUtil.getNormalizedCoordinateBounds(), GlUtil.HOMOGENEOUS_COORDINATE_VECTOR_SIZE)
             val identity = GlUtil.create4x4IdentityMatrix()
             program.setFloatsUniform("uTransformationMatrix", identity)
@@ -66,11 +66,11 @@ internal class EffectShaderProgram(
         try {
             program.use()
             program.setSamplerTexIdUniform("uTexSampler", inputTexId, 0)
-            program.setFloatUniform("uType", settings.type.shaderId.toFloat())
-            program.setFloatsUniform("uParams", params)
-            program.setFloatUniform("uTime", EffectParams.timeSeconds(presentationTimeUs, timeOriginUs, settings.speed))
-            program.setFloatsUniform("uTexel", texel)
-            program.setFloatUniform("uAspect", aspect)
+            // Each effect's program reads only some of these; the GLSL compiler drops the rest.
+            program.setFloatsUniformIfPresent("uParams", params)
+            program.setFloatsUniformIfPresent("uTime", floatArrayOf(EffectParams.timeSeconds(presentationTimeUs, timeOriginUs, settings.speed)))
+            program.setFloatsUniformIfPresent("uTexel", texel)
+            program.setFloatsUniformIfPresent("uAspect", floatArrayOf(aspect))
             program.setFloatUniform("uActive", if (EffectParams.isActive(presentationTimeUs, startUs, endUs)) 1f else 0f)
             program.bindAttributesAndUniforms()
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)

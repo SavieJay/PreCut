@@ -24,6 +24,8 @@ if [ "$1" != "--skip-run" ]; then
   [ -f "$WORK/in/clicks.m4a" ] || ffmpeg -v error -y \
     -f lavfi -i "aevalsrc='0.8*sin(2*PI*1000*t)*exp(-120*mod(t-0.25\,0.5))*gte(t\,0.25)*lt(mod(t-0.25\,0.5)\,0.03)':s=44100:d=20" \
     -c:a aac -b:a 128k "$WORK/in/clicks.m4a"
+  [ -f "$WORK/in/pattern.mp4" ] || ffmpeg -v error -y \
+    -f lavfi -i "testsrc2=s=1280x720:r=30:d=10" -c:v libx264 -pix_fmt yuv420p -g 30 -crf 18 "$WORK/in/pattern.mp4"
   [ -f "$WORK/in/tone.m4a" ] || ffmpeg -v error -y \
     -f lavfi -i "sine=f=1000:d=10:sample_rate=48000" -c:a aac -b:a 128k "$WORK/in/tone.m4a"
 

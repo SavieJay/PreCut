@@ -1,23 +1,31 @@
 package com.savie.precut.ui.editor.tools
 
-import com.savie.precut.ui.theme.TextSecondary
-import com.savie.precut.ui.theme.PreCutType
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.savie.precut.R
 import com.savie.precut.model.motion.ClipTransition
 import com.savie.precut.model.motion.MAX_TRANSITION_MS
 import com.savie.precut.model.motion.MIN_TRANSITION_MS
+import com.savie.precut.model.motion.TransitionCategory
 import com.savie.precut.model.motion.TransitionType
+import com.savie.precut.ui.components.PillTab
+import com.savie.precut.ui.components.PillTabs
 import com.savie.precut.ui.components.PresetTile
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.components.TileGrid
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextSecondary
 import kotlin.math.roundToLong
 
 /** What the Transition panel can do. */
@@ -27,20 +35,17 @@ interface TransitionActions {
     fun onApplyAll()
 }
 
-/** P-06 order: Fade black, the overlapping ones, then the other edge transitions. */
-private val TRANSITION_ORDER: List<TransitionType> = listOf(TransitionType.FADE_BLACK) +
-    TransitionType.entries.filter { it.overlapping } +
-    TransitionType.entries.filter { !it.overlapping && it != TransitionType.FADE_BLACK }
-
 /**
- * Transition (T-16, P-06): None, then edge and overlapping transitions in a 5-column grid, then
- * the duration, up to [maxMs]. [overlapNote] explains how much shorter an overlapping one makes
- * the video. Picking one plays it once.
+ * Transition (T-16, P-06): a tab per group, each with None and its transitions in a 5-column
+ * grid, then the duration, up to [maxMs]. [overlapNote] explains how much shorter an overlapping
+ * one makes the video. Picking one plays it once.
  */
 @Composable
 fun TransitionTool(transition: ClipTransition?, maxMs: Long, actions: TransitionActions, onDone: () -> Unit, overlapNote: String? = null) {
+    var tab by rememberSaveable { mutableIntStateOf(transition?.type?.category?.ordinal ?: 0) }
     ToolPanel(stringResource(R.string.tool_transition), onDone, actions = { ApplyToAllButton(actions::onApplyAll) }) {
-        TileGrid(listOf<TransitionType?>(null) + TRANSITION_ORDER, columns = 5) { type ->
+        PillTabs(TransitionCategory.entries.map { PillTab(stringResource(it.label)) }, tab, { tab = it }, Modifier.horizontalScroll(rememberScrollState()))
+        TileGrid(listOf<TransitionType?>(null) + TransitionType.entries.filter { it.category.ordinal == tab }, columns = 5) { type ->
             if (type == null) {
                 PresetTile(stringResource(R.string.motion_none), R.drawable.ic_block, selected = transition == null, onClick = { actions.onType(null) })
             } else {

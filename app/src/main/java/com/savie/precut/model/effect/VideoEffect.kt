@@ -2,44 +2,64 @@ package com.savie.precut.model.effect
 
 import kotlinx.serialization.Serializable
 
-/** The Effects panel's tabs (S-03). */
+/** The Effects panel's tabs (S-03), in order. */
 @Serializable
-enum class EffectCategory { BASIC, RETRO, GLITCH, LIGHT, LENS, SPLIT }
+enum class EffectCategory { BASIC, PARTY, LIGHT, RETRO, GLITCH, ART, WEATHER, LENS, SPLIT }
 
 /**
- * PreCut's bundled video effects (Phase 11), each a branch of one GLSL program. [shaderId] is
- * the branch the shader runs; it never changes once shipped, so saved projects keep their look.
+ * PreCut's bundled video effects (Phase 11, Phase 19), each its own GLSL program
+ * (`media/effect/EffectShaders`). Saved by name, so names never change once shipped.
  */
 @Serializable
-enum class EffectType(val category: EffectCategory, val shaderId: Int) {
-    BLUR(EffectCategory.BASIC, 1),
-    FLASH(EffectCategory.BASIC, 2),
-    BW_FLASH(EffectCategory.BASIC, 3),
-    VIGNETTE_PULSE(EffectCategory.BASIC, 4),
-    WOBBLE(EffectCategory.BASIC, 5),
-    EDGE(EffectCategory.BASIC, 6),
-    OLD_FILM(EffectCategory.RETRO, 7),
-    FILM_GRAIN(EffectCategory.RETRO, 8),
-    POSTERIZE(EffectCategory.RETRO, 9),
-    GLITCH(EffectCategory.GLITCH, 10),
-    RGB_SPLIT(EffectCategory.GLITCH, 11),
-    VHS(EffectCategory.GLITCH, 12),
-    SHAKE(EffectCategory.GLITCH, 13),
-    STROBE(EffectCategory.GLITCH, 14),
-    PIXELATE(EffectCategory.GLITCH, 15),
-    LIGHT_LEAK(EffectCategory.LIGHT, 16),
-    SOFT_GLOW(EffectCategory.LIGHT, 17),
-    BOKEH(EffectCategory.LIGHT, 18),
-    SPARKLE(EffectCategory.LIGHT, 19),
-    NEON(EffectCategory.LIGHT, 20),
-    ZOOM_LENS(EffectCategory.LENS, 21),
-    FISHEYE(EffectCategory.LENS, 22),
-    MIRROR(EffectCategory.LENS, 23),
-    KALEIDOSCOPE(EffectCategory.LENS, 24),
-    SPLIT_2(EffectCategory.SPLIT, 25),
-    SPLIT_3(EffectCategory.SPLIT, 26),
-    SPLIT_4(EffectCategory.SPLIT, 27),
-    SPLIT_9(EffectCategory.SPLIT, 28),
+enum class EffectType(val category: EffectCategory) {
+    BLUR(EffectCategory.BASIC),
+    FLASH(EffectCategory.BASIC),
+    BW_FLASH(EffectCategory.BASIC),
+    VIGNETTE_PULSE(EffectCategory.BASIC),
+    WOBBLE(EffectCategory.BASIC),
+    EDGE(EffectCategory.BASIC),
+    OLD_FILM(EffectCategory.RETRO),
+    FILM_GRAIN(EffectCategory.RETRO),
+    POSTERIZE(EffectCategory.RETRO),
+    GLITCH(EffectCategory.GLITCH),
+    RGB_SPLIT(EffectCategory.GLITCH),
+    VHS(EffectCategory.GLITCH),
+    SHAKE(EffectCategory.GLITCH),
+    STROBE(EffectCategory.GLITCH),
+    PIXELATE(EffectCategory.GLITCH),
+    LIGHT_LEAK(EffectCategory.LIGHT),
+    SOFT_GLOW(EffectCategory.LIGHT),
+    BOKEH(EffectCategory.LIGHT),
+    SPARKLE(EffectCategory.LIGHT),
+    NEON(EffectCategory.LIGHT),
+    ZOOM_LENS(EffectCategory.LENS),
+    FISHEYE(EffectCategory.LENS),
+    MIRROR(EffectCategory.LENS),
+    KALEIDOSCOPE(EffectCategory.LENS),
+    SPLIT_2(EffectCategory.SPLIT),
+    SPLIT_3(EffectCategory.SPLIT),
+    SPLIT_4(EffectCategory.SPLIT),
+    SPLIT_9(EffectCategory.SPLIT),
+
+    // Phase 19
+    HEARTBEAT(EffectCategory.PARTY),
+    CONFETTI(EffectCategory.PARTY),
+    DISCO(EffectCategory.PARTY),
+    RAINBOW(EffectCategory.PARTY),
+    INVERT_FLASH(EffectCategory.PARTY),
+    LENS_FLARE(EffectCategory.LIGHT),
+    DREAMY_GLOW(EffectCategory.LIGHT),
+    SPOTLIGHT(EffectCategory.LIGHT),
+    CRT(EffectCategory.RETRO),
+    TV_STATIC(EffectCategory.GLITCH),
+    CHROMATIC_PULSE(EffectCategory.GLITCH),
+    DUOTONE(EffectCategory.ART),
+    HALFTONE(EffectCategory.ART),
+    SKETCH(EffectCategory.ART),
+    THERMAL(EffectCategory.ART),
+    NIGHT_VISION(EffectCategory.ART),
+    SNOW(EffectCategory.WEATHER),
+    RAIN(EffectCategory.WEATHER),
 }
 
 /** An effect with its strength (0..1) and speed (how fast it animates, 0.25..4×). */

@@ -77,6 +77,16 @@ Run `tools/device_checks.sh` with the phone connected. It exports test projects 
 | Star a template, use another | Favourites and Recent chips appear and show them | |
 | Use with a song and a podcast | The template's own timing stays; a message says no steady beat was found | |
 
+## 4e. Transitions, effects, filters (Phase 19A)
+| Check | Expected | Result |
+|---|---|---|
+| The automated checks (section 1) | "catalogue export" PASS; then open `build/device_checks/out/catalogue_sheet.png` and check no frame is black or plainly wrong | |
+| Transition panel | Five tabs (Basic, Slide, Wipe, Motion, Glitch); picking one plays it once | |
+| Try Circle, Clock, Push up and Ink between two clips, then export | Preview and export match; the video is shorter by each overlapping transition | |
+| Effects panel → Party, Art, Weather tabs | Confetti falls, Snow drifts, Sketch draws the picture in pencil | |
+| Filters → Portrait, Movie, Night | Tiles show the real look on your clip | |
+| Open a project saved before this update that uses effects and transitions | Looks exactly as before | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

@@ -59,8 +59,7 @@ internal class TransitionShaderProgram(private val spec: TransitionSpec) :
             program.use()
             program.setSamplerTexIdUniform("uTexSampler", inputTexId, 0)
             program.setFloatsUniform("uSize", floatArrayOf(width, height))
-            program.setFloatsUniform("uScaleTurn", floatArrayOf(look.scale.coerceAtLeast(0.01f), Math.toRadians(look.rotationDegrees.toDouble()).toFloat()))
-            program.setFloatsUniform("uAmounts", floatArrayOf(look.colorMix, if (look.mixWhite) 1f else 0f, look.flash, look.blur))
+            look.uniforms().forEach { (name, value) -> program.setFloatsUniform(name, value) }
             // A new glitch pattern every 1/15 s.
             program.setFloatsUniform("uGlitch", floatArrayOf(look.glitch, (presentationTimeUs / 66_667L % 97L).toFloat()))
             program.bindAttributesAndUniforms()
@@ -79,3 +78,13 @@ internal class TransitionShaderProgram(private val spec: TransitionSpec) :
         }
     }
 }
+
+/** [TransitionShaders.FRAGMENT]'s uniforms for this look, except the size and the glitch (shared with the shader check). */
+internal fun TransitionLook.uniforms(): Map<String, FloatArray> = mapOf(
+    "uScaleTurn" to floatArrayOf(scale.coerceAtLeast(0.01f), Math.toRadians(rotationDegrees.toDouble()).toFloat()),
+    "uAmounts" to floatArrayOf(colorMix, if (mixWhite) 1f else 0f, flash, blur),
+    "uStretch" to floatArrayOf(stretchX.coerceAtLeast(MotionMath.MIN_STRETCH), stretchY.coerceAtLeast(MotionMath.MIN_STRETCH)),
+    // The look's y runs down, the texture's up.
+    "uOffset" to floatArrayOf(offsetX, -offsetY),
+    "uSplit" to floatArrayOf(rgbSplit),
+)

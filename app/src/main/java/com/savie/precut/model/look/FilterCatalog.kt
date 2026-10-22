@@ -1,7 +1,7 @@
 package com.savie.precut.model.look
 
 /** Filter categories, in picker order. */
-enum class FilterCategory { BASIC, LIFE, FILM, RETRO, MONO, FOOD, NATURE }
+enum class FilterCategory { BASIC, LIFE, PORTRAIT, FILM, MOVIE, RETRO, MONO, NIGHT, FOOD, NATURE }
 
 /** A built-in filter: a [Grade] baked into a LUT. Names live in the UI (by [id]). */
 data class FilterPreset(val id: String, val category: FilterCategory, val grade: Grade)
@@ -49,6 +49,14 @@ object FilterCatalog {
         FilterPreset("life.clear", FilterCategory.LIFE, Grade(contrast = 0.12f, saturation = 0.1f, gain = rgb(1f, 1.01f, 1.03f))),
         FilterPreset("life.peach", FilterCategory.LIFE, Grade(gain = rgb(1.08f, 1f, 0.95f), highlightTint = rgb(0.75f, 0.55f, 0.5f), split = 0.25f, fade = 0.1f)),
         FilterPreset("life.pastel", FilterCategory.LIFE, Grade(saturation = -0.15f, fade = 0.35f, brightness = 0.04f, highlightTint = rgb(0.6f, 0.5f, 0.65f), split = 0.15f)),
+        FilterPreset("life.honey", FilterCategory.LIFE, Grade(gain = rgb(1.08f, 1.03f, 0.88f), gamma = rgb(1.05f, 1.03f, 1f), saturation = 0.06f, fade = 0.08f)),
+        // Portrait (Phase 19): gentle on skin.
+        FilterPreset("portrait.natural", FilterCategory.PORTRAIT, Grade(gain = rgb(1.03f, 1.01f, 0.99f), contrast = -0.05f, saturation = -0.04f, brightness = 0.02f)),
+        FilterPreset("portrait.warm_skin", FilterCategory.PORTRAIT, Grade(gain = rgb(1.07f, 1.02f, 0.94f), gamma = rgb(1.05f, 1.02f, 1f), saturation = 0.04f)),
+        FilterPreset("portrait.porcelain", FilterCategory.PORTRAIT, Grade(gain = rgb(1f, 1.01f, 1.04f), brightness = 0.05f, saturation = -0.12f, contrast = -0.08f, fade = 0.08f)),
+        FilterPreset("portrait.rosy", FilterCategory.PORTRAIT, Grade(gain = rgb(1.06f, 0.99f, 1.01f), highlightTint = rgb(0.85f, 0.55f, 0.6f), split = 0.2f, brightness = 0.02f)),
+        FilterPreset("portrait.golden", FilterCategory.PORTRAIT, Grade(highlightTint = rgb(0.9f, 0.7f, 0.4f), split = 0.3f, gain = rgb(1.04f, 1.01f, 0.95f), contrast = 0.05f)),
+        FilterPreset("portrait.matte", FilterCategory.PORTRAIT, Grade(fade = 0.22f, contrast = -0.06f, saturation = -0.06f, gain = rgb(1.03f, 1f, 0.98f))),
         // Film
         FilterPreset(
             "film.teal_orange", FilterCategory.FILM,
@@ -60,6 +68,16 @@ object FilterCatalog {
         FilterPreset("film.moody", FilterCategory.FILM, Grade(gamma = rgb(0.9f, 0.9f, 0.92f), saturation = -0.2f, fade = 0.15f, shadowTint = rgb(0.35f, 0.45f, 0.5f), split = 0.3f)),
         FilterPreset("film.bleach", FilterCategory.FILM, Grade(mono = 0.45f, contrast = 0.3f)),
         FilterPreset("film.matte", FilterCategory.FILM, Grade(fade = 0.45f, contrast = 0.05f, saturation = -0.08f)),
+        // Movie (Phase 19): strong grades in the style of film genres.
+        FilterPreset(
+            "movie.blockbuster", FilterCategory.MOVIE,
+            Grade(shadowTint = rgb(0.1f, 0.5f, 0.6f), highlightTint = rgb(0.95f, 0.6f, 0.3f), split = 0.6f, contrast = 0.2f, saturation = 0.05f),
+        ),
+        FilterPreset("movie.western", FilterCategory.MOVIE, Grade(gain = rgb(1.12f, 1.02f, 0.78f), saturation = -0.25f, contrast = 0.15f, fade = 0.1f)),
+        FilterPreset("movie.sci_fi", FilterCategory.MOVIE, Grade(gain = rgb(0.88f, 1.04f, 1.06f), shadowTint = rgb(0.2f, 0.6f, 0.55f), split = 0.35f, contrast = 0.18f, saturation = -0.1f)),
+        FilterPreset("movie.indie", FilterCategory.MOVIE, Grade(fade = 0.3f, shadowTint = rgb(0.35f, 0.55f, 0.4f), split = 0.3f, saturation = -0.15f, gain = rgb(1.03f, 1f, 0.95f))),
+        FilterPreset("movie.drama", FilterCategory.MOVIE, Grade(contrast = 0.3f, saturation = -0.35f, gain = rgb(0.96f, 1f, 1.05f), gamma = rgb(0.92f, 0.92f, 0.92f))),
+        FilterPreset("movie.thriller", FilterCategory.MOVIE, Grade(gain = rgb(0.92f, 1.04f, 0.9f), shadowTint = rgb(0.25f, 0.45f, 0.3f), split = 0.4f, contrast = 0.2f, saturation = -0.2f)),
         // Retro
         FilterPreset("retro.70s", FilterCategory.RETRO, Grade(gain = rgb(1.1f, 1f, 0.8f), fade = 0.25f, saturation = -0.1f, lift = rgb(0.04f, 0.02f, 0f))),
         FilterPreset("retro.polaroid", FilterCategory.RETRO, Grade(lift = rgb(0.05f, 0.05f, 0.08f), gain = rgb(1.05f, 1.02f, 0.95f), fade = 0.2f, contrast = -0.05f)),
@@ -67,12 +85,19 @@ object FilterCatalog {
         FilterPreset("retro.sepia", FilterCategory.RETRO, Grade(matrix = SEPIA_FULL)),
         FilterPreset("retro.cross", FilterCategory.RETRO, Grade(gamma = rgb(1.15f, 1.1f, 0.8f), gain = rgb(1.05f, 1.05f, 0.9f), contrast = 0.15f, saturation = 0.1f)),
         FilterPreset("retro.vhs", FilterCategory.RETRO, Grade(gain = rgb(1.02f, 0.95f, 1.08f), fade = 0.2f, saturation = 0.12f, contrast = 0.08f)),
+        FilterPreset("retro.disposable", FilterCategory.RETRO, Grade(gain = rgb(1.05f, 1.04f, 0.9f), lift = rgb(0.02f, 0.04f, 0.03f), contrast = 0.12f, saturation = 0.15f, fade = 0.12f)),
         // Mono
         FilterPreset("mono.high_contrast", FilterCategory.MONO, Grade(mono = 1f, contrast = 0.4f)),
         FilterPreset("mono.soft", FilterCategory.MONO, Grade(mono = 1f, contrast = -0.15f, fade = 0.2f)),
         FilterPreset("mono.silver", FilterCategory.MONO, Grade(mono = 1f, gamma = rgb(1.15f, 1.15f, 1.15f), contrast = 0.1f)),
         FilterPreset("mono.selenium", FilterCategory.MONO, Grade(mono = 1f, shadowTint = rgb(0.4f, 0.45f, 0.6f), split = 0.4f)),
         FilterPreset("mono.noir", FilterCategory.MONO, Grade(mono = 1f, contrast = 0.55f, gamma = rgb(0.85f, 0.85f, 0.85f))),
+        // Night (Phase 19): city lights and dark scenes.
+        FilterPreset("night.neon", FilterCategory.NIGHT, Grade(shadowTint = rgb(0.3f, 0.2f, 0.75f), highlightTint = rgb(0.95f, 0.35f, 0.75f), split = 0.45f, saturation = 0.25f, contrast = 0.12f)),
+        FilterPreset("night.city", FilterCategory.NIGHT, Grade(shadowTint = rgb(0.15f, 0.35f, 0.6f), highlightTint = rgb(0.95f, 0.7f, 0.4f), split = 0.4f, contrast = 0.15f, brightness = 0.03f)),
+        FilterPreset("night.moonlight", FilterCategory.NIGHT, Grade(mono = 0.6f, gain = rgb(0.85f, 0.95f, 1.15f), gamma = rgb(0.95f, 0.95f, 0.95f), contrast = 0.1f)),
+        FilterPreset("night.cyber", FilterCategory.NIGHT, Grade(gain = rgb(0.95f, 0.9f, 1.12f), shadowTint = rgb(0.1f, 0.55f, 0.6f), highlightTint = rgb(0.8f, 0.3f, 0.85f), split = 0.5f, saturation = 0.2f)),
+        FilterPreset("night.amber", FilterCategory.NIGHT, Grade(gain = rgb(1.12f, 1f, 0.8f), gamma = rgb(1.08f, 1.05f, 1f), saturation = 0.1f, contrast = 0.08f)),
         // Food
         FilterPreset("food.warm_glow", FilterCategory.FOOD, Grade(gain = rgb(1.08f, 1.02f, 0.9f), saturation = 0.15f, brightness = 0.03f)),
         FilterPreset("food.fresh_green", FilterCategory.FOOD, Grade(gain = rgb(0.98f, 1.06f, 0.98f), saturation = 0.18f, contrast = 0.05f)),
@@ -86,6 +111,7 @@ object FilterCatalog {
         FilterPreset("nature.sunset", FilterCategory.NATURE, Grade(highlightTint = rgb(0.9f, 0.55f, 0.3f), shadowTint = rgb(0.45f, 0.35f, 0.6f), split = 0.4f, saturation = 0.1f)),
         FilterPreset("nature.forest", FilterCategory.NATURE, Grade(gain = rgb(0.95f, 1.04f, 0.97f), gamma = rgb(0.95f, 0.95f, 0.95f), saturation = -0.05f, fade = 0.1f)),
         FilterPreset("nature.sky", FilterCategory.NATURE, Grade(gain = rgb(0.97f, 1f, 1.1f), contrast = 0.1f, saturation = 0.12f)),
+        FilterPreset("nature.desert", FilterCategory.NATURE, Grade(gain = rgb(1.1f, 1.02f, 0.86f), highlightTint = rgb(0.9f, 0.7f, 0.5f), split = 0.2f, saturation = 0.05f, contrast = 0.1f)),
     )
 
     private val byId: Map<String, FilterPreset> = presets.associateBy { it.id }

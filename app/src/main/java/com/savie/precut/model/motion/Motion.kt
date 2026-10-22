@@ -2,15 +2,52 @@ package com.savie.precut.model.motion
 
 import kotlinx.serialization.Serializable
 
+/** The Transition panel's tabs. */
+enum class TransitionCategory { BASIC, SLIDE, WIPE, MOTION, GLITCH }
+
 /**
  * Transitions between clips. Edge ones (T-16) play half over each clip with no overlap, so the
  * timeline keeps its length; [overlapping] ones (P-06) show both clips at once, the incoming one
- * starting [ClipTransition.durationMs] earlier, so the video gets shorter by that much.
+ * starting [ClipTransition.durationMs] earlier, so the video gets shorter by that much. Saved by
+ * name, so names never change once shipped.
  */
 @Serializable
-enum class TransitionType(val overlapping: Boolean = false) {
-    FADE_BLACK, FADE_WHITE, FLASH, ZOOM_IN, ZOOM_OUT, BLUR, GLITCH, SPIN,
-    DISSOLVE(overlapping = true), SLIDE(overlapping = true), PUSH(overlapping = true), WIPE(overlapping = true),
+enum class TransitionType(val category: TransitionCategory, val overlapping: Boolean = false) {
+    FADE_BLACK(TransitionCategory.BASIC),
+    FADE_WHITE(TransitionCategory.BASIC),
+    FLASH(TransitionCategory.BASIC),
+    ZOOM_IN(TransitionCategory.MOTION),
+    ZOOM_OUT(TransitionCategory.MOTION),
+    BLUR(TransitionCategory.BASIC),
+    GLITCH(TransitionCategory.GLITCH),
+    SPIN(TransitionCategory.MOTION),
+    DISSOLVE(TransitionCategory.BASIC, overlapping = true),
+    /** In from the right. */
+    SLIDE(TransitionCategory.SLIDE, overlapping = true),
+    PUSH(TransitionCategory.SLIDE, overlapping = true),
+    WIPE(TransitionCategory.WIPE, overlapping = true),
+
+    // Phase 19: edge.
+    SHAKE(TransitionCategory.MOTION),
+    RGB_SHIFT(TransitionCategory.GLITCH),
+    FLIP(TransitionCategory.MOTION),
+    STRETCH(TransitionCategory.MOTION),
+    STROBE(TransitionCategory.GLITCH),
+
+    // Phase 19: overlapping. Slides and pushes are named by the way the incoming clip moves.
+    SLIDE_RIGHT(TransitionCategory.SLIDE, overlapping = true),
+    SLIDE_UP(TransitionCategory.SLIDE, overlapping = true),
+    SLIDE_DOWN(TransitionCategory.SLIDE, overlapping = true),
+    PUSH_RIGHT(TransitionCategory.SLIDE, overlapping = true),
+    PUSH_UP(TransitionCategory.SLIDE, overlapping = true),
+    PUSH_DOWN(TransitionCategory.SLIDE, overlapping = true),
+    CIRCLE(TransitionCategory.WIPE, overlapping = true),
+    CLOCK(TransitionCategory.WIPE, overlapping = true),
+    BLINDS(TransitionCategory.WIPE, overlapping = true),
+    ZOOM_DISSOLVE(TransitionCategory.MOTION, overlapping = true),
+    BLUR_DISSOLVE(TransitionCategory.BASIC, overlapping = true),
+    PIXELATE(TransitionCategory.GLITCH, overlapping = true),
+    INK(TransitionCategory.BASIC, overlapping = true),
 }
 
 const val MIN_TRANSITION_MS = 100L
