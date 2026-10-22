@@ -14,6 +14,12 @@ plugins {
 val keystore = providers.fileContents(rootProject.layout.projectDirectory.file("keystore.properties")).asText.orNull
     ?.let { text -> Properties().apply { load(text.reader()) } }
 
+// Cloud AI (Phase 20): where the backend is, from the gitignored cloud.properties (cloudUrl,
+// cloudRegion, playCloudProjectNumber; see docs/CLOUD_API.md). Without it the app builds and its
+// cloud features say they aren't set up in this build.
+val cloud = providers.fileContents(rootProject.layout.projectDirectory.file("cloud.properties")).asText.orNull
+    ?.let { text -> Properties().apply { load(text.reader()) } }
+
 // versionCode counts commits, so every build from a newer commit can be uploaded over the last.
 val commitCount = providers.exec {
     commandLine("git", "rev-list", "--count", "HEAD")
@@ -32,6 +38,10 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "CLOUD_URL", "\"${cloud?.getProperty("cloudUrl").orEmpty()}\"")
+        buildConfigField("String", "CLOUD_REGION", "\"${cloud?.getProperty("cloudRegion").orEmpty()}\"")
+        buildConfigField("long", "PLAY_CLOUD_PROJECT_NUMBER", "${cloud?.getProperty("playCloudProjectNumber")?.toLongOrNull() ?: 0L}L")
     }
 
     signingConfigs {
@@ -59,6 +69,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -111,6 +122,9 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
 
+    implementation(libs.okhttp)
+    implementation(libs.play.integrity)
+
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 
@@ -129,4 +143,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    testImplementation(libs.okhttp.mockwebserver)
 }

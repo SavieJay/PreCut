@@ -10,7 +10,7 @@ Edit videos on your phone: cuts, effects, text, overlays, music. No watermark.
 
 ## Full description (4000)
 
-PreCut is a video editor for your phone. Put clips on a timeline, cut and arrange them, add music, text, stickers and effects, and export in up to 4K. No watermark, no ads, no account, and nothing leaves your phone.
+PreCut is a video editor for your phone. Put clips on a timeline, cut and arrange them, add music, text, stickers and effects, and export in up to 4K. No watermark, no ads, no account, and nothing leaves your phone without your say-so.
 
 EDIT ON A TIMELINE
 • Trim, split, duplicate, reorder and replace clips with snapping to edges, beats and the playhead
@@ -52,7 +52,7 @@ EXPORT
 • Export as a GIF, as audio only, or save a single frame as a photo
 
 PRIVATE BY DESIGN
-PreCut has no internet access. Your videos, recordings and projects stay on your phone.
+Your videos, recordings and projects stay on your phone. Cloud AI features are optional: PreCut asks before every upload, sends only the sound, never the video, and you can switch them off.
 
 ## Release notes for 1.0.0 (500)
 The first release of PreCut: a full video editor on your phone. Cut and arrange clips, add music, voiceovers, text, stickers, effects, overlays with blend modes, keyframes and transitions, and export in up to 4K, as a GIF, as audio, or as a photo. No watermark, no ads, no account.

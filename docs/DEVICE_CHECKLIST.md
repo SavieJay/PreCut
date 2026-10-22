@@ -97,6 +97,23 @@ Run `tools/device_checks.sh` with the phone connected. It exports test projects 
 | Stickers → 3D, add a few | Sharp at the default size; the timeline bar shows each one's emoji | |
 | Settings → Open-source licences → Stickers | Both packs, with their licence and credit | |
 
+## 4g. Cloud AI (Phase 20)
+Use a real phone with the Play Store (an emulator can't pass Google Play's check), a debug build from this machine, and the internet on.
+
+| Check | Expected | Result |
+|---|---|---|
+| Settings → Cloud AI | The switch is on; "Free minutes this month" says "Not used yet" | |
+| Check cloud AI | The phone makes the test phrase, then a dialog asks before sending: what (a few seconds of sound), where (Ireland, then ElevenLabs), what's kept, Google Play's check | |
+| Tap **Send** | After a few seconds: "Heard: “Hello from PreCut. This is a test of the captions.”" (or close to it); the minutes row then shows 29 of 30 minutes left and the reset date | |
+| Check cloud AI again, tap **Cancel** | "Cancelled. Nothing was sent." | |
+| Airplane mode, then Check cloud AI | "You're offline…" straight away, with no dialog | |
+| Switch cloud AI off | The minutes row says "Off"; Check says cloud AI is off | |
+| Delete my cloud data → Delete | "Deleted…"; the minutes row says "Not used yet". Check again: it works and shows full minutes | |
+| Settings → Open-source licences | OkHttp and Okio, and Google Play Integrity and Play services, are listed | |
+| A release build signed with the upload key, installed with `adb install` | Check cloud AI works too (the backend knows the upload certificate) | |
+
+If Check says the phone or app couldn't be verified, send the time you tried: the function's logs (Supabase dashboard → Edge Functions → cloud → Logs) say which check failed.
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

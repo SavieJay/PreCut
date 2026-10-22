@@ -71,6 +71,7 @@ fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, viewModel: Settin
                 R.drawable.ic_movie, stringResource(R.string.settings_default_export),
                 stringResource(R.string.settings_export_summary, stringResource(export.resolution.label()), export.frameRate, stringResource(export.bitrate.label()), stringResource(export.codec.label())),
             ) { dialog = SettingsDialog.EXPORT }
+            CloudAiSection()
             Header(R.string.settings_storage)
             SettingRow(
                 R.drawable.ic_cached, stringResource(R.string.settings_cache),

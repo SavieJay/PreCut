@@ -22,6 +22,8 @@ data class SettingsValues(
     val export: ExportSettings = ExportSettings(),
     /** The notification prompt (A-03) was answered once; don't show it again. */
     val notificationsAsked: Boolean = false,
+    /** Cloud AI features (Phase 20) may be offered; each upload still asks first. */
+    val cloudAiEnabled: Boolean = true,
 )
 
 interface AppSettings {

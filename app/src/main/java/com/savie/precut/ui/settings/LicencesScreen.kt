@@ -53,6 +53,8 @@ private val LIBRARIES = listOf(
     Notice(R.string.notice_kotlin, APACHE, R.raw.licence_apache_2_0),
     Notice(R.string.notice_coil, APACHE, R.raw.licence_apache_2_0),
     Notice(R.string.notice_material_symbols, APACHE, R.raw.licence_apache_2_0),
+    Notice(R.string.notice_okhttp, APACHE, R.raw.licence_apache_2_0),
+    Notice(R.string.notice_google_play_libraries, R.string.licence_google_terms, R.raw.licence_google_play_libraries),
 )
 
 private val FONTS = listOf(

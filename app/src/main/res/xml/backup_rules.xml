@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 8–11 backups: everything as before, except this install's cloud identity (Phase 20),
+     so a phone restored from a backup registers as a new install instead of reusing another's. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="cloud.xml" />
+</full-backup-content>

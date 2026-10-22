@@ -90,5 +90,14 @@ Edit the single row of `public.cloud_config` in the Supabase dashboard (Table Ed
 ## Logs
 The function logs one JSON line per request (method, path, status, time) and per event (register, transcribe, forget, integrity refusals) with a 10-character hash of the install ID, lengths and outcomes. Never audio, words, tokens or install IDs.
 
+## App side (Phase 20B)
+- **Config:** the gitignored `cloud.properties` (`cloudUrl`, `cloudRegion`, `playCloudProjectNumber`) becomes `BuildConfig` fields; without it the app builds and says cloud AI isn't set up.
+- **`ai/cloud/CloudClient`:** the only code that talks to the function. It sends nothing while cloud AI is off in Settings, in a build without a backend, or offline; registers on the first upload only; registers again once on `not_registered`; keeps renewed install tokens; maps every error code above to an `AiFailure` (`model/ai`).
+- **`ai/UploadConsent`:** given only by the consent dialog's Send (`ui/cloud/UploadConsentDialog`), for the audio size it showed, and spent by that upload. The client refuses to upload without one.
+- **`ai/cloud/PlayIntegrityTokens`:** Play Integrity standard requests (prepared once, prepared again on error -19, transient errors retried after 1, 2 and 4 s).
+- **`ai/cloud/RequestHashes`:** the request hashes above; its unit test uses values produced by the server's own code.
+- **Settings → Cloud AI** (`ui/settings/CloudAiSection`): the switch, free minutes, Check cloud AI, Delete my cloud data, What is sent.
+- The install ID and token live in the private `cloud` preferences, which the backup rules leave out.
+
 ## Tests
-`cd supabase/functions/cloud && deno task test` (handler, Play Integrity rules, install tokens, ElevenLabs mapping, config, and the SQL under PGlite), and `deno task check` (types, lint, formatting).
+`cd supabase/functions/cloud && deno task test` (handler, Play Integrity rules, install tokens, ElevenLabs mapping, config, and the SQL under PGlite), and `deno task check` (types, lint, formatting). App: `./gradlew testDebugUnitTest --tests '*CloudClientTest' --tests '*RequestHashesTest'`. Live: `python3 -I tools/cloud_smoke.py https://auekkmbwfpqofjqugjsr.supabase.co/functions/v1/cloud`.

@@ -785,6 +785,7 @@
     <string name="licence_ofl">SIL Open Font License 1.1</string>
     <string name="licence_cc_by_4">Creative Commons Attribution 4.0</string>
     <string name="licence_mit">MIT License</string>
+    <string name="licence_google_terms">Google\'s terms of service</string>
     <string name="notice_androidx" translatable="false">AndroidX: Core, Activity, Lifecycle, Navigation, Room</string>
     <string name="notice_compose" translatable="false">Jetpack Compose and Material 3</string>
     <string name="notice_media3" translatable="false">AndroidX Media3</string>
@@ -792,6 +793,8 @@
     <string name="notice_kotlin" translatable="false">Kotlin, kotlinx.coroutines and kotlinx.serialization</string>
     <string name="notice_coil" translatable="false">Coil</string>
     <string name="notice_material_symbols" translatable="false">Material Symbols</string>
+    <string name="notice_okhttp" translatable="false">OkHttp and Okio</string>
+    <string name="notice_google_play_libraries" translatable="false">Google Play Integrity and Play services</string>
     <string name="notice_font_roboto_flex" translatable="false">Roboto Flex</string>
     <string name="notice_font_anton" translatable="false">Anton</string>
     <string name="notice_font_bebas_neue" translatable="false">Bebas Neue</string>
@@ -843,4 +846,60 @@
     <string name="blend_add">Add</string>
     <string name="blend_soft_light">Soft light</string>
     <string name="blend_difference">Difference</string>
+    <!-- Cloud AI (Phase 20) -->
+    <string name="cloud_header">Cloud AI</string>
+    <string name="cloud_switch">Cloud AI features</string>
+    <string name="cloud_switch_note">Captions and other AI features. PreCut asks before sending anything.</string>
+    <string name="cloud_minutes">Free minutes this month</string>
+    <string name="cloud_minutes_checking">Checking…</string>
+    <string name="cloud_minutes_not_used">Not used yet</string>
+    <string name="cloud_minutes_left">%1$d of %2$d min left · back on %3$s</string>
+    <string name="cloud_minutes_busy">Cloud AI is resting for the rest of the month</string>
+    <string name="cloud_minutes_offline">Offline</string>
+    <string name="cloud_minutes_off">Off</string>
+    <string name="cloud_minutes_unknown">Couldn\'t check</string>
+    <string name="cloud_check">Check cloud AI</string>
+    <string name="cloud_check_note">Sends a short test phrase and shows what came back</string>
+    <string name="cloud_check_preparing">Making the test phrase…</string>
+    <string name="cloud_check_sending">Sending…</string>
+    <string name="cloud_check_heard">Heard: \u201c%1$s\u201d</string>
+    <string name="cloud_check_heard_nothing">It worked, but no words were heard</string>
+    <string name="cloud_check_cancelled">Cancelled. Nothing was sent.</string>
+    <string name="cloud_check_no_sound">Your phone couldn\'t speak the test phrase. Check its text-to-speech settings.</string>
+    <string name="cloud_delete">Delete my cloud data</string>
+    <string name="cloud_delete_note">The anonymous ID and minutes kept on PreCut\'s server</string>
+    <string name="cloud_delete_done">Deleted. Nothing is kept on PreCut\'s server now.</string>
+    <string name="cloud_delete_deleting">Deleting…</string>
+    <string name="cloud_delete_title">Delete your cloud data?</string>
+    <string name="cloud_delete_body">PreCut\'s server will forget this phone\'s anonymous ID and the minutes it used. Nothing else is kept there, and your projects aren\'t affected.</string>
+    <string name="cloud_what">What is sent</string>
+    <string name="cloud_what_title">What cloud AI sends</string>
+    <string name="cloud_what_body">Nothing leaves your phone until you agree, every time.\n\nWhen you do, only the sound is sent, never the video or pictures. It goes to PreCut\'s server in Ireland (run on Supabase), then to ElevenLabs, which turns speech into words.\n\nPreCut\'s server keeps no audio and no words. It keeps only a random ID for this phone and the minutes it used, deleted after 13 months unused or when you tap Delete my cloud data.\n\nGoogle Play checks that this is the genuine PreCut on a genuine phone, so no one else can spend PreCut\'s minutes.</string>
+    <string name="consent_title_check">Send a test phrase?</string>
+    <string name="consent_title_captions">Send this sound for captions?</string>
+    <string name="consent_what_check">What: a test phrase your phone just spoke, %1$s long (%2$s). Only sound.</string>
+    <string name="consent_what_captions">What: only the sound of your video, %1$s long (%2$s). Never the picture.</string>
+    <string name="consent_where">Where: PreCut\'s server in Ireland, then ElevenLabs turns it into words.</string>
+    <string name="consent_kept">Kept: PreCut\'s server keeps no audio or words. ElevenLabs handles it under its own privacy policy.</string>
+    <string name="consent_verify">Google Play checks this is the genuine PreCut on a genuine phone.</string>
+    <string name="consent_send">Send</string>
+    <string name="ai_failure_cloud_off">Cloud AI is off in Settings.</string>
+    <string name="ai_failure_not_set_up">Cloud AI isn\'t set up in this build of PreCut.</string>
+    <string name="ai_failure_offline">You\'re offline. Connect to the internet and try again.</string>
+    <string name="ai_failure_no_play_services">Cloud AI needs the Play Store and Google Play services, up to date.</string>
+    <string name="ai_failure_app_not_verified">This copy of PreCut couldn\'t be verified. Install PreCut from Google Play.</string>
+    <string name="ai_failure_device_not_verified">Google Play couldn\'t verify this phone, so cloud AI isn\'t available on it.</string>
+    <string name="ai_failure_quota_used">You\'ve used this month\'s free minutes. They come back on %1$s.</string>
+    <string name="ai_failure_quota_used_soon">You\'ve used this month\'s free minutes.</string>
+    <string name="ai_failure_budget_reached">Cloud AI is resting for the rest of the month. Try again after %1$s.</string>
+    <string name="ai_failure_budget_reached_soon">Cloud AI is resting for the rest of the month.</string>
+    <string name="ai_failure_paused">Cloud AI is paused for now. Try again later.</string>
+    <plurals name="ai_failure_too_long">
+        <item quantity="one">That\'s longer than %1$d minute, too long to send at once.</item>
+        <item quantity="other">That\'s longer than %1$d minutes, too long to send at once.</item>
+    </plurals>
+    <string name="ai_failure_too_large">That sound is too big to send at once.</string>
+    <string name="ai_failure_bad_audio">The sound couldn\'t be read.</string>
+    <string name="ai_failure_update_app">Update PreCut to use cloud AI.</string>
+    <string name="ai_failure_busy">Cloud AI didn\'t answer. Try again in a moment.</string>
 </resources>

@@ -1,18 +1,29 @@
-# Play Console answers — PreCut 1.0.0
+# Play Console answers — PreCut (with cloud AI, Phase 20)
 
-Answers for the forms under Play Console → Policy → App content, based on what the app actually does: there is no INTERNET permission in the merged manifest, and no analytics, ads or accounts. Media3 adds `ACCESS_NETWORK_STATE` (it can read whether a network is connected, but can't use it) and `WAKE_LOCK` (keeps playback and exports running); neither sends anything.
+Answers for the forms under Play Console → Policy → App content, based on what the app actually does. Since Phase 20 the app has the INTERNET permission for its optional cloud AI: it sends nothing until the user agrees in a dialog shown before every upload, and then only the sound (docs/CLOUD_API.md). There are still no analytics, ads or accounts. Media3 adds `WAKE_LOCK` (keeps playback and exports running); `ACCESS_NETWORK_STATE` lets the app say "you're offline" before trying.
 
 ## Data safety
 | Question | Answer |
 |---|---|
-| Does your app collect or share any of the required user data types? | **No** |
-| Is all of the user data collected by your app encrypted in transit? | Not shown once you answer No above |
-| Do you provide a way for users to request that their data is deleted? | Not shown once you answer No above |
+| Does your app collect or share any of the required user data types? | **Yes** |
+| Is all of the user data collected by your app encrypted in transit? | **Yes** (HTTPS only; cleartext traffic is switched off in the manifest) |
+| Do you provide a way for users to request that their data is deleted? | **Yes**: in the app, Settings → Cloud AI → Delete my cloud data (and the privacy policy's contact address) |
 
-Why "No" is right: Play counts data as *collected* only when it leaves the device. PreCut processes photos, videos, audio recordings and files **on the device only** (Play's "processed ephemerally / on device" exemption). Text to speech uses the phone's installed engine, which isn't PreCut collecting the text.
+Data types to tick, each **collected** and **not shared** (Supabase, which hosts PreCut's server, and ElevenLabs, which turns speech into words, process data on PreCut's behalf, which Play counts as service providers rather than sharing):
+
+| Data type | Processed ephemerally? | Required or optional | Purposes |
+|---|---|---|---|
+| **Audio → Voice or sound recordings** | **No**. PreCut's server keeps nothing, but ElevenLabs may keep audio for a time under its own terms (answer Yes only on an ElevenLabs plan with zero retention, `ELEVENLABS_ZERO_RETENTION=true`) | **Optional** (users can decline each upload or switch cloud AI off) | **App functionality** |
+| **Device or other IDs** (the random installation ID the app makes on first cloud use) | No (kept with the minutes used, up to 13 months unused) | **Optional** | **App functionality**; **Fraud prevention, security, and compliance** |
+
+Notes:
+- Photos, videos, projects and voiceovers stay on the device; only the sound the user chooses is sent. Text to speech uses the phone's own engine.
+- IP addresses appear in the hosting provider's logs but aren't used to work out location, so they aren't a separate data type here.
+- The Play Integrity API sends Google a request hash, the app's package, version and signing certificate, its licence status and a device attestation, used only to answer the check (Google's terms: https://developer.android.com/google/play/integrity/terms#data-safety). PreCut receives only the verdict. Google leaves the form answers to the developer; the "Device or other IDs" entry above, for fraud prevention and security, is the place it belongs if you count it.
+- Before release, check these answers against `privacy-policy.md` and the app's Settings → Cloud AI → What is sent, which say the same.
 
 ## Privacy policy
-The URL of the hosted `privacy-policy.md`. Play requires one because the app requests the microphone.
+The URL of the hosted `privacy-policy.md`. Play requires one because the app requests the microphone and, with cloud AI, sends audio.
 
 ## Ads
 **No**, the app doesn't contain ads.

@@ -1,0 +1,15 @@
+Google Play Integrity and Google Play services libraries
+
+PreCut uses these Google libraries to check, before using cloud AI, that it is the genuine app
+on a genuine phone:
+
+- Play Integrity (com.google.android.play:integrity), under the Play Integrity API Terms of Service:
+  https://developer.android.com/google/play/integrity/overview#tos
+- Play Core common (com.google.android.play:core-common), under the Play Core Software
+  Development Kit Terms of Service:
+  https://developer.android.com/guide/playcore/license
+- Google Play services basement and tasks (com.google.android.gms:play-services-basement,
+  play-services-tasks), under the Android Software Development Kit License Agreement:
+  https://developer.android.com/studio/terms
+
+These libraries are provided by Google LLC. Their terms are published at the addresses above.
