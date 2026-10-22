@@ -2,6 +2,7 @@ package com.savie.precut.model
 
 import com.savie.precut.model.keyframe.TextKeyframe
 import com.savie.precut.model.sticker.Sticker
+import com.savie.precut.model.text.CaptionInfo
 import com.savie.precut.model.text.TextAlign
 import com.savie.precut.model.text.TextAnimation
 import com.savie.precut.model.text.TextGlow
@@ -56,6 +57,8 @@ data class TextOverlay(
     val spans: List<TextSpan> = emptyList(),
     /** Set on a sticker (S-01): what it shows instead of words. */
     val sticker: Sticker? = null,
+    /** Set on an automatic caption (Phase 21): its group and word timings. */
+    val caption: CaptionInfo? = null,
 )
 
 /** This text with [other]'s look (font, colours, effects, animations); its words, timing and place stay. */
