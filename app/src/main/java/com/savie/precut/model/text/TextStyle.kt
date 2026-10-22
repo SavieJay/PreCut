@@ -10,7 +10,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class TextAlign { LEFT, CENTER, RIGHT }
 
-/** Bundled fonts (OFL); null in [com.savie.precut.model.TextOverlay.fontId] is Roboto Flex. */
+/**
+ * Bundled fonts (OFL, and Apache 2.0 for Satisfy and Permanent Marker); null in
+ * [com.savie.precut.model.TextOverlay.fontId] is Roboto Flex. [id] is saved in projects and is
+ * the font's resource name, so it never changes once shipped. Each ships in one weight.
+ */
 @Serializable
 enum class BundledFont(val id: String, val displayName: String) {
     BEBAS_NEUE("bebas_neue", "Bebas Neue"),
@@ -20,6 +24,24 @@ enum class BundledFont(val id: String, val displayName: String) {
     CAVEAT("caveat", "Caveat"),
     ANTON("anton", "Anton"),
     LOBSTER("lobster", "Lobster"),
+
+    // Phase 19
+    MONTSERRAT("montserrat", "Montserrat"),
+    POPPINS("poppins", "Poppins"),
+    OSWALD("oswald", "Oswald"),
+    LORA("lora", "Lora"),
+    DM_SERIF("dm_serif_display", "DM Serif Display"),
+    RALEWAY("raleway", "Raleway"),
+    DANCING_SCRIPT("dancing_script", "Dancing Script"),
+    GREAT_VIBES("great_vibes", "Great Vibes"),
+    SATISFY("satisfy", "Satisfy"),
+    PERMANENT_MARKER("permanent_marker", "Permanent Marker"),
+    BANGERS("bangers", "Bangers"),
+    RIGHTEOUS("righteous", "Righteous"),
+    ABRIL_FATFACE("abril_fatface", "Abril Fatface"),
+    CINZEL("cinzel", "Cinzel"),
+    FREDOKA("fredoka", "Fredoka"),
+    AMATIC_SC("amatic_sc", "Amatic SC"),
     ;
 
     companion object {

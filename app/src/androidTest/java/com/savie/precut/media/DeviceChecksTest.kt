@@ -34,11 +34,18 @@ import com.savie.precut.model.export.ExportResolution
 import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.model.motion.ClipTransition
 import com.savie.precut.model.motion.TransitionType
+import com.savie.precut.model.sticker.StickerPack
+import com.savie.precut.model.sticker.stickerOverlay
 import com.savie.precut.model.template.TemplateCategory
 import com.savie.precut.model.template.TemplatePick
 import com.savie.precut.model.template.fill
 import com.savie.precut.model.template.toTemplate
+import com.savie.precut.model.text.BundledFont
+import com.savie.precut.model.text.TextTemplates
 import com.savie.precut.model.totalDurationMs
+import java.io.File
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,9 +62,6 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * Phase 13 device checks: renders test projects through the real export ([ExportManager]) and
@@ -274,6 +278,42 @@ class DeviceChecksTest {
                 effectLayers = EffectType.entries.mapIndexed { i, type -> EffectLayer("fx$i", i * share, (i + 1) * share, EffectSettings(type)) },
             ),
         )
+    }
+
+    /**
+     * Phase 19B: every text template and bundled font as text, and both sticker packs laid out in
+     * a grid, through the real preview, plus one export of the animated pack. The animated grid is
+     * grabbed twice, so the check can see the stickers move.
+     */
+    @Test
+    fun textAndStickers() = runBlocking {
+        val background = listOf(video("v", 0, 2_000, PATTERN))
+        TextTemplates.all.forEach { template ->
+            val text = template.applyTo(TextOverlay("t", template.sample, 0, 2_000, yNorm = 0.5f))
+            grab(project("text_${template.id}", background, texts = listOf(text)), 1_500)
+        }
+        BundledFont.entries.forEach { font ->
+            val text = TextOverlay("t", "${font.displayName} ₦15,000", 0, 2_000, yNorm = 0.5f, textSizeSp = 28f, fontId = font.id)
+            grab(project("font_${font.id}", background, texts = listOf(text)), 500)
+        }
+        StickerPack.entries.forEach { pack ->
+            val columns = if (pack.stickers.size > 24) 6 else 4
+            val rows = (pack.stickers.size + columns - 1) / columns
+            val stickers = pack.stickers.mapIndexed { i, item ->
+                stickerOverlay("s$i", pack.sticker(item), startMs = 0).copy(
+                    endMs = 2_000,
+                    xNorm = (i % columns + 0.5f) / columns,
+                    yNorm = (i / columns + 0.5f) / rows,
+                    textSizeSp = 280f / rows,
+                )
+            }
+            val grid = project("stickers_${pack.id}", background, texts = stickers)
+            grab(grid, 300)
+            if (pack.animated) {
+                grab(grid, 900)
+                export(grid)
+            }
+        }
     }
 
     private suspend fun export(project: Project) {

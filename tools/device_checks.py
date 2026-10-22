@@ -247,9 +247,18 @@ keys = [float(t.split(",")[0]) for t in out.split()]
 gap = max(b - a for a, b in zip(keys, keys[1:])) if len(keys) > 1 else float("inf")
 check("proxy keyframes", gap <= 0.2 + FRAME / 2, f"{len(keys)} keyframes, largest gap {gap:.3f} s")
 
-# Phase 19 catalogue: a preview frame per effect and transition (each compiled on this GPU, or the
-# test fails), and one export with all of them; the frames go on a sheet to look over.
-frames = sorted(f for f in os.listdir(OUT) if f.startswith(("effect_", "transition_")) and f.endswith(".png"))
+# Phase 19B: animated pack stickers move (two preview frames 0.6 s apart differ), and their export plays.
+def pixels(name):
+    return list(Image.open(path(name)).convert("L").resize((90, 160)).getdata())
+still, later = pixels("stickers_noto_animated_preview_300.png"), pixels("stickers_noto_animated_preview_900.png")
+moved = sum(abs(a - b) for a, b in zip(still, later)) / len(still)
+t = frame_times(path("stickers_noto_animated.mp4"))
+check("animated stickers play", moved > 2 and len(t) == 60, f"mean change {moved:.1f} between 0.3 s and 0.9 s; export {len(t)} frames (expected 60)")
+
+# Phase 19 catalogue: a preview frame per effect, transition, text template, font and sticker pack
+# (each shader compiled on this GPU, or the test fails), and one export with all effects and
+# transitions; the frames go on a sheet to look over.
+frames = sorted(f for f in os.listdir(OUT) if f.startswith(("effect_", "transition_", "text_", "font_", "stickers_")) and f.endswith(".png"))
 t = frame_times(path("catalogue.mp4"))
 expected = expected_ms("catalogue") / 1000
 check("catalogue export", abs(len(t) / 30 - expected) <= 2 * FRAME,

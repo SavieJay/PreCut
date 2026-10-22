@@ -1,7 +1,5 @@
 package com.savie.precut.model
 
-import com.savie.precut.model.sticker.StickerKind
-
 /**
  * Every media Uri the project points at: clips and overlays (and a reversed clip's original),
  * audio, a picture cover, canvas pictures and picture stickers. One list for the media sweep,
@@ -13,7 +11,7 @@ fun Project.mediaUris(): List<String> {
         listOfNotNull((cover as? ProjectCover.Image)?.uri) +
         all.mapNotNull { it.canvas.imageUri } +
         all.mapNotNull { it.reversedFrom?.uri } +
-        textOverlays.mapNotNull { overlay -> overlay.sticker?.takeIf { it.kind != StickerKind.EMOJI }?.value }
+        textOverlays.mapNotNull { overlay -> overlay.sticker?.takeIf { it.kind.isFile }?.value }
 }
 
 /** The project with every Uri in [mediaUris] passed through [transform] (the same places, in the same way). */
@@ -29,7 +27,7 @@ fun Project.mapMediaUris(transform: (String) -> String): Project {
         audioClips = audioClips.map { it.copy(uri = transform(it.uri)) },
         cover = (cover as? ProjectCover.Image)?.let { it.copy(uri = transform(it.uri)) } ?: cover,
         textOverlays = textOverlays.map { overlay ->
-            val sticker = overlay.sticker?.takeIf { it.kind != StickerKind.EMOJI }
+            val sticker = overlay.sticker?.takeIf { it.kind.isFile }
             if (sticker == null) overlay else overlay.copy(sticker = sticker.copy(value = transform(sticker.value)))
         },
     )

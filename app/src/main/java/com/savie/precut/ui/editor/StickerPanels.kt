@@ -11,6 +11,8 @@ import com.savie.precut.R
 import com.savie.precut.media.sticker.LibraryImage
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.sticker.DEFAULT_STICKER_DURATION_MS
+import com.savie.precut.model.sticker.PackSticker
+import com.savie.precut.model.sticker.StickerPack
 import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.components.formatSeconds
 import com.savie.precut.ui.editor.tools.sticker.DrawActions
@@ -55,6 +57,7 @@ fun StickerSheetPanels(tool: EditorTool, positionMs: () -> Long, viewModel: Edit
             override fun onImage(image: LibraryImage) = stickers.onImage(image)
             override fun onImport() = stickers.onImport()
             override fun onRemoveImage(image: LibraryImage) = stickers.onRemoveImage(image)
+            override fun onPack(pack: StickerPack, item: PackSticker) = stickers.onPack(pack, item)
         }
     }
     StickerSheet(recent, images, actions, onClose = close)

@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Sticker(
     val kind: StickerKind,
-    /** [StickerKind.EMOJI]: the emoji; otherwise the picture's Uri. */
+    /** [StickerKind.EMOJI]: the emoji; [StickerKind.PACK]: `<pack id>/<name>`; otherwise the picture's Uri. */
     val value: String,
     /** Width / height of the picture. */
     val aspect: Float = 1f,
@@ -22,7 +22,18 @@ data class Sticker(
 )
 
 @Serializable
-enum class StickerKind { EMOJI, IMAGE, DRAWING }
+enum class StickerKind {
+    EMOJI,
+    IMAGE,
+    DRAWING,
+
+    /** A picture from a [StickerPack] that ships with the app (Phase 19). */
+    PACK,
+    ;
+
+    /** Whether the sticker's value is a file the project owns (moved, copied and kept with it). */
+    val isFile: Boolean get() = this == IMAGE || this == DRAWING
+}
 
 val TextOverlay.isSticker: Boolean get() = sticker != null
 

@@ -22,11 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import com.savie.precut.media.text.resource
 import com.savie.precut.model.clipById
 import com.savie.precut.model.template.ProjectTemplate
 import com.savie.precut.model.text.BundledFont
 import com.savie.precut.model.timelineDurationMs
-import com.savie.precut.ui.editor.tools.text.resource
 import com.savie.precut.ui.theme.Ink1
 import com.savie.precut.ui.theme.Ink3
 import com.savie.precut.ui.theme.LookLayerBar

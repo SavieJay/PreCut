@@ -13,11 +13,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.savie.precut.R
 import com.savie.precut.model.TextOverlay
+import com.savie.precut.model.sticker.Sticker
+import com.savie.precut.model.sticker.StickerKind
+import com.savie.precut.model.sticker.StickerPack
 import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.StickerBar
 import com.savie.precut.ui.theme.TextLaneBar
-import com.savie.precut.model.sticker.Sticker
-import com.savie.precut.model.sticker.StickerKind
 import kotlin.math.roundToLong
 
 /**
@@ -87,5 +88,6 @@ private class StickerLabels(val image: String, val gif: String, val drawing: Str
         StickerKind.EMOJI -> sticker.value
         StickerKind.IMAGE -> if (sticker.animated) gif else image
         StickerKind.DRAWING -> drawing
+        StickerKind.PACK -> StickerPack.of(sticker)?.second?.emoji ?: image
     }
 }

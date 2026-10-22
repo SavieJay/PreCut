@@ -87,6 +87,16 @@ Run `tools/device_checks.sh` with the phone connected. It exports test projects 
 | Filters → Portrait, Movie, Night | Tiles show the real look on your clip | |
 | Open a project saved before this update that uses effects and transitions | Looks exactly as before | |
 
+## 4f. Fonts, text templates, sticker packs (Phase 19B)
+| Check | Expected | Result |
+|---|---|---|
+| The automated checks (section 1) | "animated stickers play" PASS; on `catalogue_sheet.png` every `font_` and `text_` frame shows its text in its own font, and the two `stickers_` grids show every sticker | |
+| Text → Style → Font | 24 fonts plus Roboto Flex, each name drawn in itself | |
+| Text → Style → Templates | Five groups (Title, Social, Caption, Script, Fun); a tap restyles the text and keeps its words and place | |
+| Stickers → Animated, add Fire and Party popper, play | They animate in the preview and in the export | |
+| Stickers → 3D, add a few | Sharp at the default size; the timeline bar shows each one's emoji | |
+| Settings → Open-source licences → Stickers | Both packs, with their licence and credit | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

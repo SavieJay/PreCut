@@ -20,12 +20,12 @@ EDIT ON A TIMELINE
 • Undo and redo every change; drafts save as you go
 
 LOOK AND FEEL
-• Filters, plus your own .cube LUTs
+• 61 filters (life, portrait, film, movie, night and more), plus your own .cube LUTs
 • Adjust brightness, contrast, saturation, HSL and curves
-• 28 effects: glitch, retro, light leaks, lens, split screens and more
+• 46 effects: party, glitch, retro, light leaks, art, snow and rain, lens, split screens and more
 • Motion blur for fast movement
 • Keyframes with easing curves for movement, opacity, masks and colour
-• Transitions between clips: dissolve, slide, push, wipe, zoom, spin and more
+• 30 transitions between clips: dissolve, slide, push, wipe, circle, clock, ink, zoom, spin, glitch and more
 • In, out and combo animations
 
 LAYERS
@@ -35,9 +35,10 @@ LAYERS
 • Canvas colour, blur or picture behind your video
 
 TEXT AND STICKERS
-• Styled text: fonts, outline, shadow, glow, background, curved text and animations
+• Styled text in 24 bundled fonts or your own: outline, shadow, glow, background, curved text and animations
+• 35 one-tap text templates for titles, captions and social posts
 • Text to speech
-• Emoji, animated GIF and WebP stickers, your own images, and drawing
+• Emoji, animated and 3D sticker packs, animated GIF and WebP stickers, your own images, and drawing
 
 AUDIO
 • Several music and sound tracks, each with its own volume, fades and speed

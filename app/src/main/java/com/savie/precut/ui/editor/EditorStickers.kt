@@ -2,22 +2,24 @@ package com.savie.precut.ui.editor
 
 import android.net.Uri
 import com.savie.precut.di.IoDispatcher
+import com.savie.precut.media.TEXT_REFERENCE_WIDTH_DP
 import com.savie.precut.media.sticker.DrawingRasterizer
 import com.savie.precut.media.sticker.LibraryImage
-import com.savie.precut.model.outputSize
-import com.savie.precut.model.sticker.Drawing
-import kotlinx.coroutines.flow.update
 import com.savie.precut.media.sticker.StickerLibrary
 import com.savie.precut.model.edit.EditAction
 import com.savie.precut.model.frameRatio
+import com.savie.precut.model.outputSize
+import com.savie.precut.model.sticker.Drawing
+import com.savie.precut.model.sticker.PackSticker
 import com.savie.precut.model.sticker.Sticker
 import com.savie.precut.model.sticker.StickerKind
+import com.savie.precut.model.sticker.StickerPack
 import com.savie.precut.model.sticker.stickerOverlay
-import com.savie.precut.media.TEXT_REFERENCE_WIDTH_DP
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -51,6 +53,8 @@ class EditorStickers(
         host.scope.launch { withContext(io) { library.useEmoji(emoji) } }
         add(Sticker(StickerKind.EMOJI, emoji))
     }
+
+    fun onPack(pack: StickerPack, item: PackSticker) = add(pack.sticker(item))
 
     fun onImage(image: LibraryImage) {
         host.scope.launch {

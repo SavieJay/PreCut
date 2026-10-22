@@ -2,6 +2,7 @@ package com.savie.precut.media.text
 
 import android.content.Context
 import android.graphics.Typeface
+import androidx.annotation.FontRes
 import androidx.core.content.res.ResourcesCompat
 import com.savie.precut.R
 import com.savie.precut.model.text.BundledFont
@@ -67,16 +68,7 @@ class TextFonts @Inject constructor(@ApplicationContext private val context: Con
         fontId.takeIf { it.startsWith(BundledFont.IMPORTED_PREFIX) }?.let { File(File(context.filesDir, DIR), it.removePrefix(BundledFont.IMPORTED_PREFIX)) }
 
     private fun load(fontId: String?): Typeface? {
-        val bundled = when (BundledFont.of(fontId)) {
-            BundledFont.BEBAS_NEUE -> R.font.bebas_neue
-            BundledFont.PLAYFAIR -> R.font.playfair_display
-            BundledFont.PACIFICO -> R.font.pacifico
-            BundledFont.SPACE_MONO -> R.font.space_mono
-            BundledFont.CAVEAT -> R.font.caveat
-            BundledFont.ANTON -> R.font.anton
-            BundledFont.LOBSTER -> R.font.lobster
-            null -> if (fontId == null) R.font.roboto_flex else null
-        }
+        val bundled = BundledFont.of(fontId)?.resource() ?: if (fontId == null) R.font.roboto_flex else null
         if (bundled != null) return ResourcesCompat.getFont(context, bundled)
         val file = fontId?.let(::importedFile)?.takeIf { it.exists() } ?: return null
         return try {
@@ -95,3 +87,31 @@ class TextFonts @Inject constructor(@ApplicationContext private val context: Con
 
 /** A font imported from the device: its id (`file:<name>`), the name shown, and its file. */
 data class ImportedFont(val id: String, val name: String, val file: File)
+
+/** The font resource a bundled font is shipped as. */
+@FontRes
+fun BundledFont.resource(): Int = when (this) {
+    BundledFont.BEBAS_NEUE -> R.font.bebas_neue
+    BundledFont.PLAYFAIR -> R.font.playfair_display
+    BundledFont.PACIFICO -> R.font.pacifico
+    BundledFont.SPACE_MONO -> R.font.space_mono
+    BundledFont.CAVEAT -> R.font.caveat
+    BundledFont.ANTON -> R.font.anton
+    BundledFont.LOBSTER -> R.font.lobster
+    BundledFont.MONTSERRAT -> R.font.montserrat
+    BundledFont.POPPINS -> R.font.poppins
+    BundledFont.OSWALD -> R.font.oswald
+    BundledFont.LORA -> R.font.lora
+    BundledFont.DM_SERIF -> R.font.dm_serif_display
+    BundledFont.RALEWAY -> R.font.raleway
+    BundledFont.DANCING_SCRIPT -> R.font.dancing_script
+    BundledFont.GREAT_VIBES -> R.font.great_vibes
+    BundledFont.SATISFY -> R.font.satisfy
+    BundledFont.PERMANENT_MARKER -> R.font.permanent_marker
+    BundledFont.BANGERS -> R.font.bangers
+    BundledFont.RIGHTEOUS -> R.font.righteous
+    BundledFont.ABRIL_FATFACE -> R.font.abril_fatface
+    BundledFont.CINZEL -> R.font.cinzel
+    BundledFont.FREDOKA -> R.font.fredoka
+    BundledFont.AMATIC_SC -> R.font.amatic_sc
+}

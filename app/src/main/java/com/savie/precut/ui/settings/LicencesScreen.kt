@@ -64,13 +64,34 @@ private val FONTS = listOf(
     Notice(R.string.notice_font_pacifico, OFL, R.raw.licence_ofl_pacifico),
     Notice(R.string.notice_font_playfair_display, OFL, R.raw.licence_ofl_playfairdisplay),
     Notice(R.string.notice_font_space_mono, OFL, R.raw.licence_ofl_spacemono),
+    Notice(R.string.notice_font_montserrat, OFL, R.raw.licence_ofl_montserrat),
+    Notice(R.string.notice_font_poppins, OFL, R.raw.licence_ofl_poppins),
+    Notice(R.string.notice_font_oswald, OFL, R.raw.licence_ofl_oswald),
+    Notice(R.string.notice_font_lora, OFL, R.raw.licence_ofl_lora),
+    Notice(R.string.notice_font_dm_serif_display, OFL, R.raw.licence_ofl_dmserifdisplay),
+    Notice(R.string.notice_font_raleway, OFL, R.raw.licence_ofl_raleway),
+    Notice(R.string.notice_font_dancing_script, OFL, R.raw.licence_ofl_dancingscript),
+    Notice(R.string.notice_font_great_vibes, OFL, R.raw.licence_ofl_greatvibes),
+    Notice(R.string.notice_font_satisfy, APACHE, R.raw.licence_apache_2_0),
+    Notice(R.string.notice_font_permanent_marker, APACHE, R.raw.licence_apache_2_0),
+    Notice(R.string.notice_font_bangers, OFL, R.raw.licence_ofl_bangers),
+    Notice(R.string.notice_font_righteous, OFL, R.raw.licence_ofl_righteous),
+    Notice(R.string.notice_font_abril_fatface, OFL, R.raw.licence_ofl_abrilfatface),
+    Notice(R.string.notice_font_cinzel, OFL, R.raw.licence_ofl_cinzel),
+    Notice(R.string.notice_font_fredoka, OFL, R.raw.licence_ofl_fredoka),
+    Notice(R.string.notice_font_amatic_sc, OFL, R.raw.licence_ofl_amaticsc),
 )
 
-/** Open-source licences: what PreCut ships, and each licence's full text (Apache 2.0 and the OFL ask for it). */
+private val STICKERS = listOf(
+    Notice(R.string.notice_stickers_noto_animated, R.string.licence_cc_by_4, R.raw.licence_cc_by_4_noto_animated),
+    Notice(R.string.notice_stickers_fluent_3d, R.string.licence_mit, R.raw.licence_mit_fluent_emoji),
+)
+
+/** Open-source licences: what PreCut ships, and each licence's full text (Apache 2.0, the OFL, MIT and CC BY ask for it or a link). */
 @Composable
 fun LicencesScreen(onBack: () -> Unit) {
     var openName by rememberSaveable { mutableStateOf<Int?>(null) }
-    val open = (LIBRARIES + FONTS).firstOrNull { it.name == openName }
+    val open = (LIBRARIES + FONTS + STICKERS).firstOrNull { it.name == openName }
     BackHandler(enabled = open != null) { openName = null }
     Column(Modifier.fillMaxSize().background(Ink0).statusBarsPadding().navigationBarsPadding()) {
         Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -85,6 +106,7 @@ fun LicencesScreen(onBack: () -> Unit) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
                 Section(R.string.licences_libraries, LIBRARIES) { openName = it.name }
                 Section(R.string.licences_fonts, FONTS) { openName = it.name }
+                Section(R.string.licences_stickers, STICKERS) { openName = it.name }
             }
         }
     }

@@ -32,6 +32,27 @@ class TextStyleTest {
     }
 
     @Test
+    fun templates_fillEveryGroup_andStayInTheEditorsRanges() {
+        TextTemplateCategory.entries.forEach { category ->
+            // At most three rows of three tiles, so a group never needs scrolling.
+            assertTrue(category.name, TextTemplates.inCategory(category).size in 1..9)
+        }
+        TextTemplates.all.forEach { template ->
+            val style = template.style
+            assertTrue(template.id, style.letterSpacing in -5f..20f)
+            assertTrue(template.id, style.curve in -MAX_TEXT_CURVE..MAX_TEXT_CURVE)
+            assertTrue(template.id, style.textSizeSp in com.savie.precut.model.MIN_TEXT_SIZE_SP..com.savie.precut.model.MAX_TEXT_SIZE_SP)
+            listOfNotNull(style.animationIn, style.animationOut, style.animationLoop).forEach {
+                assertTrue(template.id, it.durationMs in MIN_TEXT_ANIMATION_MS..MAX_TEXT_ANIMATION_MS)
+            }
+        }
+        // Every Phase 19 font shows up in at least one template.
+        val used = TextTemplates.all.mapNotNull { BundledFont.of(it.style.fontId) }.toSet()
+        val phase19 = BundledFont.entries.dropWhile { it != BundledFont.MONTSERRAT }
+        assertEquals(emptyList<BundledFont>(), phase19.filter { it !in used })
+    }
+
+    @Test
     fun textSpecFor_carriesTheStyleAndScalesToTheShortSide() {
         val styled = words.copy(textSizeSp = 36f, stroke = TextStroke(width = 2f), animationIn = TextAnimation(TextAnimationType.POP))
         val spec = textSpecFor(styled, OutputSize(1080, 1920))

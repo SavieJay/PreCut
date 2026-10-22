@@ -531,6 +531,11 @@
     <string name="text_tab_effects">Effects</string>
     <string name="text_tab_animation">Animation</string>
     <string name="text_tab_templates">Templates</string>
+    <string name="text_templates_title">Title</string>
+    <string name="text_templates_social">Social</string>
+    <string name="text_templates_caption">Caption</string>
+    <string name="text_templates_script">Script</string>
+    <string name="text_templates_fun">Fun</string>
     <string name="text_import_font">Import font (.ttf, .otf)</string>
     <string name="text_font_default_name">Roboto Flex</string>
     <string name="text_font_default">Default</string>
@@ -588,6 +593,10 @@
     <string name="tool_keyframe">Keyframe</string>
     <string name="sticker_title">Stickers</string>
     <string name="sticker_tab_emoji">Emoji</string>
+    <string name="sticker_tab_animated">Animated</string>
+    <string name="sticker_tab_3d">3D</string>
+    <string name="sticker_credit_noto_animated">Animated Noto Emoji by Google · CC BY 4.0</string>
+    <string name="sticker_credit_fluent_3d">Fluent Emoji by Microsoft · MIT licence</string>
     <string name="sticker_tab_images">My images</string>
     <string name="sticker_search">Search emoji</string>
     <string name="sticker_recent">Recent</string>
@@ -771,8 +780,11 @@
     <string name="crash_share_subject">PreCut crash report</string>
     <string name="licences_libraries">Libraries and icons</string>
     <string name="licences_fonts">Fonts</string>
+    <string name="licences_stickers">Stickers</string>
     <string name="licence_apache">Apache License 2.0</string>
     <string name="licence_ofl">SIL Open Font License 1.1</string>
+    <string name="licence_cc_by_4">Creative Commons Attribution 4.0</string>
+    <string name="licence_mit">MIT License</string>
     <string name="notice_androidx" translatable="false">AndroidX: Core, Activity, Lifecycle, Navigation, Room</string>
     <string name="notice_compose" translatable="false">Jetpack Compose and Material 3</string>
     <string name="notice_media3" translatable="false">AndroidX Media3</string>
@@ -788,6 +800,24 @@
     <string name="notice_font_pacifico" translatable="false">Pacifico</string>
     <string name="notice_font_playfair_display" translatable="false">Playfair Display</string>
     <string name="notice_font_space_mono" translatable="false">Space Mono</string>
+    <string name="notice_font_montserrat" translatable="false">Montserrat</string>
+    <string name="notice_font_poppins" translatable="false">Poppins</string>
+    <string name="notice_font_oswald" translatable="false">Oswald</string>
+    <string name="notice_font_lora" translatable="false">Lora</string>
+    <string name="notice_font_dm_serif_display" translatable="false">DM Serif Display</string>
+    <string name="notice_font_raleway" translatable="false">Raleway</string>
+    <string name="notice_font_dancing_script" translatable="false">Dancing Script</string>
+    <string name="notice_font_great_vibes" translatable="false">Great Vibes</string>
+    <string name="notice_font_satisfy" translatable="false">Satisfy</string>
+    <string name="notice_font_permanent_marker" translatable="false">Permanent Marker</string>
+    <string name="notice_font_bangers" translatable="false">Bangers</string>
+    <string name="notice_font_righteous" translatable="false">Righteous</string>
+    <string name="notice_font_abril_fatface" translatable="false">Abril Fatface</string>
+    <string name="notice_font_cinzel" translatable="false">Cinzel</string>
+    <string name="notice_font_fredoka" translatable="false">Fredoka</string>
+    <string name="notice_font_amatic_sc" translatable="false">Amatic SC</string>
+    <string name="notice_stickers_noto_animated" translatable="false">Animated Noto Emoji (Google)</string>
+    <string name="notice_stickers_fluent_3d" translatable="false">Fluent Emoji 3D (Microsoft)</string>
     <string name="export_gif">GIF</string>
     <string name="export_gif_title">Export a GIF</string>
     <string name="export_gif_size">Size</string>

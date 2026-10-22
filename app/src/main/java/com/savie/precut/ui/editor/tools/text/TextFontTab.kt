@@ -31,6 +31,7 @@ import com.savie.precut.ui.theme.PreCutType
 import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
 import com.savie.precut.media.text.ImportedFont
+import com.savie.precut.media.text.resource
 
 /** Font (X-04a): import, Roboto Flex, the bundled fonts and imported ones, each shown in itself. */
 @Composable
@@ -64,14 +65,4 @@ private fun FontRow(name: String, family: FontFamily?, note: String?, selected: 
         note?.let { Text(it, style = PreCutType.labelChip, color = TextSecondary) }
         if (selected) Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Accent, modifier = Modifier.size(20.dp))
     }
-}
-
-internal fun BundledFont.resource(): Int = when (this) {
-    BundledFont.BEBAS_NEUE -> R.font.bebas_neue
-    BundledFont.PLAYFAIR -> R.font.playfair_display
-    BundledFont.PACIFICO -> R.font.pacifico
-    BundledFont.SPACE_MONO -> R.font.space_mono
-    BundledFont.CAVEAT -> R.font.caveat
-    BundledFont.ANTON -> R.font.anton
-    BundledFont.LOBSTER -> R.font.lobster
 }

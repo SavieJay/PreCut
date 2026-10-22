@@ -9,7 +9,9 @@ import android.net.Uri
 import android.text.TextPaint
 import android.util.LruCache
 import com.savie.precut.model.sticker.Sticker
+import com.savie.precut.model.sticker.PackSticker
 import com.savie.precut.model.sticker.StickerKind
+import com.savie.precut.model.sticker.StickerPack
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import javax.inject.Inject
@@ -35,8 +37,9 @@ class StickerFrames(private val bitmaps: List<Bitmap>, private val delaysMs: Int
 
 /**
  * Draws stickers (S-01, S-02) at a given height in output pixels: an emoji with the system's
- * colour emoji font, or a picture (PNG/WebP/JPEG/GIF first frame; GIF frames via [frames]).
- * Decoded pictures are cached by Uri and size. Safe to call from any thread.
+ * colour emoji font, or a picture (PNG/WebP/JPEG/GIF first frame; GIF and WebP frames via
+ * [frames]) from a file or, for a pack sticker, the app's assets. Decoded pictures are cached by
+ * source and size. Safe to call from any thread.
  */
 @Singleton
 class StickerRenderer @Inject constructor(@ApplicationContext private val context: Context) {
@@ -54,7 +57,7 @@ class StickerRenderer @Inject constructor(@ApplicationContext private val contex
         stills.get(key)?.let { return it }
         val bitmap = when (sticker.kind) {
             StickerKind.EMOJI -> emoji(sticker.value, height)
-            StickerKind.IMAGE, StickerKind.DRAWING -> picture(sticker.value, height) ?: empty(sticker.aspect, height)
+            StickerKind.IMAGE, StickerKind.DRAWING, StickerKind.PACK -> source(sticker)?.let { picture(it, height) } ?: empty(sticker.aspect, height)
         }
         stills.put(key, bitmap)
         return bitmap
@@ -66,7 +69,7 @@ class StickerRenderer @Inject constructor(@ApplicationContext private val contex
         val height = heightPx.roundToInt().coerceIn(1, MAX_SIDE)
         val key = "${sticker.value}|$height"
         animations.get(key)?.let { return it.first }
-        val bytes = read(sticker.value) ?: return null
+        val bytes = source(sticker)?.let(::read) ?: return null
         val (w, h) = animationSize(bytes) ?: return null
         val bitmaps = mutableListOf<Bitmap>()
         val delays = mutableListOf<Int>()
@@ -147,8 +150,19 @@ class StickerRenderer @Inject constructor(@ApplicationContext private val contex
 
     private fun read(uri: String): ByteArray? = open(uri) { it.readBytes() }
 
+    /**
+     * Where [sticker]'s picture is: its file's Uri, or its place in the app's assets; null for a
+     * pack sticker this version doesn't ship.
+     */
+    private fun source(sticker: Sticker): String? =
+        if (sticker.kind == StickerKind.PACK) StickerPack.of(sticker)?.let { (pack, item) -> pack.assetUri(item) } else sticker.value
+
     private fun <T> open(uri: String, block: (java.io.InputStream) -> T?): T? = try {
-        context.contentResolver.openInputStream(Uri.parse(uri))?.use(block)
+        if (uri.startsWith(ASSET_URI)) {
+            context.assets.open(uri.removePrefix(ASSET_URI)).use(block)
+        } else {
+            context.contentResolver.openInputStream(Uri.parse(uri))?.use(block)
+        }
     } catch (_: IOException) {
         null
     } catch (_: SecurityException) {
@@ -166,3 +180,9 @@ class StickerRenderer @Inject constructor(@ApplicationContext private val contex
         const val FRAME_BUDGET_BYTES = 64 * 1024 * 1024
     }
 }
+
+/** The prefix that points a Uri into the app's assets (Coil reads it too). */
+const val ASSET_URI = "file:///android_asset/"
+
+/** [item]'s picture as a Uri, for the renderer and the sticker sheet's tiles. */
+fun StickerPack.assetUri(item: PackSticker): String = ASSET_URI + assetPath(item)
