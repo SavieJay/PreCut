@@ -22,3 +22,8 @@ captures/
 *.jks
 *.keystore
 keystore.properties
+
+# Cloud AI (Phase 20): the app's backend address and keys, and the backend's secrets
+cloud.properties
+supabase/.env.secrets
+supabase/functions/.env.local
