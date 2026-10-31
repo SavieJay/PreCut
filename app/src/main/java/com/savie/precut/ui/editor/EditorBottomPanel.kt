@@ -1,6 +1,7 @@
 package com.savie.precut.ui.editor
 
 import android.Manifest
+import com.savie.precut.model.frame.cutoutCoversClip
 import com.savie.precut.model.edit.clipShownAt
 import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
@@ -24,6 +25,7 @@ import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.ui.editor.captions.CaptionsPanelFor
 import com.savie.precut.ui.editor.tools.AudioMenuBar
 import com.savie.precut.ui.editor.tools.ChromaTool
+import com.savie.precut.ui.editor.tools.CutoutTool
 import com.savie.precut.ui.editor.tools.ClipVolumeTool
 import com.savie.precut.ui.editor.tools.MaskTool
 import com.savie.precut.ui.editor.tools.CoverTool
@@ -125,6 +127,8 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         state.activeTool == EditorTool.MASK && clip != null -> MaskTool(clip.mask, rememberMaskActions(viewModel), onDone = close)
         state.activeTool == EditorTool.CHROMA && clip != null ->
             ChromaTool(clip.chroma, state.chromaPicking, rememberChromaActions(viewModel), onDone = close)
+        state.activeTool == EditorTool.CUTOUT && clip != null ->
+            CutoutTool(clip.cutout, clip.cutoutCoversClip(), state.peekOriginal, rememberCutoutActions(viewModel), onDone = close)
         state.activeTool == EditorTool.FADE && clip != null ->
             FadeTool(clip.fadeInMs, clip.fadeOutMs, clip.timelineDurationMs(), viewModel::onClipFadesChanged, onDone = close)
         state.activeTool in TEXT_STYLE_TOOLS && text != null && state.activeTool != null ->

@@ -135,6 +135,8 @@ fun EditorScreen(
             EditorEvent.ReverseNotForPhotos -> resources.getString(R.string.reverse_not_for_photos)
             EditorEvent.ReverseFailed -> resources.getString(R.string.reverse_failed)
             EditorEvent.ReverseUnsupported -> resources.getString(R.string.reverse_unsupported)
+            EditorEvent.CutoutNoPerson -> resources.getString(R.string.cutout_no_person)
+            EditorEvent.CutoutFailed -> resources.getString(R.string.cutout_failed)
             EditorEvent.TemplateSaved -> {
                 templateSheet = false
                 resources.getString(R.string.template_saved)
@@ -155,10 +157,11 @@ fun EditorScreen(
                 }
                 return@ObserveAsEvents
             }
-            EditorEvent.FrozeFrame, EditorEvent.ClipReversed, EditorEvent.ClipUnreversed -> {
+            EditorEvent.FrozeFrame, EditorEvent.ClipReversed, EditorEvent.ClipUnreversed, EditorEvent.CutoutDone -> {
                 val text = when (event) {
                     EditorEvent.FrozeFrame -> R.string.freeze_added
                     EditorEvent.ClipReversed -> R.string.reverse_done
+                    EditorEvent.CutoutDone -> R.string.cutout_done
                     else -> R.string.reverse_removed
                 }
                 scope.launch {

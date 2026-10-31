@@ -44,8 +44,13 @@ class EffectsFactory @Inject constructor(
      * the output frame: plainly fitted on black, or over the clip's canvas.
      */
     fun videoEffects(visual: VisualSpec, outputSize: OutputSize): List<Effect> = buildList {
-        if (visual.look != null || visual.chroma != null || visual.lookKeyframes.isNotEmpty()) {
-            add(LookEffect(visual.look ?: ClipLook(), luts, chroma = visual.chroma, keyframes = visual.lookKeyframes, keyframesStartUs = visual.keyframesStartUs))
+        if (visual.look != null || visual.chroma != null || visual.cutout != null || visual.lookKeyframes.isNotEmpty()) {
+            add(
+                LookEffect(
+                    visual.look ?: ClipLook(), luts, chroma = visual.chroma, keyframes = visual.lookKeyframes,
+                    keyframesStartUs = visual.keyframesStartUs, cutout = visual.cutout,
+                ),
+            )
         }
         if (visual.mirrored || visual.rotationDegrees % 360 != 0) {
             // Media3 scales before rotating, and rotates counter-clockwise for positive angles; the model is clockwise.

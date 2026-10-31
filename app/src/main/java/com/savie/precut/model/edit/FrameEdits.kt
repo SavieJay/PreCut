@@ -40,6 +40,9 @@ internal fun Project.applyFrameEdit(action: EditAction.FrameEdit): Project = whe
     is EditAction.SetChroma -> updateFrame(action.clipId) {
         it.copy(chroma = action.chroma?.let { key -> key.copy(intensity = key.intensity.coerceIn(0f, 1f), shadow = key.shadow.coerceIn(0f, 1f)) })
     }
+    is EditAction.SetCutout -> updateFrame(action.clipId) {
+        it.copy(cutout = action.cutout?.let { cut -> cut.copy(softness = cut.softness.coerceIn(0f, 1f), edge = cut.edge.coerceIn(-1f, 1f)) })
+    }
 }
 
 private fun ClipMask.normalized(): ClipMask = copy(

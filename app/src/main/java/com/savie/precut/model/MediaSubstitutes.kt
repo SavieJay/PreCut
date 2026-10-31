@@ -9,8 +9,11 @@ fun Project.withMediaSubstitutes(substitutes: Map<String, String>): Project {
     if (substitutes.isEmpty()) return this
     var changed = false
     fun swap(clip: Clip): Clip {
-        val stand = substitutes[clip.uri]?.takeIf { clip.type == ClipType.VIDEO }
-        return if (stand == null) clip else clip.copy(uri = stand).also { changed = true }
+        val stand = substitutes[clip.uri]?.takeIf { clip.type == ClipType.VIDEO } ?: return clip
+        changed = true
+        // A background-removal matte still fits the stand-in (same moments), so it follows it.
+        val cutout = clip.cutout?.let { if (it.sourceUri == clip.uri) it.copy(sourceUri = stand) else it }
+        return clip.copy(uri = stand, cutout = cutout)
     }
     val swapped = clips.map(::swap)
     val swappedOverlays = overlays.map { it.copy(clip = swap(it.clip)) }

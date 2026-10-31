@@ -12,6 +12,7 @@ import com.savie.precut.model.coverSource
 import com.savie.precut.model.frame.ChromaKey
 import com.savie.precut.model.frame.ClipCanvas
 import com.savie.precut.model.frame.ClipMask
+import com.savie.precut.model.frame.matteMsAtOffset
 import com.savie.precut.model.keyframe.ClipKeyframe
 import com.savie.precut.model.keyframe.TextKeyframe
 import com.savie.precut.model.edit.keyframesOnTimeline
@@ -130,6 +131,8 @@ data class VisualSpec(
     val transition: TransitionSpec? = null,
     /** Keyed on the source colours, in the look pass; null without a key. */
     val chroma: ChromaKey? = null,
+    /** Background removal from the clip's matte, in the look pass; null when off. */
+    val cutout: CutoutSpec? = null,
     /** Keyframes animating filter strength, Adjust and chroma strength, timed from [keyframesStartUs]. */
     val lookKeyframes: List<ClipKeyframe> = emptyList(),
     /** Composition time of the clip's start (keyframe times are offsets from it). */
@@ -144,6 +147,36 @@ data class VisualSpec(
 
 /** Where a clip sits in composition time, for effects that change over the clip. */
 data class ClipTime(val startUs: Long, val lengthMs: Long)
+
+/**
+ * Remove background (Phase 22A) on a clip starting at composition time [clipStartUs]: the look pass
+ * keeps what [matteUri]'s picture marks as person. The edge is a soft step on the matte from
+ * [softness] and [edge] ([edgeRange]).
+ */
+data class CutoutSpec(
+    val matteUri: String,
+    val softness: Float,
+    val edge: Float,
+    val clipStartUs: Long,
+    /** The clip (timing, media and matte range) the matte times come from. */
+    private val clip: Clip,
+) {
+    /** The matte time (µs) at composition time [timeUs]; null where the clip shows uncut. */
+    fun matteUsAt(timeUs: Long): Long? = clip.matteMsAtOffset((timeUs - clipStartUs) / 1_000)?.times(1_000)
+
+    /** Matte values below the first are background, above the second person; a looser edge lowers both. */
+    fun edgeRange(): Pair<Float, Float> {
+        val centre = 0.5f - edge.coerceIn(-1f, 1f) * EDGE_REACH
+        val half = (MIN_EDGE_WIDTH + softness.coerceIn(0f, 1f) * SOFT_EDGE_WIDTH) / 2f
+        return (centre - half).coerceAtLeast(0f) to (centre + half).coerceAtMost(1f)
+    }
+
+    private companion object {
+        const val EDGE_REACH = 0.35f
+        const val MIN_EDGE_WIDTH = 0.04f
+        const val SOFT_EDGE_WIDTH = 0.6f
+    }
+}
 
 /** In/Out/Combo animations of a clip starting at [time]. */
 data class AnimationSpec(
@@ -412,6 +445,7 @@ private fun itemSpecOf(clip: Clip, originalAudioMuted: Boolean, live: Boolean, m
         frame = frameSpecOf(clip, live, motion.time, overlay, keyframes),
         transition = motion.transition,
         chroma = clip.chroma,
+        cutout = clip.cutout?.let { CutoutSpec(it.matteUri, it.softness, it.edge, motion.time.startUs, clip) },
         lookKeyframes = keyframes.takeIf { clip.animatesLook() }.orEmpty(),
         keyframesStartUs = if (clip.animatesLook()) motion.time.startUs else 0L,
         effect = clip.effect?.let { ClipEffectSpec(it, motion.time.startUs) },
@@ -448,7 +482,7 @@ private fun itemSpecOf(clip: Clip, originalAudioMuted: Boolean, live: Boolean, m
 private fun frameSpecOf(clip: Clip, live: Boolean, time: ClipTime, overlay: Boolean, keyframes: List<ClipKeyframe>): FrameSpec? {
     val animated = clip.animationIn != null || clip.animationOut != null || clip.animationCombo != null
     val plain = clip.fit == FrameFit.FIT && clip.transform.isIdentity && clip.opacity >= 1f && clip.canvas.isDefault && !animated &&
-        clip.mask == null && clip.chroma == null && keyframes.isEmpty()
+        clip.mask == null && clip.chroma == null && clip.cutout == null && keyframes.isEmpty()
     if (plain && !live && !overlay) return null
     return FrameSpec(
         clip.fit, clip.transform, clip.opacity.coerceIn(0f, 1f), clip.canvas,
@@ -495,7 +529,7 @@ private fun Clip.animatesLook(): Boolean {
  * transitions, layers, effects, texts, cover), which work in SDR only.
  */
 fun CompositionSpec.usesOwnShaders(): Boolean =
-    items.any { it.visual.let { v -> v.frame != null || v.look != null || v.chroma != null || v.effect != null || v.transition != null || v.crop != null } } ||
+    items.any { it.visual.let { v -> v.frame != null || v.look != null || v.chroma != null || v.cutout != null || v.effect != null || v.transition != null || v.crop != null } } ||
         overlayLanes.isNotEmpty() || transitions.isNotEmpty() || lookLayers.isNotEmpty() || effectLayers.isNotEmpty() ||
         texts.isNotEmpty() || cover != null
 

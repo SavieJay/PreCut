@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,19 +38,39 @@ import com.savie.precut.ui.theme.tabular
 
 /** T-19: reversing progress; only Cancel closes it. */
 @Composable
-fun ReverseDialog(progress: ReverseProgress, onCancel: () -> Unit) {
+fun ReverseDialog(progress: ReverseProgress, onCancel: () -> Unit) = WorkProgressDialog(
+    R.drawable.ic_reverse,
+    stringResource(R.string.reverse_progress, progress.percent),
+    stringResource(R.string.reverse_body, formatSeconds(progress.clipLengthMs)),
+    progress,
+    onCancel,
+)
+
+/** Remove background (Phase 22A): progress of a clip's matte; only Cancel closes it. */
+@Composable
+fun CutoutDialog(progress: ReverseProgress, onCancel: () -> Unit) = WorkProgressDialog(
+    R.drawable.ic_frame_person,
+    stringResource(R.string.cutout_progress, progress.percent),
+    stringResource(R.string.cutout_body, formatSeconds(progress.clipLengthMs)),
+    progress,
+    onCancel,
+)
+
+/** Long work on a clip done on the phone: [title] with the percent, [body], time left, Cancel. */
+@Composable
+private fun WorkProgressDialog(@DrawableRes icon: Int, title: String, body: String, progress: ReverseProgress, onCancel: () -> Unit) {
     Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
         Column(
             Modifier.fillMaxWidth().background(Ink2, RoundedCornerShape(28.dp)).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Box(Modifier.size(48.dp).background(AccentContainer, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.ic_reverse), contentDescription = null, tint = Accent)
+                Icon(painterResource(icon), contentDescription = null, tint = Accent)
             }
-            Text(stringResource(R.string.reverse_progress, progress.percent), style = MaterialTheme.typography.titleLarge.tabular())
+            Text(title, style = MaterialTheme.typography.titleLarge.tabular())
             val left = progress.secondsLeft?.let { LocalResources.current.getQuantityString(R.plurals.reverse_seconds_left, it.coerceAtLeast(1), it.coerceAtLeast(1)) }
             Text(
-                listOfNotNull(stringResource(R.string.reverse_body, formatSeconds(progress.clipLengthMs)), left).joinToString(" "),
+                listOfNotNull(body, left).joinToString(" "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )

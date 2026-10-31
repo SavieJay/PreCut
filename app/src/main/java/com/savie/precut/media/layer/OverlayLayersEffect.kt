@@ -234,11 +234,11 @@ internal class OverlayLayersShaderProgram(
                 }
             }
             var picture = source
-            if (item.visual.look != null || item.visual.chroma != null || item.visual.lookKeyframes.isNotEmpty()) {
+            if (item.visual.look != null || item.visual.chroma != null || item.visual.cutout != null || item.visual.lookKeyframes.isNotEmpty()) {
                 val lookSpec = item.visual.look ?: ClipLook()
                 val animated = item.visual.lookKeyframes.takeIf { it.isNotEmpty() }?.let { LookKeyframes(lookSpec, it, item.visual.keyframesStartUs) }
                 val program = look ?: LookShaderProgram(
-                    LookUniforms.of(lookSpec), lookSpec.filterId?.let(luts::cube), null, item.visual.chroma, animated,
+                    LookUniforms.of(lookSpec), lookSpec.filterId?.let(luts::cube), null, item.visual.chroma, animated, item.visual.cutout,
                 ).also { look = it }
                 graded = graded.sized(picture.width, picture.height)
                 GlUtil.focusFramebufferUsingCurrentContext(graded.fbo, picture.width, picture.height)

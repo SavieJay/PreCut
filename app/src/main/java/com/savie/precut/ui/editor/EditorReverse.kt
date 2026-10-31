@@ -13,7 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-/** A reverse in progress (T-19): [secondsLeft] is null until there's enough progress to estimate. */
+/** Long work on a clip (Reverse T-19, Remove background): [secondsLeft] is null until there's enough progress to estimate. */
 data class ReverseProgress(val clipLengthMs: Long, val percent: Int, val secondsLeft: Int?)
 
 /**

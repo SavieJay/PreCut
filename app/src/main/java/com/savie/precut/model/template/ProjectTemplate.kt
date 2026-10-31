@@ -70,7 +70,8 @@ fun Project.toTemplate(id: String, title: String, category: TemplateCategory, sl
     val overlayStarts = overlays.map { Triple(it.id, it.timelineStartMs, 1) }
     val ordered = (mainStarts + overlayStarts).filter { it.first in slotIds }.sortedWith(compareBy({ it.second }, { it.third })).map { it.first }
     val placeholders = ordered.withIndex().associate { (index, clipId) -> clipId to SLOT_URI_PREFIX + index }
-    fun Clip.asSlot() = placeholders[this.id]?.let { copy(uri = it, reversedFrom = null) } ?: this
+    // A slot's matte belongs to the media it held, so a filled slot starts without one.
+    fun Clip.asSlot() = placeholders[this.id]?.let { copy(uri = it, reversedFrom = null, cutout = null) } ?: this
     val recipe = copy(
         id = id,
         name = title,

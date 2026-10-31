@@ -154,6 +154,29 @@ The project from 4h, with its captions.
 | Header: Share subtitles | The share sheet offers the .srt file (e.g. to Drive or WhatsApp) | |
 | Load the .srt next to the exported video in a player (VLC, or YouTube Studio) | The subtitles line up with the speech | |
 
+## 4j. Remove background (Phase 22A)
+Works on the phone, offline. Use a video of one person filmed fairly close (head and shoulders to full body), a portrait (upright) video of a person, a photo of a person, and a clip with no people (a landscape).
+
+| Check | Expected | Result |
+|---|---|---|
+| Select the person video → Remove BG → switch on | "Removing background… N%" with time left and Cancel; then "Background removed" with Undo. The person stays, the rest shows the canvas (black by default) | |
+| Play it | The outline follows the person without flickering or lagging behind; hair and hands may be rougher | |
+| Canvas → Blur, then a colour, then a picture | The person stays in front of each background | |
+| Softness and Edge sliders (release each) | Softness blurs the outline's edge; Edge right keeps more around the person, left trims closer | |
+| Show original on, then off | The whole clip, then the cut-out clip again | |
+| Export at 1080p and play from the gallery | Same cut-out as the preview, at the same moments | |
+| The portrait video | The outline sits on the person (not turned sideways or mirrored) | |
+| The photo, as a main clip and as an overlay | The person stays; as an overlay, the video below shows around them | |
+| An overlay of the person over another video, moving with keyframes | The cut-out person moves with the overlay; the export matches | |
+| Cancel half way, then switch on again | Nothing changes after Cancel; the second run starts over and finishes | |
+| Switch off, then on again | Instant the second time (the outline is reused) | |
+| The clip with no people | "No person found in this clip" and the switch stays off | |
+| Split the cut-out clip, Duplicate it, Speed 2x, Reverse it | Every piece stays cut out, at the right moments | |
+| Trim the cut-out clip longer than it was | The panel says part of the clip isn't cut out, with Update; Update fixes it | |
+| Undo, Redo; close and reopen the project | Each comes back as it was | |
+| Save as template with the clip as a slot, then use it | The filled slot starts without the cut-out (switch it on again) | |
+| Projects → gear → Open-source licences | LiteRT and the MediaPipe Selfie Segmentation model are listed | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:
@@ -167,6 +190,7 @@ The project from 4h, with its captions.
 | Full screen and Reverse | No crash | |
 | Settings → Cloud AI → Check cloud AI → Send | Works as in 4g | |
 | Generate captions for a short speech clip | Captions are added, as in 4h | |
+| Remove BG on a clip with a person, then export | Works as in 4j (the release build shrinks code, so this checks LiteRT survived) | |
 
 ## 6. Store screenshots
 Take the six screenshots listed in `docs/store/README.md` while you're at it.

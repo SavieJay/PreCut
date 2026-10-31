@@ -9,6 +9,7 @@ import com.savie.precut.model.frame.ClipMask
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.frame.CropRatio
 import com.savie.precut.model.frame.CropRect
+import com.savie.precut.model.frame.Cutout
 import com.savie.precut.model.frame.FrameFit
 import com.savie.precut.model.keyframe.ClipKeyframe
 import com.savie.precut.model.look.ClipLook
@@ -73,6 +74,8 @@ data class Clip(
     val mask: ClipMask? = null,
     /** Removes a colour (P-04); null keeps every colour. */
     val chroma: ChromaKey? = null,
+    /** Removes the background around a person (Phase 22A); null shows everything. */
+    val cutout: Cutout? = null,
     /**
      * Animated values (P-05), sorted by [ClipKeyframe.atMs], which is *source* time, so keyframes
      * stay on the same moment of the media when the clip is trimmed or sped up. While there are

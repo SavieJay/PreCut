@@ -17,6 +17,7 @@ import com.savie.precut.model.frame.ClipMask
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.frame.CropRatio
 import com.savie.precut.model.frame.CropRect
+import com.savie.precut.model.frame.Cutout
 import com.savie.precut.model.frame.FrameFit
 import com.savie.precut.model.keyframe.Easing
 import com.savie.precut.model.keyframe.EasingCurve
@@ -162,6 +163,9 @@ sealed interface EditAction {
 
     /** Sets or (null) removes a clip's chroma key (P-04). */
     data class SetChroma(val clipId: String, val chroma: ChromaKey?) : FrameEdit
+
+    /** Sets or (null) removes a clip's background removal (Phase 22A); softness and edge are clamped. */
+    data class SetCutout(val clipId: String, val cutout: Cutout?) : FrameEdit
 
     /** Motion edits (transitions, animations, freeze frame), applied by `applyMotionEdit`. */
     sealed interface MotionEdit : EditAction

@@ -2,8 +2,8 @@ package com.savie.precut.model
 
 /**
  * Every media Uri the project points at: clips and overlays (and a reversed clip's original),
- * audio, a picture cover, canvas pictures and picture stickers. One list for the media sweep,
- * templates and anything else that must find or move a project's files.
+ * background-removal mattes, audio, a picture cover, canvas pictures and picture stickers. One
+ * list for the media sweep, templates and anything else that must find or move a project's files.
  */
 fun Project.mediaUris(): List<String> {
     val all = clips + overlays.map { it.clip }
@@ -11,6 +11,7 @@ fun Project.mediaUris(): List<String> {
         listOfNotNull((cover as? ProjectCover.Image)?.uri) +
         all.mapNotNull { it.canvas.imageUri } +
         all.mapNotNull { it.reversedFrom?.uri } +
+        all.mapNotNull { it.cutout?.matteUri } +
         textOverlays.mapNotNull { overlay -> overlay.sticker?.takeIf { it.kind.isFile }?.value }
 }
 
@@ -20,6 +21,8 @@ fun Project.mapMediaUris(transform: (String) -> String): Project {
         uri = transform(uri),
         canvas = canvas.imageUri?.let { canvas.copy(imageUri = transform(it)) } ?: canvas,
         reversedFrom = reversedFrom?.let { it.copy(uri = transform(it.uri)) },
+        // The source moves with the media it names, so the matte still matches its clip.
+        cutout = cutout?.let { it.copy(matteUri = transform(it.matteUri), sourceUri = transform(it.sourceUri)) },
     )
     return copy(
         clips = clips.map { it.mapped() },

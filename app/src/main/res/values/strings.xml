@@ -485,6 +485,22 @@
     <string name="chroma_hint">Drag on the preview to pick the colour to remove</string>
     <string name="chroma_intensity">Intensity</string>
     <string name="chroma_shadow">Shadow</string>
+    <!-- Remove background (Phase 22A) -->
+    <string name="tool_cutout">Remove BG</string>
+    <string name="cutout_title">Remove background</string>
+    <string name="cutout_intro">Finds the person in this clip and removes everything else. It runs on your phone: nothing is uploaded.</string>
+    <string name="cutout_limits">Works best with one or two people close to the camera.</string>
+    <string name="cutout_switch">Remove background</string>
+    <string name="cutout_update_needed">Part of this clip isn\'t cut out: it was trimmed longer or reversed afterwards.</string>
+    <string name="cutout_update">Update</string>
+    <string name="cutout_softness">Softness</string>
+    <string name="cutout_edge">Edge</string>
+    <string name="cutout_show_original">Show original</string>
+    <string name="cutout_progress">Removing background… %1$d%%</string>
+    <string name="cutout_body">Finding the person in this %1$s clip, on your phone.</string>
+    <string name="cutout_done">Background removed</string>
+    <string name="cutout_no_person">No person found in this clip</string>
+    <string name="cutout_failed">Couldn\'t remove the background</string>
     <!-- Keyframes (P-05) -->
     <string name="keyframe_add">Add keyframe at playhead</string>
     <string name="keyframe_remove">Remove keyframe at playhead</string>
@@ -795,6 +811,8 @@
     <string name="notice_material_symbols" translatable="false">Material Symbols</string>
     <string name="notice_okhttp" translatable="false">OkHttp and Okio</string>
     <string name="notice_google_play_libraries" translatable="false">Google Play Integrity and Play services</string>
+    <string name="notice_litert" translatable="false">LiteRT (TensorFlow Lite)</string>
+    <string name="notice_selfie_segmenter" translatable="false">MediaPipe Selfie Segmentation model</string>
     <string name="notice_font_roboto_flex" translatable="false">Roboto Flex</string>
     <string name="notice_font_anton" translatable="false">Anton</string>
     <string name="notice_font_bebas_neue" translatable="false">Bebas Neue</string>

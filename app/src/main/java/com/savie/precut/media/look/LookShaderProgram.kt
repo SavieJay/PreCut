@@ -12,6 +12,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.BaseGlShaderProgram
 import androidx.media3.effect.GlEffect
 import androidx.media3.effect.GlShaderProgram
+import com.savie.precut.media.CutoutSpec
+import com.savie.precut.media.cutout.MatteFrames
 import com.savie.precut.model.frame.ChromaKey
 import com.savie.precut.model.keyframe.ClipKeyframe
 import com.savie.precut.model.keyframe.valuesAt
@@ -19,9 +21,9 @@ import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.look.Cube
 
 /**
- * PreCut's look effect (filter LUT with intensity, Adjust, HSL, Curves) as one GL pass. With
- * [activeUs], it only grades frames in that composition-time range (look layers); other frames
- * pass through unchanged.
+ * PreCut's look effect (filter LUT with intensity, Adjust, HSL, Curves) as one GL pass, which also
+ * keys (chroma) and removes the background ([cutout]) on the source picture. With [activeUs], it
+ * only grades frames in that composition-time range (look layers); other frames pass through.
  */
 @OptIn(UnstableApi::class)
 class LookEffect(
@@ -32,12 +34,14 @@ class LookEffect(
     /** Keyframes (times into the clip) animating filter strength, Adjust and chroma strength. */
     private val keyframes: List<ClipKeyframe> = emptyList(),
     private val keyframesStartUs: Long = 0L,
+    private val cutout: CutoutSpec? = null,
 ) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
         // Baked/parsed here, on the GL thread, so building a composition stays cheap.
         LookShaderProgram(
             LookUniforms.of(look), look.filterId?.let(luts::cube), activeUs, chroma,
             keyframes.takeIf { it.isNotEmpty() }?.let { LookKeyframes(look, it, keyframesStartUs) },
+            cutout,
         )
 }
 
@@ -51,12 +55,18 @@ internal class LookShaderProgram(
     private val activeUs: LongRange?,
     private val chroma: ChromaKey? = null,
     private val animated: LookKeyframes? = null,
+    private val cutout: CutoutSpec? = null,
 ) : BaseGlShaderProgram(/* useHighPrecisionColorComponents= */ false, /* texturePoolCapacity= */ 1) {
 
     private val program: GlProgram
     private val lutTexture: Int
     private val lutSize: Float
     private val curveTexture: Int
+    /** White: everything is person when no matte picture applies. */
+    private val noMatteTexture: Int
+    /** Opened here, on the GL thread; null without a cutout or when the file can't be read. */
+    private val matte: MatteFrames? = cutout?.let { MatteFrames.open(it.matteUri) }
+    private val cutoutEdge = cutout?.edgeRange()
     private var texelWidth = 0f
     private var texelHeight = 0f
     private var aspect = 1f
@@ -73,6 +83,7 @@ internal class LookShaderProgram(
             lutTexture = textureOf(cube?.let { Bitmap.createBitmap(it.toTexturePixels(), it.size * it.size, it.size, Bitmap.Config.ARGB_8888) })
             lutSize = (cube?.size ?: 2).toFloat()
             curveTexture = textureOf(uniforms.curveTable?.let(::curveBitmap))
+            noMatteTexture = textureOf(Bitmap.createBitmap(intArrayOf(-1), 1, 1, Bitmap.Config.ARGB_8888))
         } catch (e: GlUtil.GlException) {
             throw VideoFrameProcessingException(e)
         }
@@ -92,6 +103,11 @@ internal class LookShaderProgram(
             program.setSamplerTexIdUniform("uTexSampler", inputTexId, 0)
             program.setSamplerTexIdUniform("uLut", lutTexture, 1)
             program.setSamplerTexIdUniform("uCurves", curveTexture, 2)
+            // A moment the matte doesn't cover shows the clip uncut.
+            val matteUs = cutout?.matteUsAt(presentationTimeUs)
+            val cut = matte != null && matteUs != null && cutoutEdge != null && matte.showAt(matteUs)
+            program.setSamplerTexIdUniform("uMatte", if (cut) checkNotNull(matte).texture else noMatteTexture, 3)
+            program.setFloatsUniform("uCutout", floatArrayOf(if (cut) 1f else 0f, cutoutEdge?.first ?: 0f, cutoutEdge?.second ?: 1f, 0f))
             val keyed = animated?.let { it.keyframes.valuesAt((presentationTimeUs - it.startUs) / 1_000) }
             val adjust = keyed?.let { LookUniforms.adjustOf(it.adjust) }
             program.setFloatsUniform("uAdjustA", adjust?.a ?: uniforms.adjustA)
@@ -132,6 +148,8 @@ internal class LookShaderProgram(
             program.delete()
             GlUtil.deleteTexture(lutTexture)
             GlUtil.deleteTexture(curveTexture)
+            GlUtil.deleteTexture(noMatteTexture)
+            matte?.release()
         } catch (e: GlUtil.GlException) {
             throw VideoFrameProcessingException(e)
         }

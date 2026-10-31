@@ -38,11 +38,13 @@ import com.savie.precut.media.export.FrameGrabber
 import com.savie.precut.media.frame.LiveFrames
 import com.savie.precut.media.look.LookThumbnailer
 import com.savie.precut.media.look.LutCache
+import com.savie.precut.media.cutout.MatteMaker
 import com.savie.precut.media.reverse.ClipReverser
 import com.savie.precut.media.sticker.StickerLibrary
 import com.savie.precut.media.text.TextFonts
 import com.savie.precut.media.textSpecFor
 import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.Project
@@ -93,7 +95,7 @@ import javax.inject.Inject
  * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
  * clip when there is one, otherwise on a video clip.
  */
-enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET, MOTION_BLUR, BLEND, CAPTIONS }
+enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, CUTOUT, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET, MOTION_BLUR, BLEND, CAPTIONS }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -126,6 +128,8 @@ sealed interface EditorUiState {
         val chromaPicking: Boolean = false,
         /** A reversed copy is being made (T-19). */
         val reversing: ReverseProgress? = null,
+        /** A clip's background-removal matte is being made (Phase 22A). */
+        val cuttingOut: ReverseProgress? = null,
     ) : EditorUiState
 }
 
@@ -182,6 +186,10 @@ sealed interface EditorEvent {
     data object ReverseFailed : EditorEvent
     data object ReverseUnsupported : EditorEvent
     data object ReverseNotForPhotos : EditorEvent
+    /** Shown with Undo. */
+    data object CutoutDone : EditorEvent
+    data object CutoutNoPerson : EditorEvent
+    data object CutoutFailed : EditorEvent
     /** The music's sound couldn't be read for beat detection. */
     data object BeatsUnreadable : EditorEvent
     /** Silence, or no steady rhythm. */
@@ -223,6 +231,7 @@ class EditorViewModel @Inject constructor(
     private val liveFrames: LiveFrames,
     freezeFrames: FreezeFrames,
     reverser: ClipReverser,
+    matteMaker: MatteMaker,
     private val textRenderer: TextOverlayRenderer,
     textFonts: TextFonts,
     tts: TtsSynthesizer,
@@ -322,6 +331,9 @@ class EditorViewModel @Inject constructor(
 
     /** Overlays (picture-in-picture). */
     val overlay = EditorOverlay(host, importer)
+
+    /** Remove background. */
+    val cutout = EditorCutout(host, previewController, matteMaker)
 
     /** Mask and Chroma key. */
     val mask = EditorMask(host, liveFrames, previewController)
@@ -536,10 +548,17 @@ class EditorViewModel @Inject constructor(
         return present.withMediaSubstitutes(readyProxies.value).withPeek()
     }
 
-    /** During a before/after peek, the edited clip's or layer's look is left out of the preview. */
+    /**
+     * During a before/after peek, the edited clip's or layer's look is left out of the preview (in
+     * Remove background, the clip's cutout).
+     */
     private fun Project.withPeek(): Project {
         val ready = _uiState.value as? EditorUiState.Ready ?: return this
         if (!ready.peekOriginal) return this
+        if (ready.activeTool == EditorTool.CUTOUT) {
+            fun Clip.uncut() = if (id == ready.selectedClipId) copy(cutout = null) else this
+            return copy(clips = clips.map { it.uncut() }, overlays = overlays.map { it.copy(clip = it.clip.uncut()) })
+        }
         return copy(
             clips = clips.map { if (it.id == ready.selectedClipId) it.copy(look = ClipLook()) else it },
             lookLayers = lookLayers.filterNot { it.id == ready.selectedLayerId },
@@ -646,6 +665,7 @@ class EditorViewModel @Inject constructor(
             EditorTool.EDIT, EditorTool.TRANSFORM, EditorTool.OPACITY, EditorTool.CANVAS, EditorTool.ANIMATION, EditorTool.MOTION_BLUR, EditorTool.BLEND -> frame.open(tool)
             EditorTool.TRANSITION -> Unit // opened from a junction marker
             EditorTool.MASK, EditorTool.CHROMA -> mask.open(tool)
+            EditorTool.CUTOUT -> cutout.open()
             EditorTool.KEYFRAME_EASING -> keyframes.onOpenEasing()
             EditorTool.TEXT_STYLE, EditorTool.TEXT_RICH, EditorTool.TEXT_TTS -> textStyle.open(tool)
             EditorTool.STICKERS, EditorTool.DRAW -> stickers.open(tool)

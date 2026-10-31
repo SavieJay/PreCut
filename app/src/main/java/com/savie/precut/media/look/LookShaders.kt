@@ -33,6 +33,8 @@ uniform vec4 uMisc;      // sharpen, lut mix, lut size, grain seed
 uniform vec4 uFlags;     // enabled, hsl enabled, curves enabled, aspect (w / h)
 uniform vec2 uTexelSize;
 uniform vec4 uChroma;    // key Cb, Cr, threshold (< 0: no key), soft edge
+uniform sampler2D uMatte; // background removal: person 1, rows top-down
+uniform vec4 uCutout;    // on (> 0.5), edge low, edge high
 uniform vec4 uHslHueA;
 uniform vec4 uHslHueB;
 uniform vec4 uHslSatA;
@@ -113,6 +115,10 @@ void main() {
     // Edges keep a tint of the key colour; take some colour out of them.
     float spill = 1.0 - smoothstep(uChroma.z, uChroma.z + uChroma.w * 2.0 + 0.05, d);
     c = mix(c, vec3(dot(c, LUMA)), spill * 0.6);
+  }
+  if (uCutout.x > 0.5) {
+    // The matte covers the whole upright frame, its rows top-down.
+    keyAlpha *= smoothstep(uCutout.y, uCutout.z, texture2D(uMatte, vec2(vTexSamplingCoord.x, 1.0 - vTexSamplingCoord.y)).r);
   }
   if (uMisc.x > 0.0) {
     vec3 around = texture2D(uTexSampler, vTexSamplingCoord + vec2(uTexelSize.x, 0.0)).rgb

@@ -7,6 +7,7 @@ import com.savie.precut.model.frame.ClipCanvas
 import com.savie.precut.model.frame.ClipTransform
 import com.savie.precut.model.frame.CropRatio
 import com.savie.precut.model.frame.CropRect
+import com.savie.precut.model.frame.Cutout
 import com.savie.precut.model.frame.FrameFit
 import com.savie.precut.model.OverlayClip
 import com.savie.precut.model.ProjectCover
@@ -115,5 +116,15 @@ class ProjectSerializerTest {
     fun corruptJson_isNull() {
         assertNull(ProjectSerializer.decode("{not json"))
         assertNull(ProjectSerializer.decode("""{"id":"p"}""")) // required fields missing
+    }
+
+    @Test
+    fun phase21Draft_hasNoCutout_andCutoutRoundTrips() {
+        val json = """{"id":"p","name":"Old","createdAt":1,"updatedAt":2,""" +
+            """"clips":[{"id":"a","uri":"content://a","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000}]}"""
+        assertNull(ProjectSerializer.decode(json)?.clips?.single()?.cutout)
+        val cut = videoClip("a").let { it.copy(cutout = Cutout("file:///m/a.matte", it.uri, 0L, 10_000L, softness = 0.6f, edge = -0.2f)) }
+        val original = project(cut).copy(overlays = listOf(OverlayClip(cut.copy(id = "o"), 500L)))
+        assertEquals(original, ProjectSerializer.decode(ProjectSerializer.encode(original)))
     }
 }
