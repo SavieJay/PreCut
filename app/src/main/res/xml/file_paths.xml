@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Camera captures (shared with the camera app, to write into) and crash reports (shared by the user from Settings). -->
+<!-- Camera captures (shared with the camera app, to write into), crash reports (shared by the user from Settings) and caption subtitles (shared from the Captions panel). -->
 <paths>
     <files-path name="captures" path="captures/" />
     <files-path name="crashes" path="crashes/" />
+    <files-path name="subtitles" path="subtitles/" />
 </paths>

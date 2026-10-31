@@ -51,5 +51,9 @@ fun coalesceKeyFor(action: EditAction): String? = when (action) {
     is EditAction.UpdateText -> "text:${action.overlay.id}"
     is EditAction.EditKeyframedText -> "text:${action.overlay.id}"
     is EditAction.EditKeyframed -> coalesceKeyFor(action.edit)?.let { "keyframe:${action.timelineMs}:$it" }
+    is EditAction.SetCaptionText -> "text:${action.textId}"
+    is EditAction.SetCaptionTimes -> "caption-times:${action.textId}"
+    // Every caption's look while a style slider or picker moves.
+    is EditAction.StyleAllCaptions -> "captions-look"
     else -> null
 }

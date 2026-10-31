@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.model.TextOverlay
+import com.savie.precut.ui.editor.captions.CaptionScopeRow
 import com.savie.precut.ui.editor.tools.text.RichTextTool
 import com.savie.precut.ui.editor.tools.text.TextStyleActions
 import com.savie.precut.ui.editor.tools.text.TextStyleTool
@@ -30,7 +31,15 @@ fun TextStylePanels(state: EditorUiState.Ready, text: TextOverlay, tool: EditorT
                     override fun onBack() = controller.onBack()
                 }
             }
-            TextStyleTool(text, fonts, recentColors, viewModel::renderText, actions, onDone = close)
+            val allCaptions by controller.allCaptions.collectAsStateWithLifecycle()
+            TextStyleTool(
+                text, fonts, recentColors, viewModel::renderText, actions, onDone = close,
+                scope = if (text.caption != null) {
+                    { CaptionScopeRow(allCaptions, controller::onCaptionScope) }
+                } else {
+                    null
+                },
+            )
         }
         EditorTool.TEXT_RICH -> RichTextTool(text, recentColors, controller::onChange, controller::onBack, onDone = close)
         EditorTool.TEXT_TTS -> {

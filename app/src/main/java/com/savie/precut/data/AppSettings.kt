@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
 import com.savie.precut.model.export.ExportSettings
+import com.savie.precut.model.text.CaptionStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,10 @@ data class SettingsValues(
     val notificationsAsked: Boolean = false,
     /** Cloud AI features (Phase 20) may be offered; each upload still asks first. */
     val cloudAiEnabled: Boolean = true,
+    /** Captions' last language (a 2-letter code); null lets the provider tell. */
+    val captionLanguage: String? = null,
+    /** Captions' last style, a `CaptionStyle` id. */
+    val captionStyleId: String = CaptionStyle.DEFAULT.id,
 )
 
 interface AppSettings {

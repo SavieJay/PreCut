@@ -35,6 +35,8 @@ fun TextStyleTool(
     render: (TextOverlay, OutputSize) -> Bitmap?,
     actions: TextStyleActions,
     onDone: () -> Unit,
+    /** Above the tabs: what a caption's changes apply to (Phase 21B); null for other texts. */
+    scope: (@Composable () -> Unit)? = null,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     ToolPanel(
@@ -43,6 +45,7 @@ fun TextStyleTool(
         actions = { ApplyToAllButton(actions::onApplyAll) },
         onBack = actions::onBack,
     ) {
+        scope?.invoke()
         PillTabs(
             listOf(R.string.text_tab_font, R.string.text_tab_style, R.string.text_tab_effects, R.string.text_tab_animation, R.string.text_tab_templates)
                 .map { PillTab(stringResource(it)) },

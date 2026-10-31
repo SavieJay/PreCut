@@ -1,9 +1,12 @@
 package com.savie.precut.ui.editor
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
@@ -31,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import com.savie.precut.ui.components.projectDisplayName
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -44,6 +48,7 @@ import com.savie.precut.ui.editor.preview.FullScreenPreview
 import com.savie.precut.ui.editor.template.SaveTemplateSheet
 import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
+import com.savie.precut.ui.editor.captions.CaptionsHost
 import com.savie.precut.ui.editor.export.EditorExportHost
 import com.savie.precut.ui.editor.export.rememberExportNavigator
 
@@ -64,6 +69,7 @@ fun EditorScreen(
     var templateSheet by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
+    val context = LocalContext.current
 
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onScreenStopped() }
 
@@ -90,6 +96,7 @@ fun EditorScreen(
     // `.cube` files have no standard MIME type, so any file can be picked and is validated.
     val fontPicker = rememberLauncherForActivityResult(OpenDocument()) { uri -> viewModel.textStyle.onFontPicked(uri?.toString()) }
     val stickerPicker = rememberLauncherForActivityResult(OpenDocument()) { uri -> viewModel.stickers.onImagePicked(uri?.toString()) }
+    val subtitlesPicker = rememberLauncherForActivityResult(CreateDocument(SRT_MIME_TYPE)) { uri -> viewModel.captionEdits.onSrtTarget(uri?.toString()) }
     val lutPicker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         viewModel.look.onImportLut(uri?.toString())
     }
@@ -160,6 +167,28 @@ fun EditorScreen(
                 }
                 return@ObserveAsEvents
             }
+            is EditorEvent.CaptionsAdded, EditorEvent.CaptionRegenerated -> {
+                scope.launch {
+                    val text = if (event is EditorEvent.CaptionsAdded) {
+                        resources.getQuantityString(R.plurals.captions_added, event.count, event.count)
+                    } else {
+                        resources.getString(R.string.captions_regenerated)
+                    }
+                    val result = snackbarHostState.showSnackbar(text, actionLabel = resources.getString(R.string.action_undo))
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
+                }
+                return@ObserveAsEvents
+            }
+            is EditorEvent.PickSubtitlesTarget -> {
+                subtitlesPicker.launch(event.fileName)
+                return@ObserveAsEvents
+            }
+            is EditorEvent.ShareSubtitles -> {
+                shareSubtitles(context, event.uri, resources.getString(R.string.captions_share_srt))
+                return@ObserveAsEvents
+            }
+            EditorEvent.SubtitlesSaved -> resources.getString(R.string.captions_srt_saved)
+            EditorEvent.SubtitlesNotSaved -> resources.getString(R.string.captions_srt_failed)
             EditorEvent.MusicImportFailed -> resources.getString(R.string.audio_import_failed)
             EditorEvent.RecordingFailed -> resources.getString(R.string.voiceover_failed)
             EditorEvent.NothingToExtract -> resources.getString(R.string.audio_nothing_to_extract)
@@ -275,6 +304,7 @@ fun EditorScreen(
                         modifier = modifier,
                     )
                     EditorExportHost(state, viewModel, exportNavigator, viewModel.appSettingsForUi)
+                    CaptionsHost(viewModel.captions)
                 }
             }
         }
@@ -301,4 +331,16 @@ fun EditorScreen(
             )
         }
     }
+}
+
+/** SubRip subtitles' MIME type. */
+private const val SRT_MIME_TYPE = "application/x-subrip"
+
+/** Offers the SRT file at [uri] (the app's FileProvider) to other apps. */
+private fun shareSubtitles(context: Context, uri: String, title: String) {
+    val intent = Intent(Intent.ACTION_SEND)
+        .setType(SRT_MIME_TYPE)
+        .putExtra(Intent.EXTRA_STREAM, Uri.parse(uri))
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    context.startActivity(Intent.createChooser(intent, title))
 }

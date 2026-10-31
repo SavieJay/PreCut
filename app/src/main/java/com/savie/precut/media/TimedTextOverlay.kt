@@ -8,13 +8,16 @@ import androidx.media3.effect.BitmapOverlay
 import androidx.media3.effect.StaticOverlaySettings
 import com.savie.precut.media.sticker.StickerFrames
 import com.savie.precut.model.keyframe.valuesAt
+import com.savie.precut.model.text.highlightedWordAt
 import com.savie.precut.model.text.TextMotion
 import com.savie.precut.model.text.TextMotions
 
 /**
  * A rendered text or sticker, placed on its anchor (or keyframes), turned, and visible only within its time
  * range, with its In/Out/Loop animations (X-04d). Typewriter frames are rendered on demand by
- * [renderRevealed] (characters shown → bitmap) and kept.
+ * [renderRevealed] (characters shown → bitmap) and kept. A caption's word highlight (Phase 21A)
+ * is rendered by [renderHighlighted] (word → bitmap); only the current word's is kept, since a
+ * long video has hundreds of words.
  */
 @OptIn(UnstableApi::class)
 class TimedTextOverlay(
@@ -23,13 +26,20 @@ class TimedTextOverlay(
     private val renderRevealed: (Int) -> Bitmap = { bitmap },
     /** A GIF sticker's frames, by time since it appeared. */
     private val frames: StickerFrames? = null,
+    private val renderHighlighted: ((Int) -> Bitmap)? = null,
 ) : BitmapOverlay() {
 
     private val typewriterFrames = HashMap<Int, Bitmap>()
+    private var highlighted: Pair<Int, Bitmap>? = null
     private val hidden: OverlaySettings = StaticOverlaySettings.Builder().setAlphaScale(0f).build()
 
     override fun getBitmap(presentationTimeUs: Long): Bitmap {
         frames?.let { return it.at((presentationTimeUs - spec.startUs) / 1_000) }
+        if (renderHighlighted != null) {
+            val word = spec.style.highlightedWordAt((presentationTimeUs - spec.startUs) / 1_000) ?: return bitmap
+            highlighted?.takeIf { it.first == word }?.let { return it.second }
+            return renderHighlighted(word).also { highlighted = word to it }
+        }
         val reveal = revealAt(presentationTimeUs) ?: return bitmap
         if (reveal >= spec.text.length) return bitmap
         return typewriterFrames.getOrPut(reveal) { renderRevealed(reveal) }

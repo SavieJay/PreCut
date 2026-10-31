@@ -58,6 +58,9 @@ interface VideoExporter {
 
     /** Exports [project] as a looping GIF ([gif] size and frame rate) to a temporary file. */
     fun exportGif(project: Project, gif: GifSettings): Flow<ExportState>
+
+    /** Exports [project]'s sound only, at a speech bitrate, to a temporary M4A (for captions). */
+    fun exportSpeech(project: Project): Flow<ExportState>
 }
 
 // Transformer's encoder settings and error codes are unstable in Media3 1.11.
@@ -73,6 +76,13 @@ class ExportManager @Inject constructor(
         val composition = compositionBuilder.build(project, settings.resolution.shortSidePx, output = output)
             ?: return flowOf(ExportState.Failed(IllegalStateException("Project has no clips")))
         return export(composition, settings, project.outputSize(settings.resolution.shortSidePx), audioOnly)
+    }
+
+    override fun exportSpeech(project: Project): Flow<ExportState> {
+        val composition = compositionBuilder.build(project, output = ExportOutput(audioOnly = true))
+            ?: return flowOf(ExportState.Failed(IllegalStateException("Project has no clips")))
+        val settings = ExportSettings()
+        return export(composition, settings, project.outputSize(settings.resolution.shortSidePx), audioOnly = true, audioBitrate = SPEECH_AUDIO_BITRATE)
     }
 
     /**
@@ -117,14 +127,20 @@ class ExportManager @Inject constructor(
         }
     }
 
-    private fun export(composition: Composition, settings: ExportSettings, size: OutputSize, audioOnly: Boolean): Flow<ExportState> = callbackFlow {
+    private fun export(
+        composition: Composition,
+        settings: ExportSettings,
+        size: OutputSize,
+        audioOnly: Boolean,
+        audioBitrate: Int = EXPORT_AUDIO_BITRATE,
+    ): Flow<ExportState> = callbackFlow {
         val extension = if (audioOnly) "m4a" else "mp4"
         val output = File(File(context.cacheDir, EXPORT_DIR).apply { mkdirs() }, "${UUID.randomUUID()}.$extension")
         var finished = false
 
         val encoders = DefaultEncoderFactory.Builder(context)
             .setRequestedVideoEncoderSettings(VideoEncoderSettings.Builder().setBitrate(settings.videoBitrate(size)).build())
-            .setRequestedAudioEncoderSettings(AudioEncoderSettings.Builder().setBitrate(EXPORT_AUDIO_BITRATE).build())
+            .setRequestedAudioEncoderSettings(AudioEncoderSettings.Builder().setBitrate(audioBitrate).build())
             .build()
         val transformer = Transformer.Builder(context)
             .setVideoMimeType(if (settings.codec == ExportCodec.HEVC) MimeTypes.VIDEO_H265 else MimeTypes.VIDEO_H264)
@@ -182,6 +198,8 @@ class ExportManager @Inject constructor(
             ExportException.ERROR_CODE_ENCODING_FORMAT_UNSUPPORTED,
         )
         const val EXPORT_DIR = "exports"
+        /** Enough for speech to text; 10 minutes stay well under the cloud's 10 MB upload limit. */
+        const val SPEECH_AUDIO_BITRATE = 64_000
         const val PROGRESS_POLL_MS = 200L
         /** The MP4's share of a GIF export's progress, in percent. */
         const val VIDEO_SHARE = 60

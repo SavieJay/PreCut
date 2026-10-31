@@ -1,6 +1,6 @@
 # Phone checklist (Phase 16)
 
-Everything built since Phase 9 that hasn't been confirmed on a phone. Work down the list, write **OK** or what you saw in the Result column, and send it back. Anything that fails gets fixed with a test before the item counts as done.
+Everything built since Phase 9 that hasn't been confirmed on a phone. Work down the list, write **OK** or what you saw in the Result column, and send it back. Anything that fails gets fixed with a test before the item counts as done. The same checks, with step-by-step instructions and Pass/Fail/Skip buttons that save as you go, are on the "PreCut Phone Checks" page (an artifact in your claude.ai gallery); keep the two in step when checks change.
 
 ## 0. Setup
 1. On the phone: Settings → About phone → tap **Build number** 7 times, then Developer options → turn on **USB debugging**. Connect by USB and accept the prompt.
@@ -114,6 +114,46 @@ Use a real phone with the Play Store (an emulator can't pass Google Play's check
 
 If Check says the phone or app couldn't be verified, send the time you tried: the function's logs (Supabase dashboard → Edge Functions → cloud → Logs) say which check failed.
 
+## 4h. Automatic captions (Phase 21A)
+Same phone and build as 4g, with the internet on. Use a 1–2 minute clip of someone speaking clearly, plus a song added with Audio → Music.
+
+| Check | Expected | Result |
+|---|---|---|
+| Main toolbar | **Captions** sits right after Text | |
+| Tap Captions | The sheet shows Language (Auto first), Style (Highlight picked), the note that music is left out, and "Needs 2 min · N min left" | |
+| Pick English, then Generate | "Preparing the sound…" counts up, then the consent dialog shows the length and size | |
+| Tap **Send** | "Making captions…", then "N captions added" with Undo. Lines of a few words appear on the text track, timed to the speech | |
+| Play the preview | Each line shows while it's spoken; with Highlight, the word being spoken turns yellow | |
+| Export the video | The captions and the moving highlight look the same as in the preview | |
+| The song's lyrics | No captions come from the music | |
+| Undo | Every caption goes in one step; Redo brings them back | |
+| Captions (the panel opens now) → Generate again → Box → Generate captions → Send | The sheet says it replaces the captions already there; afterwards there's one set, in the Box style | |
+| Tap a caption, edit its words or move it | It behaves like any text | |
+| Mute the clip (no voiceover), open Captions | It says there's no sound to caption; Generate is off | |
+| Airplane mode, open Captions | The offline message; Generate is off | |
+| Generate, then **Cancel** in the consent dialog | Nothing is sent; the minutes don't change | |
+| A video over 10 minutes (optional) | The dialog says it's sent in parts; "Sending part 1 of 2…"; **Stop** during part 1 keeps part 1's captions and says you stopped | |
+| Yoruba, Igbo or Hausa speech (optional) | Captions in that language; note how good they are | |
+
+## 4i. Editing captions (Phase 21B)
+The project from 4h, with its captions.
+
+| Check | Expected | Result |
+|---|---|---|
+| Tap Captions | The Captions panel opens (not the sheet): style chips, every line with its start time, Generate again. While playing, the line being spoken is marked and kept in view | |
+| Tap a line | The playhead goes to it and it opens: its words, Start and End with − and +, Split, Merge, Hear again, Delete | |
+| Fix a word | The preview shows the new words; with Highlight, the highlight still moves word by word | |
+| Start −, End + a few times | The times change by 0.1 s; they stop at the lines before and after. One Undo puts back a quick run of taps | |
+| Split with the playhead inside the line | Two lines, cut between words; each shows only its own words | |
+| Merge | The line and the next become one | |
+| Hear again | The consent dialog shows a few seconds; then "Caption heard again" with Undo; the line's words are redone, its times kept | |
+| Delete | The line goes; deleting the last caption closes the panel | |
+| A style chip (e.g. Pop) | Every caption changes; titles you added yourself don't | |
+| Tap a caption → Text → Style | "Apply to: All captions" is on: a font or colour change goes to every caption. With "This caption", only that one changes | |
+| Header: Save subtitles | The file picker suggests "<project>.srt"; the saved file opens in a text app with numbered lines and times like 00:00:03,200 --> 00:00:05,800 | |
+| Header: Share subtitles | The share sheet offers the .srt file (e.g. to Drive or WhatsApp) | |
+| Load the .srt next to the exported video in a player (VLC, or YouTube Studio) | The subtitles line up with the speech | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:
@@ -125,6 +165,8 @@ If Check says the phone or app couldn't be verified, send the time you tried: th
 | Export a video, a GIF, audio only and a frame | All four saved, Open and Share work | |
 | Settings → Open-source licences → tap an entry | The full licence text shows | |
 | Full screen and Reverse | No crash | |
+| Settings → Cloud AI → Check cloud AI → Send | Works as in 4g | |
+| Generate captions for a short speech clip | Captions are added, as in 4h | |
 
 ## 6. Store screenshots
 Take the six screenshots listed in `docs/store/README.md` while you're at it.

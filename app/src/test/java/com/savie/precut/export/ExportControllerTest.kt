@@ -204,6 +204,8 @@ class ExportControllerTest {
                 .transformWhile { emit(it); it is ExportState.Running }
                 .onCompletion { if (it != null) cancelled = true }
         }
+
+        override fun exportSpeech(project: Project): Flow<ExportState> = export(project, ExportSettings(), audioOnly = true)
     }
 
     private class FakeSaver : MediaSaver {

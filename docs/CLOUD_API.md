@@ -93,7 +93,8 @@ The function logs one JSON line per request (method, path, status, time) and per
 ## App side (Phase 20B)
 - **Config:** the gitignored `cloud.properties` (`cloudUrl`, `cloudRegion`, `playCloudProjectNumber`) becomes `BuildConfig` fields; without it the app builds and says cloud AI isn't set up.
 - **`ai/cloud/CloudClient`:** the only code that talks to the function. It sends nothing while cloud AI is off in Settings, in a build without a backend, or offline; registers on the first upload only; registers again once on `not_registered`; keeps renewed install tokens; maps every error code above to an `AiFailure` (`model/ai`).
-- **`ai/UploadConsent`:** given only by the consent dialog's Send (`ui/cloud/UploadConsentDialog`), for the audio size it showed, and spent by that upload. The client refuses to upload without one.
+- **`ai/UploadConsent`:** given only by the consent dialog's Send (`ui/cloud/UploadConsentDialog`), for the audio sizes it showed, and spent upload by upload: one job's parts in order, each of exactly its size, and no more (Phase 21A). The client refuses to upload without one.
+- **Captions (Phase 21A, `ai/CaptionJob`):** the timeline's sound without music, exported as 64 kbps AAC (`audio/mp4`); sound over the upload limit (`maxUploadSeconds` from `status`, less 2 s) is cut at the quietest moment in the 30 s before each limit and sent part by part under one consent. When `status` shows fewer free minutes than the whole timeline needs, only the leading parts they cover are prepared and sent.
 - **`ai/cloud/PlayIntegrityTokens`:** Play Integrity standard requests (prepared once, prepared again on error -19, transient errors retried after 1, 2 and 4 s).
 - **`ai/cloud/RequestHashes`:** the request hashes above; its unit test uses values produced by the server's own code.
 - **Settings → Cloud AI** (`ui/settings/CloudAiSection`): the switch, free minutes, Check cloud AI, Delete my cloud data, What is sent.

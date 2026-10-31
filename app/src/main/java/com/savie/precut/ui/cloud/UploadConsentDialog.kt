@@ -14,16 +14,18 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.ai.AiFeature
 import com.savie.precut.model.ai.UploadSummary
+import com.savie.precut.ui.components.formatDurationMs
 
 /**
  * Asked before every upload (Phase 20): what is sent, where it goes, what is kept, and that Google
  * Play checks the app. Only [onSend] may give the upload its consent
- * ([com.savie.precut.ai.UploadConsent.givenFor]).
+ * ([com.savie.precut.ai.UploadConsent.givenFor]). Sound sent in parts says so; [note] adds a line
+ * (e.g. that the free minutes cover only the start).
  */
 @Composable
-fun UploadConsentDialog(summary: UploadSummary, onSend: () -> Unit, onCancel: () -> Unit) {
+fun UploadConsentDialog(summary: UploadSummary, onSend: () -> Unit, onCancel: () -> Unit, note: String? = null) {
     val context = LocalContext.current
-    val length = stringResource(R.string.motion_seconds, summary.durationMs / 1000f)
+    val length = if (summary.durationMs >= 60_000L) formatDurationMs(summary.durationMs) else stringResource(R.string.motion_seconds, summary.durationMs / 1000f)
     val size = Formatter.formatShortFileSize(context, summary.bytes)
     AlertDialog(
         onDismissRequest = onCancel,
@@ -33,8 +35,11 @@ fun UploadConsentDialog(summary: UploadSummary, onSend: () -> Unit, onCancel: ()
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val what = if (summary.feature == AiFeature.CHECK) R.string.consent_what_check else R.string.consent_what_captions
-                listOf(stringResource(what, length, size), stringResource(R.string.consent_where), stringResource(R.string.consent_kept), stringResource(R.string.consent_verify))
-                    .forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                val parts = summary.partBytes.size.takeIf { it > 1 }?.let { stringResource(R.string.consent_parts, it) }
+                listOfNotNull(
+                    stringResource(what, length, size), parts, note,
+                    stringResource(R.string.consent_where), stringResource(R.string.consent_kept), stringResource(R.string.consent_verify),
+                ).forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
             }
         },
         confirmButton = { TextButton(onClick = onSend) { Text(stringResource(R.string.consent_send)) } },

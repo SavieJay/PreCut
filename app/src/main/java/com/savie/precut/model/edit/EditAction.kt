@@ -9,6 +9,8 @@ import com.savie.precut.model.OverlayClip
 import com.savie.precut.model.ProjectCover
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.VoiceEffect
+import com.savie.precut.model.ai.TranscriptWord
+import com.savie.precut.model.text.CaptionStyle
 import com.savie.precut.model.frame.ChromaKey
 import com.savie.precut.model.frame.ClipCanvas
 import com.savie.precut.model.frame.ClipMask
@@ -209,6 +211,33 @@ sealed interface EditAction {
 
     /** A copy starting where the original ends (same length; clamped to the timeline). */
     data class DuplicateText(val overlayId: String, val newId: String) : EditAction
+
+    /** Automatic captions (Phase 21A): every existing caption is replaced by [captions], in one step. */
+    data class SetCaptions(val captions: List<TextOverlay>) : EditAction
+
+    /** Caption edits (Phase 21B), applied by `applyCaptionEdit`. Text edits work on captions too. */
+    sealed interface CaptionEdit : EditAction
+
+    /** A caption's words; their times stay if only spacing changed, else they're spread across the line. */
+    data class SetCaptionText(val textId: String, val text: String) : CaptionEdit
+
+    /** A caption's times, kept between its neighbours; its words stay where they're spoken. */
+    data class SetCaptionTimes(val textId: String, val startMs: Long, val endMs: Long) : CaptionEdit
+
+    /** Cuts a caption before word [atWord]; the second part gets [newId]. */
+    data class SplitCaption(val textId: String, val atWord: Int, val newId: String) : CaptionEdit
+
+    /** Joins a caption with the caption after it. */
+    data class MergeCaptionWithNext(val textId: String) : CaptionEdit
+
+    /** A caption's words heard again ([words] in timeline time); none changes nothing. */
+    data class SetHeardWords(val textId: String, val words: List<TranscriptWord>) : CaptionEdit
+
+    /** Every caption in [style]. */
+    data class RestyleCaptions(val style: CaptionStyle) : CaptionEdit
+
+    /** [overlay] replaces its caption, and every other caption takes its look; words, times and places stay. */
+    data class StyleAllCaptions(val overlay: TextOverlay) : CaptionEdit
 
     /** Sets (or with null clears) the project cover, and whether it's the export's first frame. */
     data class SetCover(val cover: ProjectCover?, val inExport: Boolean) : EditAction

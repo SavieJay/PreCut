@@ -39,6 +39,11 @@ class EditorTextStyle(
     private val _making = MutableStateFlow(false)
     val making: StateFlow<Boolean> = _making.asStateFlow()
 
+    private val _allCaptions = MutableStateFlow(true)
+
+    /** Whether a caption's style changes go to every caption (Phase 21B); otherwise just to it. */
+    val allCaptions: StateFlow<Boolean> = _allCaptions.asStateFlow()
+
     /** Opens TEXT_STYLE, TEXT_RICH or TEXT_TTS on the selected text. */
     fun open(tool: EditorTool) {
         if (host.ready?.selectedTextId == null) return
@@ -62,7 +67,12 @@ class EditorTextStyle(
         host.update { it.copy(activeTool = EditorTool.TEXT) }
     }
 
-    fun onChange(overlay: TextOverlay) = host.applyEdit(EditAction.UpdateText(overlay))
+    fun onChange(overlay: TextOverlay) =
+        host.applyEdit(if (overlay.caption != null && _allCaptions.value) EditAction.StyleAllCaptions(overlay) else EditAction.UpdateText(overlay))
+
+    fun onCaptionScope(all: Boolean) {
+        _allCaptions.value = all
+    }
 
     fun onApplyAll() {
         val ready = host.ready ?: return

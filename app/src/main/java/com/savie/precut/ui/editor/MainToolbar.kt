@@ -73,6 +73,7 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onToOverlay() = viewModel.overlay.onToOverlay()
             override fun onReplace() = viewModel.onReplaceClip()
             override fun onText() = viewModel.onToolSelected(EditorTool.TEXT)
+            override fun onCaptions() = viewModel.onCaptions()
             override fun onStickers() = viewModel.onToolSelected(EditorTool.STICKERS)
             override fun onDraw() = viewModel.onToolSelected(EditorTool.DRAW)
             override fun onEffects() = viewModel.onToolSelected(EditorTool.EFFECTS)

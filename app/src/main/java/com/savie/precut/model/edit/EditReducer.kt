@@ -1,6 +1,9 @@
 package com.savie.precut.model.edit
 
 import com.savie.precut.model.validSpans
+import com.savie.precut.model.text.captionSplitIndex
+import com.savie.precut.model.text.splitCaption
+import com.savie.precut.model.text.withCaptionText
 
 import com.savie.precut.model.Clip
 import com.savie.precut.model.MediaInfo
@@ -52,6 +55,11 @@ object EditReducer {
                 .let { if (it.size == project.textOverlays.size) project else project.copy(textOverlays = it) }
             is EditAction.SplitText -> project.splitText(action)
             is EditAction.DuplicateText -> project.duplicateText(action)
+            is EditAction.CaptionEdit -> project.applyCaptionEdit(action)
+            is EditAction.SetCaptions -> {
+                val kept = project.textOverlays.filter { it.caption == null }
+                if (kept.size == project.textOverlays.size && action.captions.isEmpty()) project else project.copy(textOverlays = kept + action.captions)
+            }
             is EditAction.SetCover ->
                 if (project.cover == action.cover && project.coverInExport == action.inExport) {
                     project
@@ -104,8 +112,10 @@ object EditReducer {
 
     private fun Project.updateText(overlay: TextOverlay): Project {
         val index = textOverlays.indexOfFirst { it.id == overlay.id }
+        // A caption's edited words get new word times (Phase 21B).
+        val worded = if (index >= 0 && overlay.caption != null && textOverlays[index].text != overlay.text) overlay.withCaptionText(overlay.text) else overlay
         // Spans that no longer fit the (edited) words are dropped or clipped.
-        val valid = overlay.copy(spans = overlay.validSpans())
+        val valid = worded.copy(spans = worded.validSpans())
         if (index < 0 || textOverlays[index] == valid) return this
         return copy(textOverlays = textOverlays.toMutableList().also { it[index] = valid })
     }
@@ -115,7 +125,12 @@ object EditReducer {
         if (index < 0) return this
         val text = textOverlays[index]
         if (action.atMs - text.startMs < MIN_CLIP_DURATION_MS || text.endMs - action.atMs < MIN_CLIP_DURATION_MS) return this
-        val parts = listOf(text.copy(endMs = action.atMs), text.copy(id = action.newId, startMs = action.atMs))
+        // A caption is cut between words, so each part says only its own (Phase 21B).
+        val parts = if (text.caption != null) {
+            text.captionSplitIndex(action.atMs)?.let { text.splitCaption(it, action.newId, MIN_CLIP_DURATION_MS) }?.toList() ?: return this
+        } else {
+            listOf(text.copy(endMs = action.atMs), text.copy(id = action.newId, startMs = action.atMs))
+        }
         return copy(textOverlays = textOverlays.subList(0, index) + parts + textOverlays.subList(index + 1, textOverlays.size))
     }
 

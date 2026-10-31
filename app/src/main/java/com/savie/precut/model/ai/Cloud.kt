@@ -22,8 +22,14 @@ data class CloudStatus(
     val maxUploadSeconds: Int,
 )
 
-/** What a cloud feature is about to send, as the consent dialog shows it. */
-data class UploadSummary(val feature: AiFeature, val durationMs: Long, val bytes: Long)
+/**
+ * What a cloud feature is about to send, as the consent dialog shows it. Long sound goes in
+ * several uploads: [partBytes] are their sizes in order (empty for one upload of [bytes]).
+ */
+data class UploadSummary(val feature: AiFeature, val durationMs: Long, val bytes: Long, val partBytes: List<Long> = emptyList()) {
+    /** The uploads this consent covers, in order. */
+    val uploads: List<Long> get() = partBytes.ifEmpty { listOf(bytes) }
+}
 
 enum class AiFeature {
     /** Settings → Check cloud AI: a test phrase spoken by the phone. */

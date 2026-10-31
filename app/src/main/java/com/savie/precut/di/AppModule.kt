@@ -12,6 +12,8 @@ import com.savie.precut.ai.cloud.IntegrityTokens
 import com.savie.precut.ai.cloud.NetworkState
 import com.savie.precut.ai.cloud.PlayIntegrityTokens
 import com.savie.precut.ai.cloud.PrefsInstallStore
+import com.savie.precut.data.AndroidSubtitleFiles
+import com.savie.precut.data.SubtitleFiles
 import com.savie.precut.data.AndroidAppStorage
 import com.savie.precut.data.AppMediaJanitor
 import com.savie.precut.data.AppSettings
@@ -39,6 +41,8 @@ import com.savie.precut.media.MediaSaver
 import com.savie.precut.media.MediaStoreSaver
 import com.savie.precut.media.SharedMediaCopier
 import com.savie.precut.media.SharedMediaStore
+import com.savie.precut.media.AndroidSpeechAudio
+import com.savie.precut.media.SpeechAudio
 import com.savie.precut.media.VideoExporter
 import com.savie.precut.media.audio.AndroidBeatDetector
 import com.savie.precut.media.audio.BeatDetector
@@ -83,6 +87,12 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindVideoExporter(impl: ExportManager): VideoExporter
+
+    @Binds
+    abstract fun bindSpeechAudio(impl: AndroidSpeechAudio): SpeechAudio
+
+    @Binds
+    abstract fun bindSubtitleFiles(impl: AndroidSubtitleFiles): SubtitleFiles
 
     @Binds
     abstract fun bindMediaSaver(impl: MediaStoreSaver): MediaSaver

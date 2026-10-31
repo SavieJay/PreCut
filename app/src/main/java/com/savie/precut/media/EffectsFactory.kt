@@ -26,6 +26,7 @@ import com.savie.precut.model.OutputSize
 import com.savie.precut.model.frame.ClipCanvas
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.frame.FrameGeometry
+import com.savie.precut.model.text.withWordHighlighted
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
@@ -127,6 +128,9 @@ class EffectsFactory @Inject constructor(
                 textRenderer.render(text, outputSize),
                 renderRevealed = { reveal -> textRenderer.render(text, outputSize, reveal) },
                 frames = textRenderer.stickerFrames(text),
+                renderHighlighted = text.style.caption?.highlightArgb?.let {
+                    { word -> textRenderer.render(text.copy(style = text.style.withWordHighlighted(word)), outputSize) }
+                },
             )
         }
         return OverlayEffect(listOfNotNull(coverOverlay) + textOverlays)

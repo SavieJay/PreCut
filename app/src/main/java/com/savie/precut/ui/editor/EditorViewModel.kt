@@ -7,7 +7,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
+import com.savie.precut.ai.CaptionJob
+import com.savie.precut.ai.cloud.CloudClient
 import com.savie.precut.data.AppSettings
+import com.savie.precut.data.SubtitleFiles
 import com.savie.precut.data.EffectFavourites
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.data.TemplateMaker
@@ -55,6 +58,7 @@ import com.savie.precut.model.insertIndexAt
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.speed.SpeedCurve
 import com.savie.precut.model.template.TemplateCategory
+import com.savie.precut.model.text.captionCount
 import com.savie.precut.model.totalDurationMs
 import com.savie.precut.model.withMediaSubstitutes
 import com.savie.precut.ui.navigation.requireProjectId
@@ -89,7 +93,7 @@ import javax.inject.Inject
  * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
  * clip when there is one, otherwise on a video clip.
  */
-enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET, MOTION_BLUR, BLEND }
+enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET, MOTION_BLUR, BLEND, CAPTIONS }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -160,6 +164,16 @@ sealed interface EditorEvent {
     data object PickCanvasImage : EditorEvent
     /** Shown with Undo. */
     data object FrozeFrame : EditorEvent
+    /** Shown with Undo: [count] captions were added (Phase 21A). */
+    data class CaptionsAdded(val count: Int) : EditorEvent
+    /** Shown with Undo: one caption's words were heard again (Phase 21B). */
+    data object CaptionRegenerated : EditorEvent
+    /** The screen should ask where to save the SRT file, suggesting [fileName]. */
+    data class PickSubtitlesTarget(val fileName: String) : EditorEvent
+    /** The screen should offer the SRT file at [uri] to other apps. */
+    data class ShareSubtitles(val uri: String) : EditorEvent
+    data object SubtitlesSaved : EditorEvent
+    data object SubtitlesNotSaved : EditorEvent
     data object FreezeFailed : EditorEvent
     data object FreezeNotForPhotos : EditorEvent
     /** Shown with Undo. */
@@ -218,6 +232,9 @@ class EditorViewModel @Inject constructor(
     exportCapabilities: ExportCapabilitiesProbe,
     frameGrabber: FrameGrabber,
     mediaSaver: MediaSaver,
+    captionJob: CaptionJob,
+    cloudClient: CloudClient,
+    subtitleFiles: SubtitleFiles,
     @ApplicationContext appContext: Context,
     @IoDispatcher ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
@@ -326,6 +343,18 @@ class EditorViewModel @Inject constructor(
 
     /** The export settings sheet. */
     val export = EditorExport(host, appSettings, exportCapabilities, frameGrabber, mediaSaver, appContext.cacheDir, ioDispatcher)
+
+    /** Automatic captions: generating them, and regenerating one line. */
+    val captions = EditorCaptions(host, previewController, captionJob, cloudClient, appSettings)
+
+    /** The Captions panel: editing lines, a style for all, the SRT file. */
+    val captionEdits = EditorCaptionEdits(host, subtitleFiles, appSettings)
+
+    /** The Captions button: the panel when there are captions, otherwise the sheet that makes them. */
+    fun onCaptions() {
+        val project = (_uiState.value as? EditorUiState.Ready)?.project ?: return
+        if (project.captionCount() > 0) captionEdits.open() else captions.onOpen()
+    }
 
     fun isEffectLayer(layerId: String): Boolean = (_uiState.value as? EditorUiState.Ready)?.project?.effectLayers?.any { it.id == layerId } == true
 
@@ -622,6 +651,7 @@ class EditorViewModel @Inject constructor(
             EditorTool.STICKERS, EditorTool.DRAW -> stickers.open(tool)
             EditorTool.EFFECTS -> effects.open()
             EditorTool.EFFECT_TARGET -> Unit // opened by picking an effect
+            EditorTool.CAPTIONS -> captionEdits.open()
             EditorTool.STICKER_ANIMATION, EditorTool.STICKER_OPACITY -> updateReady { it.copy(activeTool = tool) }
             EditorTool.TRIM, EditorTool.SPEED, EditorTool.VOLUME, EditorTool.FADE -> {
                 val clipId = targetClipId() ?: return
@@ -789,6 +819,7 @@ class EditorViewModel @Inject constructor(
     override fun onCleared() {
         session?.flush()
         audio.release()
+        captions.onCleared()
         previewController.release()
     }
 
