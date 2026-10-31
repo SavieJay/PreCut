@@ -27,3 +27,7 @@ keystore.properties
 cloud.properties
 supabase/.env.secrets
 supabase/functions/.env.local
+
+# Claude Code: local worktrees and session transcripts
+/.claude/worktrees/
+/*.jsonl
