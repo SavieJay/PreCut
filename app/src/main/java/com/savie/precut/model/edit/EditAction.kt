@@ -19,6 +19,9 @@ import com.savie.precut.model.frame.CropRatio
 import com.savie.precut.model.frame.CropRect
 import com.savie.precut.model.frame.Cutout
 import com.savie.precut.model.frame.FrameFit
+import com.savie.precut.model.audio.NoiseReduction
+import com.savie.precut.model.frame.ReframeSpeed
+import com.savie.precut.model.frame.SubjectSample
 import com.savie.precut.model.keyframe.Easing
 import com.savie.precut.model.keyframe.EasingCurve
 import com.savie.precut.model.look.ClipLook
@@ -167,6 +170,12 @@ sealed interface EditAction {
     /** Sets or (null) removes a clip's background removal (Phase 22A); softness and edge are clamped. */
     data class SetCutout(val clipId: String, val cutout: Cutout?) : FrameEdit
 
+    /**
+     * Auto reframe (Phase 22B): fills the clip into the project's frame and keyframes its position
+     * to follow the person in [samples] at [speed] (see `Clip.reframed`).
+     */
+    data class AutoReframe(val clipId: String, val samples: List<SubjectSample>, val speed: ReframeSpeed) : FrameEdit
+
     /** Motion edits (transitions, animations, freeze frame), applied by `applyMotionEdit`. */
     sealed interface MotionEdit : EditAction
 
@@ -254,6 +263,9 @@ sealed interface EditAction {
 
     data class SetClipMuted(val clipId: String, val muted: Boolean) : EditAction
 
+    /** Reduce noise (Phase 22B) on a clip's sound, or (null) off; the strength is clamped to 0..1. */
+    data class SetClipNoiseReduction(val clipId: String, val reduction: NoiseReduction?) : EditAction
+
     /**
      * Swaps a clip's media, keeping its position, length (as far as the new media allows) and
      * settings (speed for videos, filter, rotation, volume, fades).
@@ -315,6 +327,9 @@ sealed interface EditAction {
     data class SetAudioTiming(val audioId: String, val timelineStartMs: Long, val trimStartMs: Long, val trimEndMs: Long) : AudioEdit
 
     data class SetAudioVolume(val audioId: String, val volume: Float) : AudioEdit
+
+    /** Reduce noise (Phase 22B) on an audio clip, or (null) off; the strength is clamped to 0..1. */
+    data class SetAudioNoiseReduction(val audioId: String, val reduction: NoiseReduction?) : AudioEdit
 
     data class SetAudioFades(val audioId: String, val fadeInMs: Long, val fadeOutMs: Long) : AudioEdit
 

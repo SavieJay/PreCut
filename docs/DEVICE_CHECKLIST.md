@@ -177,6 +177,30 @@ Works on the phone, offline. Use a video of one person filmed fairly close (head
 | Save as template with the clip as a slot, then use it | The filled slot starts without the cut-out (switch it on again) | |
 | Projects → gear → Open-source licences | LiteRT and the MediaPipe Selfie Segmentation model are listed | |
 
+## 4k. Auto reframe and Reduce noise (Phase 22B)
+Both work on the phone, offline. For Reframe use a landscape video of a person walking across, in a project set to 9:16 (Ratio). For Reduce noise use a voice recording with a steady background noise (a fan, traffic hum, wind), and the same recorded as a voiceover (Audio → Record).
+
+| Check | Expected | Result |
+|---|---|---|
+| Select the landscape clip → Reframe → Normal → Reframe this clip | "Reframing… N%" with Cancel, then "Clip reframed" with Undo; the picture fills the 9:16 frame | |
+| Play it | The frame follows the person smoothly, without jitter; it holds still while they stand still | |
+| Slow, then Fast (Reframe this clip again after Undo) | Slow pans more gently and lags more; Fast keeps the person closer to the middle | |
+| Show original framing on, then off | The whole landscape picture unmoved, then the reframed clip | |
+| Look at the keyframes on the clip; move one on the preview | Diamonds on the clip; moving one changes the path there, like any keyframe | |
+| A clip with an opacity or volume keyframe, then Reframe | The fade or volume change is still there | |
+| A clip with Remove BG on, then Reframe | Works, and quicker (it reads the cut-out outline) | |
+| Apply to all with several clips | One progress dialog for all; "N clips reframed"; one Undo puts them all back | |
+| A clip with no people | "No person found in this clip"; nothing changes | |
+| Ratio 16:9 with a 16:9 clip, then Reframe | "This clip already fits the frame. Pick another ratio first." | |
+| Export at 1080p | The export follows the person exactly as the preview did | |
+| Select the noisy clip → Volume → Reduce noise on | "Measuring the noise…" briefly, then the switch is on; the background noise is much quieter and the voice stays clear | |
+| Strength up and down (release each), then off | More, then less noise taken out; off plays the original sound | |
+| The voiceover → Volume → Reduce noise | The same on an audio clip | |
+| Export, and Export → Audio only | Both sound like the preview, in sync with the picture (lips match) | |
+| Extract audio from the cleaned clip | The extracted audio is cleaned too | |
+| Reduce noise on a clip with no sound (a screen recording without audio) | "Not enough sound in this clip to measure its noise"; the switch stays off | |
+| Undo, Redo; close and reopen the project | Each comes back as it was | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:
@@ -191,6 +215,7 @@ Works on the phone, offline. Use a video of one person filmed fairly close (head
 | Settings → Cloud AI → Check cloud AI → Send | Works as in 4g | |
 | Generate captions for a short speech clip | Captions are added, as in 4h | |
 | Remove BG on a clip with a person, then export | Works as in 4j (the release build shrinks code, so this checks LiteRT survived) | |
+| Reframe a clip and Reduce noise on another, then export | Works as in 4k | |
 
 ## 6. Store screenshots
 Take the six screenshots listed in `docs/store/README.md` while you're at it.

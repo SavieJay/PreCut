@@ -1,5 +1,6 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.audio.NoiseReduction
 import kotlinx.serialization.Serializable
 import kotlin.math.roundToLong
 
@@ -38,6 +39,8 @@ data class AudioClip(
     val fadeOutMs: Long = 0,
     val voiceEffect: VoiceEffect = VoiceEffect.NONE,
     val beatsMs: List<Long> = emptyList(),
+    /** Takes steady background noise out (Phase 22B); null plays the sound as it is. */
+    val noiseReduction: NoiseReduction? = null,
 )
 
 /** Length on the timeline: `(trimEnd - trimStart) / speed`. */

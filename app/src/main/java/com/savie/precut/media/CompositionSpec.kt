@@ -1,5 +1,6 @@
 package com.savie.precut.media
 
+import com.savie.precut.model.audio.NoiseReduction
 import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
@@ -114,6 +115,8 @@ data class SoundSpec(
     val volumeKeyframes: List<ClipKeyframe> = emptyList(),
     /** Where this item starts in its clip (timeline ms), for keyframe times; non-zero after a cut head. */
     val keyframeOffsetMs: Long = 0L,
+    /** Reduce noise, first in the chain; null when off. */
+    val noiseReduction: NoiseReduction? = null,
 )
 
 /** Look shared by every item: grading, mirror, user rotation, crop, then placement in the frame. */
@@ -406,7 +409,7 @@ private fun audioLanesOf(project: Project): List<List<AudioItemSpec>> {
                 clipStartMs = placement.sourceStartMs,
                 clipEndMs = placement.sourceEndMs,
                 speed = audio.speed,
-                sound = SoundSpec(audio.volume, fadeIn, fadeOut, placement.timelineDurationMs, audio.voiceEffect.pitch),
+                sound = SoundSpec(audio.volume, fadeIn, fadeOut, placement.timelineDurationMs, audio.voiceEffect.pitch, noiseReduction = audio.noiseReduction),
             ).also { cursor = placement.timelineStartMs + placement.timelineDurationMs }
         }
     }.filter { it.isNotEmpty() }
@@ -467,6 +470,7 @@ private fun itemSpecOf(clip: Clip, originalAudioMuted: Boolean, live: Boolean, m
                 SoundSpec(
                     if (silent) 0f else clip.volume, fadeIn, fadeOut, length,
                     volumeKeyframes = keyframes.takeUnless { silent || keyframes.all { it.volume == clip.volume } }.orEmpty(),
+                    noiseReduction = clip.noiseReduction.takeUnless { silent },
                 )
             },
             visual = visual,

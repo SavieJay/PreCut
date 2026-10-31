@@ -1,5 +1,6 @@
 package com.savie.precut.model
 
+import com.savie.precut.model.audio.NoiseReduction
 import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.effect.EffectSettings
 
@@ -76,6 +77,8 @@ data class Clip(
     val chroma: ChromaKey? = null,
     /** Removes the background around a person (Phase 22A); null shows everything. */
     val cutout: Cutout? = null,
+    /** Takes steady background noise out of the clip's sound (Phase 22B); null plays it as it is. */
+    val noiseReduction: NoiseReduction? = null,
     /**
      * Animated values (P-05), sorted by [ClipKeyframe.atMs], which is *source* time, so keyframes
      * stay on the same moment of the media when the clip is trimmed or sped up. While there are

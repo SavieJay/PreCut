@@ -27,7 +27,10 @@ fun AudioPanels(audio: AudioClip, activeTool: EditorTool?, positionMs: () -> Lon
     val controller = viewModel.audio
     val close = viewModel::onToolClosed
     when (activeTool) {
-        EditorTool.VOLUME -> AudioVolumeTool(audio.volume, controller::onVolume, onDone = close)
+        EditorTool.VOLUME -> AudioVolumeTool(
+            audio.volume, controller::onVolume, onDone = close,
+            reduction = audio.noiseReduction, noise = rememberNoiseActions(viewModel),
+        )
         EditorTool.FADE -> FadeTool(audio.fadeInMs, audio.fadeOutMs, audio.timelineDurationMs(), controller::onFades, onDone = close)
         EditorTool.SPEED -> SpeedTool(
             audio.speed, onSpeedChanged = controller::onSpeed, onDone = close,

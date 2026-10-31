@@ -13,6 +13,7 @@ import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
 import androidx.media3.effect.ScaleAndRotateTransformation
 import com.savie.precut.media.effect.VideoEffectGl
+import com.savie.precut.media.audio.NoiseReductionProcessor
 import com.savie.precut.media.look.LookEffect
 import com.savie.precut.media.look.LutCache
 import com.savie.precut.media.frame.CanvasEffect
@@ -90,10 +91,13 @@ class EffectsFactory @Inject constructor(
     }
 
     /**
-     * Volume, then fades, then pitch; each stage only when it does something. Volume and fades
-     * are separate processors because a fade's shape replaces (not scales) the provider's gain.
+     * Reduce noise, then volume, then fades, then pitch; each stage only when it does something.
+     * Volume and fades are separate processors because a fade's shape replaces (not scales) the
+     * provider's gain.
      */
     fun audioProcessors(sound: SoundSpec): List<AudioProcessor> = buildList {
+        // First, on the sound as recorded, which is what the noise was measured on.
+        sound.noiseReduction?.takeIf { it.strength > 0f }?.let { add(NoiseReductionProcessor(it)) }
         if (sound.volumeKeyframes.isNotEmpty()) {
             add(GainProcessor(KeyframeGainProvider(sound.volumeKeyframes, sound.keyframeOffsetMs)))
         } else if (sound.volume != 1f) {

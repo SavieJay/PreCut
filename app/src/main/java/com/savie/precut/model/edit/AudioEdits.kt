@@ -1,5 +1,6 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.audio.clamped
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.AudioKind
 import com.savie.precut.model.Clip
@@ -46,12 +47,15 @@ internal fun Project.applyAudioEdit(action: EditAction.AudioEdit): Project = whe
             trimStartMs = 0L,
             trimEndMs = minOf(length, action.sourceDurationMs),
             beatsMs = emptyList(),
+            // The noise was measured from the old sound.
+            noiseReduction = null,
         )
     }
     is EditAction.SetAudioTiming -> updateAudio(action.audioId) {
         it.copy(timelineStartMs = action.timelineStartMs, trimStartMs = action.trimStartMs, trimEndMs = action.trimEndMs)
     }
     is EditAction.SetAudioVolume -> updateAudio(action.audioId) { it.copy(volume = action.volume.coerceIn(0f, MAX_VOLUME)) }
+    is EditAction.SetAudioNoiseReduction -> updateAudio(action.audioId) { it.copy(noiseReduction = action.reduction?.clamped()) }
     is EditAction.SetAudioFades -> updateAudio(action.audioId) { it.copy(fadeInMs = action.fadeInMs, fadeOutMs = action.fadeOutMs) }
     is EditAction.SetAudioSpeed -> updateAudio(action.audioId) { it.copy(speed = action.speed.coerceIn(MIN_AUDIO_SPEED, MAX_AUDIO_SPEED)) }
     is EditAction.SetVoiceEffect -> updateAudio(action.audioId) { it.copy(voiceEffect = action.effect) }
@@ -91,6 +95,8 @@ private fun Project.extractAudio(action: EditAction.ExtractAudio): Project {
         speed = clip.averageSpeed(),
         fadeInMs = clip.fadeInMs,
         fadeOutMs = clip.fadeOutMs,
+        // The same sound, so the same noise.
+        noiseReduction = clip.noiseReduction,
     )
     return copy(
         clips = clips.toMutableList().also { it[index] = clip.copy(muted = true) },

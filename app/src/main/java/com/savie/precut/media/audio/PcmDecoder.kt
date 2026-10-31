@@ -16,13 +16,17 @@ internal object PcmDecoder {
     /**
      * Calls [onFormat] with the sample rate and channel count before any samples, and again if the
      * decoder's real output differs from the container's; then [onPcm] for each chunk of
-     * interleaved samples with its presentation time. False when [uri] has no audio track. Throws
-     * `IOException` or a `RuntimeException` (unsupported codec, revoked access, corrupt file).
+     * interleaved samples with its presentation time. With [startUs] and [endUs], decoding starts at
+     * the sync sample before [startUs] and stops after [endUs] (chunks around them still arrive, with
+     * their times). False when [uri] has no audio track. Throws `IOException` or a
+     * `RuntimeException` (unsupported codec, revoked access, corrupt file).
      */
     suspend fun decode(
         context: Context,
         uri: String,
         onFormat: (sampleRate: Int, channels: Int) -> Unit,
+        startUs: Long = 0L,
+        endUs: Long = Long.MAX_VALUE,
         onPcm: (samples: ShortArray, count: Int, timeUs: Long) -> Unit,
     ): Boolean {
         val extractor = MediaExtractor()
@@ -39,7 +43,8 @@ internal object PcmDecoder {
             decoder.configure(format, null, null, 0)
             decoder.start()
             onFormat(format.getInteger(MediaFormat.KEY_SAMPLE_RATE), format.getInteger(MediaFormat.KEY_CHANNEL_COUNT))
-            drain(extractor, decoder, onFormat, onPcm)
+            if (startUs > 0L) extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+            drain(extractor, decoder, endUs, onFormat, onPcm)
             return true
         } finally {
             codec?.release()
@@ -50,6 +55,7 @@ internal object PcmDecoder {
     private suspend fun drain(
         extractor: MediaExtractor,
         decoder: MediaCodec,
+        endUs: Long,
         onFormat: (Int, Int) -> Unit,
         onPcm: (ShortArray, Int, Long) -> Unit,
     ) {
@@ -63,7 +69,7 @@ internal object PcmDecoder {
                 if (inIndex >= 0) {
                     val buffer = requireNotNull(decoder.getInputBuffer(inIndex))
                     val size = extractor.readSampleData(buffer, 0)
-                    if (size < 0) {
+                    if (size < 0 || extractor.sampleTime > endUs) {
                         decoder.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                         inputDone = true
                     } else {

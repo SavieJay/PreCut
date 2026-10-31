@@ -501,6 +501,40 @@
     <string name="cutout_done">Background removed</string>
     <string name="cutout_no_person">No person found in this clip</string>
     <string name="cutout_failed">Couldn\'t remove the background</string>
+    <!-- Auto reframe (Phase 22B) -->
+    <string name="tool_reframe">Reframe</string>
+    <string name="reframe_title">Auto reframe</string>
+    <string name="reframe_intro">Moves the picture so the person stays in the %1$s frame. It runs on your phone, and the result is position keyframes you can still adjust.</string>
+    <string name="reframe_limits">Follows people only; with several, the frame centres on the group.</string>
+    <string name="reframe_follow">Follow</string>
+    <string name="reframe_slow">Slow</string>
+    <string name="reframe_normal">Normal</string>
+    <string name="reframe_fast">Fast</string>
+    <string name="reframe_apply">Reframe this clip</string>
+    <string name="reframe_show_original">Show original framing</string>
+    <string name="reframe_progress">Reframing… %1$d%%</string>
+    <string name="reframe_body">Following the person in this %1$s clip, on your phone.</string>
+    <plurals name="reframe_body_all">
+        <item quantity="one">Following the person in %1$d clip, on your phone.</item>
+        <item quantity="other">Following the people in %1$d clips, on your phone.</item>
+    </plurals>
+    <string name="reframe_done">Clip reframed</string>
+    <plurals name="reframe_done_all">
+        <item quantity="one">%1$d clip reframed</item>
+        <item quantity="other">%1$d clips reframed</item>
+    </plurals>
+    <string name="reframe_no_person">No person found in this clip</string>
+    <string name="reframe_none_found">No person found in any clip</string>
+    <string name="reframe_nothing_to_move">This clip already fits the frame. Pick another ratio first.</string>
+    <string name="reframe_failed">Couldn\'t reframe this clip</string>
+    <!-- Reduce noise (Phase 22B) -->
+    <string name="noise_reduce">Reduce noise</string>
+    <string name="noise_intro">Takes steady background noise (hum, hiss, wind, a fan) out of the sound, on your phone. Switch it off to hear the original.</string>
+    <string name="noise_strength">Strength</string>
+    <string name="noise_progress">Measuring the noise… %1$d%%</string>
+    <string name="noise_body">Listening to this %1$s clip\'s background noise, on your phone.</string>
+    <string name="noise_no_sound">Not enough sound in this clip to measure its noise</string>
+    <string name="noise_failed">Couldn\'t read this clip\'s sound</string>
     <!-- Keyframes (P-05) -->
     <string name="keyframe_add">Add keyframe at playhead</string>
     <string name="keyframe_remove">Remove keyframe at playhead</string>

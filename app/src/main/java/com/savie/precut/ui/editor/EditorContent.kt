@@ -109,6 +109,8 @@ fun EditorContent(
         )
         state.reversing?.let { ReverseDialog(it, onCancel = viewModel.reverse::onCancel) }
         state.cuttingOut?.let { CutoutDialog(it, onCancel = viewModel.cutout::onCancel) }
+        state.reframing?.let { ReframeDialog(it, onCancel = viewModel.reframe::onCancel) }
+        state.measuringNoise?.let { NoiseDialog(it, onCancel = viewModel.noise::onCancel) }
         // The panel's surface continues behind the navigation bar.
         Column(Modifier.background(Ink1).navigationBarsPadding()) {
             EditorBottomPanel(state, canSplit, { previewState.value.positionMs }, viewModel)

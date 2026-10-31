@@ -2,6 +2,10 @@ package com.savie.precut.ui.editor
 
 import android.Manifest
 import com.savie.precut.model.frame.cutoutCoversClip
+import com.savie.precut.ui.editor.tools.NoiseReductionRows
+import com.savie.precut.ui.editor.tools.NoiseActions
+import com.savie.precut.model.audio.NoiseReduction
+import com.savie.precut.model.ClipType
 import com.savie.precut.model.edit.clipShownAt
 import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
@@ -26,6 +30,7 @@ import com.savie.precut.ui.editor.captions.CaptionsPanelFor
 import com.savie.precut.ui.editor.tools.AudioMenuBar
 import com.savie.precut.ui.editor.tools.ChromaTool
 import com.savie.precut.ui.editor.tools.CutoutTool
+import com.savie.precut.ui.editor.tools.ReframeTool
 import com.savie.precut.ui.editor.tools.ClipVolumeTool
 import com.savie.precut.ui.editor.tools.MaskTool
 import com.savie.precut.ui.editor.tools.CoverTool
@@ -121,6 +126,7 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         state.activeTool == EditorTool.VOLUME && clip != null -> ClipVolumeTool(
             clip, viewModel::onClipVolumeChanged, viewModel::onClipMutedChanged, onDone = close,
             onApplyAll = viewModel::onVolumeApplyAll,
+            noise = rememberNoiseActions(viewModel).takeIf { clip.type == ClipType.VIDEO },
         )
         state.activeTool in EditorFrame.FRAME_TOOLS && clip != null && state.activeTool != null ->
             FramePanels(clip, state.activeTool, viewModel)
@@ -129,6 +135,8 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
             ChromaTool(clip.chroma, state.chromaPicking, rememberChromaActions(viewModel), onDone = close)
         state.activeTool == EditorTool.CUTOUT && clip != null ->
             CutoutTool(clip.cutout, clip.cutoutCoversClip(), state.peekOriginal, rememberCutoutActions(viewModel), onDone = close)
+        state.activeTool == EditorTool.REFRAME && clip != null ->
+            ReframeTool(state.project.aspectRatio, state.reframeSpeed, state.peekOriginal, rememberReframeActions(viewModel), onDone = close)
         state.activeTool == EditorTool.FADE && clip != null ->
             FadeTool(clip.fadeInMs, clip.fadeOutMs, clip.timelineDurationMs(), viewModel::onClipFadesChanged, onDone = close)
         state.activeTool in TEXT_STYLE_TOOLS && text != null && state.activeTool != null ->
@@ -176,11 +184,18 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
     }
 }
 
-/** Volume panel for an audio clip. */
+/** Volume panel for an audio clip; with [noise], Reduce noise too (not for several clips at once). */
 @Composable
-fun AudioVolumeTool(volume: Float, onVolumeChanged: (Float) -> Unit, onDone: () -> Unit) {
+fun AudioVolumeTool(
+    volume: Float,
+    onVolumeChanged: (Float) -> Unit,
+    onDone: () -> Unit,
+    reduction: NoiseReduction? = null,
+    noise: NoiseActions? = null,
+) {
     ToolPanel(stringResource(R.string.tool_volume), onDone) {
         VolumeSlider(volume, enabled = true, onVolumeChanged = onVolumeChanged)
+        noise?.let { NoiseReductionRows(reduction, it) }
     }
 }
 

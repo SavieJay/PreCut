@@ -15,7 +15,7 @@ import com.savie.precut.R
 import com.savie.precut.ui.components.SwitchRow
 import com.savie.precut.model.Clip
 
-/** Volume of a clip's own sound, plus mute (which keeps the volume for unmuting). */
+/** Volume of a clip's own sound, plus mute (which keeps the volume for unmuting) and, with [noise], Reduce noise. */
 @Composable
 fun ClipVolumeTool(
     clip: Clip,
@@ -25,9 +25,11 @@ fun ClipVolumeTool(
     modifier: Modifier = Modifier,
     /** Shows "Apply to all" when set. */
     onApplyAll: (() -> Unit)? = null,
+    noise: NoiseActions? = null,
 ) {
     ToolPanel(stringResource(R.string.volume_title), onDone, modifier, actions = { onApplyAll?.let { ApplyToAllButton(it) } }) {
         VolumeSlider(clip.volume, enabled = !clip.muted, onVolumeChanged = onVolumeChanged)
         SwitchRow(stringResource(R.string.volume_mute), checked = clip.muted, onCheckedChange = onMutedChanged)
+        noise?.let { NoiseReductionRows(clip.noiseReduction, it) }
     }
 }

@@ -42,7 +42,8 @@ fun ReverseDialog(progress: ReverseProgress, onCancel: () -> Unit) = WorkProgres
     R.drawable.ic_reverse,
     stringResource(R.string.reverse_progress, progress.percent),
     stringResource(R.string.reverse_body, formatSeconds(progress.clipLengthMs)),
-    progress,
+    progress.percent,
+    progress.secondsLeft,
     onCancel,
 )
 
@@ -52,13 +53,40 @@ fun CutoutDialog(progress: ReverseProgress, onCancel: () -> Unit) = WorkProgress
     R.drawable.ic_frame_person,
     stringResource(R.string.cutout_progress, progress.percent),
     stringResource(R.string.cutout_body, formatSeconds(progress.clipLengthMs)),
-    progress,
+    progress.percent,
+    progress.secondsLeft,
+    onCancel,
+)
+
+/** Auto reframe (Phase 22B): following the person in one clip, or in [ReframeProgress.clips] with Apply to all. */
+@Composable
+fun ReframeDialog(progress: ReframeProgress, onCancel: () -> Unit) = WorkProgressDialog(
+    R.drawable.ic_reframe,
+    stringResource(R.string.reframe_progress, progress.percent),
+    if (progress.clips == 1) {
+        stringResource(R.string.reframe_body, formatSeconds(progress.clipLengthMs))
+    } else {
+        LocalResources.current.getQuantityString(R.plurals.reframe_body_all, progress.clips, progress.clips)
+    },
+    progress.percent,
+    progress.secondsLeft,
+    onCancel,
+)
+
+/** Reduce noise (Phase 22B): measuring a clip's background noise. */
+@Composable
+fun NoiseDialog(progress: ReverseProgress, onCancel: () -> Unit) = WorkProgressDialog(
+    R.drawable.ic_noise,
+    stringResource(R.string.noise_progress, progress.percent),
+    stringResource(R.string.noise_body, formatSeconds(progress.clipLengthMs)),
+    progress.percent,
+    progress.secondsLeft,
     onCancel,
 )
 
 /** Long work on a clip done on the phone: [title] with the percent, [body], time left, Cancel. */
 @Composable
-private fun WorkProgressDialog(@DrawableRes icon: Int, title: String, body: String, progress: ReverseProgress, onCancel: () -> Unit) {
+private fun WorkProgressDialog(@DrawableRes icon: Int, title: String, body: String, percent: Int, secondsLeft: Int?, onCancel: () -> Unit) {
     Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
         Column(
             Modifier.fillMaxWidth().background(Ink2, RoundedCornerShape(28.dp)).padding(24.dp),
@@ -68,14 +96,14 @@ private fun WorkProgressDialog(@DrawableRes icon: Int, title: String, body: Stri
                 Icon(painterResource(icon), contentDescription = null, tint = Accent)
             }
             Text(title, style = MaterialTheme.typography.titleLarge.tabular())
-            val left = progress.secondsLeft?.let { LocalResources.current.getQuantityString(R.plurals.reverse_seconds_left, it.coerceAtLeast(1), it.coerceAtLeast(1)) }
+            val left = secondsLeft?.let { LocalResources.current.getQuantityString(R.plurals.reverse_seconds_left, it.coerceAtLeast(1), it.coerceAtLeast(1)) }
             Text(
                 listOfNotNull(body, left).joinToString(" "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )
             LinearProgressIndicator(
-                progress = { progress.percent / 100f },
+                progress = { percent / 100f },
                 modifier = Modifier.fillMaxWidth().height(6.dp),
                 color = Accent,
                 trackColor = Ink3,

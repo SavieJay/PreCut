@@ -137,6 +137,24 @@ fun EditorScreen(
             EditorEvent.ReverseUnsupported -> resources.getString(R.string.reverse_unsupported)
             EditorEvent.CutoutNoPerson -> resources.getString(R.string.cutout_no_person)
             EditorEvent.CutoutFailed -> resources.getString(R.string.cutout_failed)
+            EditorEvent.ReframeNoPerson -> resources.getString(R.string.reframe_no_person)
+            EditorEvent.ReframeNoneFound -> resources.getString(R.string.reframe_none_found)
+            EditorEvent.ReframeNothingToMove -> resources.getString(R.string.reframe_nothing_to_move)
+            EditorEvent.ReframeFailed -> resources.getString(R.string.reframe_failed)
+            EditorEvent.NoiseNoSound -> resources.getString(R.string.noise_no_sound)
+            EditorEvent.NoiseFailed -> resources.getString(R.string.noise_failed)
+            EditorEvent.ReframeDone, is EditorEvent.ReframedAll -> {
+                val text = if (event is EditorEvent.ReframedAll) {
+                    resources.getQuantityString(R.plurals.reframe_done_all, event.count, event.count)
+                } else {
+                    resources.getString(R.string.reframe_done)
+                }
+                scope.launch {
+                    val result = snackbarHostState.showSnackbar(text, actionLabel = resources.getString(R.string.action_undo))
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
+                }
+                return@ObserveAsEvents
+            }
             EditorEvent.TemplateSaved -> {
                 templateSheet = false
                 resources.getString(R.string.template_saved)

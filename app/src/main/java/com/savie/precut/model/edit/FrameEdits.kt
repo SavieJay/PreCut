@@ -43,6 +43,10 @@ internal fun Project.applyFrameEdit(action: EditAction.FrameEdit): Project = whe
     is EditAction.SetCutout -> updateFrame(action.clipId) {
         it.copy(cutout = action.cutout?.let { cut -> cut.copy(softness = cut.softness.coerceIn(0f, 1f), edge = cut.edge.coerceIn(-1f, 1f)) })
     }
+    is EditAction.AutoReframe -> {
+        val aspect = frameAspect()
+        updateFrame(action.clipId) { it.reframed(action.samples, action.speed, aspect) }
+    }
 }
 
 private fun ClipMask.normalized(): ClipMask = copy(

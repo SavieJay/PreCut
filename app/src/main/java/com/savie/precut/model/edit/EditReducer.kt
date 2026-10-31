@@ -1,5 +1,6 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.audio.clamped
 import com.savie.precut.model.validSpans
 import com.savie.precut.model.text.captionSplitIndex
 import com.savie.precut.model.text.splitCaption
@@ -69,6 +70,7 @@ object EditReducer {
             is EditAction.Batch -> action.actions.fold(project, ::reduce)
             is EditAction.SetClipVolume -> project.updateClip(action.clipId) { it.copy(volume = action.volume.coerceIn(0f, MAX_VOLUME)) }
             is EditAction.SetClipMuted -> project.updateClip(action.clipId) { it.copy(muted = action.muted) }
+            is EditAction.SetClipNoiseReduction -> project.updateClip(action.clipId) { it.copy(noiseReduction = action.reduction?.clamped()) }
             is EditAction.ReplaceClip -> project.updateClip(action.clipId) { it.replacedWith(action.uri, action.info) }
             is EditAction.RemoveItems -> {
                 val clips = project.clips.filterNot { it.id in action.clipIds }
