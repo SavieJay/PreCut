@@ -7,6 +7,7 @@ import com.savie.precut.model.text.splitCaption
 import com.savie.precut.model.text.withCaptionText
 
 import com.savie.precut.model.Clip
+import com.savie.precut.model.brand.withBrandKit
 import com.savie.precut.model.MediaInfo
 import com.savie.precut.model.clipFromMedia
 import com.savie.precut.model.ClipType
@@ -69,6 +70,7 @@ object EditReducer {
                 }
             is EditAction.Batch -> action.actions.fold(project, ::reduce)
             is EditAction.RemoveTimeRanges -> project.withoutTimeRanges(action.ranges)
+            is EditAction.ApplyBrandKit -> project.withBrandKit(action.kit, action.suffix, action.photoDurationMs)
             is EditAction.SetClipVolume -> project.updateClip(action.clipId) { it.copy(volume = action.volume.coerceIn(0f, MAX_VOLUME)) }
             is EditAction.SetClipMuted -> project.updateClip(action.clipId) { it.copy(muted = action.muted) }
             is EditAction.SetClipNoiseReduction -> project.updateClip(action.clipId) { it.copy(noiseReduction = action.reduction?.clamped()) }

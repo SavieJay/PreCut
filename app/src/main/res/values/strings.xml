@@ -1258,4 +1258,26 @@
     <string name="hook_why_zoom">A slow zoom-in on the first clip gives the first second energy.</string>
     <string name="hook_tip_beats">Cut to the beat</string>
     <string name="hook_why_beats">Your clips are long for a short video; cutting on the music\'s beats quickens the pace.</string>
+
+    <!-- Brand kit (Phase 26B) -->
+    <string name="tool_brand">Brand</string>
+    <string name="brand_title">Brand kit</string>
+    <string name="brand_summary">Logo, colours, fonts, intro and outro</string>
+    <string name="brand_intro_text">Save your brand once; the Brand tool in the editor puts it on a project in one tap.</string>
+    <string name="brand_logo">Logo</string>
+    <string name="brand_colors">Colours</string>
+    <string name="brand_add_color">Add a colour</string>
+    <string name="brand_title_font">Title font</string>
+    <string name="brand_body_font">Captions font</string>
+    <string name="brand_font_unchanged">Leave as it is</string>
+    <string name="brand_intro">Intro clip</string>
+    <string name="brand_outro">Outro clip</string>
+    <string name="brand_none">Not set</string>
+    <string name="brand_set">Set</string>
+    <string name="brand_remove">Remove</string>
+    <string name="brand_apply_new">Apply to new projects automatically</string>
+    <string name="brand_apply_new_summary">New projects and templates start with your brand</string>
+    <string name="brand_pick_failed">That file couldn\'t be opened.</string>
+    <string name="brand_applied">Brand kit applied</string>
+    <string name="brand_empty">Set up your brand kit first: Settings → Brand kit.</string>
 </resources>

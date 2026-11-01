@@ -238,6 +238,9 @@ sealed interface EditorEvent {
     data class OpenPaywall(val feature: ProFeature) : EditorEvent
     /** Shown with Undo: Edit by transcript took [removedMs] out. */
     data class TranscriptCut(val removedMs: Long) : EditorEvent
+    /** Shown with Undo. */
+    data object BrandApplied : EditorEvent
+    data object BrandKitEmpty : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -421,6 +424,9 @@ class EditorViewModel @Inject constructor(
     /** Hook coach (Pro). */
     val hookCoach = EditorHookCoach(host, pro)
 
+    /** Brand kit (Pro). */
+    val brand = EditorBrand(host, pro, appSettings)
+
     /** Prompt-to-edit: the request, Claude's steps and the review. */
     val aiEdit = EditorAiEdit(host, cloudClient, appSettings)
 
@@ -473,6 +479,7 @@ class EditorViewModel @Inject constructor(
             showInPreview(playable(project, missing), 0L)
             _uiState.value = EditorUiState.Ready(project, missingIds = missing)
             requestProxies(project)
+            brand.onOpened(project)
         }
         viewModelScope.launch {
             // A newly finished proxy swaps in once the preview is idle, so it never interrupts

@@ -2,6 +2,7 @@ package com.savie.precut.model.edit
 
 import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.brand.BrandKit
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.Clip
 import com.savie.precut.model.MediaInfo
@@ -258,6 +259,8 @@ sealed interface EditAction {
     /** Sets (or with null clears) the project cover, and whether it's the export's first frame. */
     data class SetCover(val cover: ProjectCover?, val inExport: Boolean) : EditAction
 
+    /** The brand kit (Phase 26B) on the project: intro, outro, logo, colours and fonts; [suffix] makes ids unique. */
+    data class ApplyBrandKit(val kit: BrandKit, val suffix: String, val photoDurationMs: Long) : EditAction
     /** Edit by transcript (Phase 26B): takes these stretches of the timeline out, closing the gaps. */
     data class RemoveTimeRanges(val ranges: List<TimeRange>) : EditAction
     /** Several edits applied in order as one undo step (multi-select, "Apply to all"). */

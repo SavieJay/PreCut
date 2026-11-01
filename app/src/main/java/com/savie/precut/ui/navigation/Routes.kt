@@ -26,5 +26,9 @@ data class PaywallRoute(val feature: String? = null)
 @Serializable
 data object LicencesRoute
 
+/** Settings → Brand kit (Phase 26B). */
+@Serializable
+data object BrandKitRoute
+
 @Serializable
 data class TemplateRoute(val templateId: String)

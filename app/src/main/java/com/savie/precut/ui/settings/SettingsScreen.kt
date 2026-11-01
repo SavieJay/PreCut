@@ -55,6 +55,7 @@ fun SettingsScreen(
     onLicences: () -> Unit,
     onReplayIntro: () -> Unit = {},
     onGetPro: () -> Unit = {},
+    onBrandKit: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val values by viewModel.values.collectAsStateWithLifecycle()
@@ -78,6 +79,7 @@ fun SettingsScreen(
                 R.drawable.ic_apps, stringResource(R.string.settings_simple_mode), stringResource(R.string.settings_simple_mode_summary),
                 trailing = { PreCutSwitch(values.simpleMode, viewModel::onSimpleMode) },
             ) { viewModel.onSimpleMode(!values.simpleMode) }
+            SettingRow(R.drawable.ic_palette, stringResource(R.string.brand_title), stringResource(R.string.brand_summary), chevron = true, onClick = onBrandKit)
             Header(R.string.settings_export)
             val export = values.export
             SettingRow(

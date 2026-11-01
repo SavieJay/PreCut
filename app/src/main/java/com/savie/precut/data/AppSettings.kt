@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
 import com.savie.precut.model.export.ExportSettings
+import com.savie.precut.model.brand.BrandKit
 import com.savie.precut.model.onboarding.CreationGoal
 import com.savie.precut.model.text.CaptionStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,6 +41,8 @@ data class SettingsValues(
     val simpleMode: Boolean = false,
     /** The editor's three first-run tips (timeline, tools, export) were shown. */
     val coachMarksShown: Boolean = false,
+    /** The brand kit (Phase 26B, Pro). */
+    val brandKit: BrandKit = BrandKit(),
 )
 
 interface AppSettings {

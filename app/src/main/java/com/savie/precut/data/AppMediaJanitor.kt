@@ -29,10 +29,13 @@ class AppMediaJanitor @Inject constructor(
     private val repository: ProjectRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val proxies: ProxyManager,
+    private val settings: AppSettings,
 ) : UnusedMediaCleaner {
     override suspend fun sweep() {
         val projects = repository.loadAll()
-        val referenced = projects.flatMap(::mediaUris).toSet()
+        // The brand kit's files (Phase 26B) are kept even while no project uses them.
+        val brand = settings.values.value.brandKit.let { listOfNotNull(it.logo?.uri, it.intro?.uri, it.outro?.uri) }
+        val referenced = (projects.flatMap(::mediaUris) + brand).toSet()
         proxies.trim(projects.flatMap { it.clips }.filter(ProxyRules::needsProxy).map { it.uri }.toSet())
         withContext(ioDispatcher) {
             unusedFiles(APP_MEDIA_DIRS.map { File(context.filesDir, it) }, referenced) { Uri.fromFile(it).toString() }

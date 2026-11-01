@@ -11,6 +11,7 @@ import com.savie.precut.ui.export.ExportScreen
 import com.savie.precut.ui.home.HomeScreen
 import com.savie.precut.ui.onboarding.OnboardingScreen
 import com.savie.precut.ui.pro.PaywallScreen
+import com.savie.precut.ui.settings.BrandKitScreen
 import com.savie.precut.ui.settings.LicencesScreen
 import com.savie.precut.ui.settings.SettingsScreen
 import com.savie.precut.ui.templates.TemplateScreen
@@ -57,6 +58,7 @@ fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
                 onLicences = { navController.navigate(LicencesRoute) },
                 onReplayIntro = { navController.navigate(OnboardingRoute) },
                 onGetPro = { navController.navigate(PaywallRoute()) },
+                onBrandKit = { navController.navigate(BrandKitRoute) },
             )
         }
         composable<TemplateRoute> {
@@ -65,6 +67,9 @@ fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
                 // The new project replaces the template page: Back from the editor returns to Projects.
                 onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) { popUpTo<HomeRoute>() } },
             )
+        }
+        composable<BrandKitRoute> {
+            BrandKitScreen(onBack = { navController.popBackStack() })
         }
         composable<PaywallRoute> {
             PaywallScreen(onClose = { navController.popBackStack() })
