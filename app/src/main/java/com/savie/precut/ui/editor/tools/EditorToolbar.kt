@@ -1,6 +1,11 @@
 package com.savie.precut.ui.editor.tools
 
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.savie.precut.R
 
@@ -42,10 +47,31 @@ interface ToolbarActions {
     fun onCover()
 }
 
-/** Main bottom tool row. */
+/**
+ * Main bottom tool row. In [simple] mode (Phase 24) it shows the everyday tools and More, which
+ * opens the full row.
+ */
 @Composable
-fun EditorToolbar(canSplit: Boolean, hasClips: Boolean, actions: ToolbarActions, modifier: Modifier = Modifier) {
+fun EditorToolbar(canSplit: Boolean, hasClips: Boolean, actions: ToolbarActions, modifier: Modifier = Modifier, simple: Boolean = false) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
     ToolRow(modifier) {
+        if (simple && !expanded) {
+            ToolButton(R.drawable.ic_auto_awesome, R.string.tool_ai_edit, hasClips, actions::onAiEdit)
+            ToolButton(R.drawable.ic_split, R.string.tool_split, canSplit, actions::onSplit)
+            ToolButton(R.drawable.ic_trim, R.string.tool_trim, hasClips, actions::onTrim)
+            ToolButton(R.drawable.ic_music, R.string.tool_audio, hasClips, actions::onAudio)
+            ToolButton(R.drawable.ic_text, R.string.tool_text, hasClips, actions::onText)
+            ToolButton(R.drawable.ic_filter, R.string.tool_filters, hasClips, actions::onFilters)
+            ToolButton(R.drawable.ic_apps, R.string.tool_more, onClick = { expanded = true })
+        } else {
+            AllTools(canSplit, hasClips, actions)
+            if (simple) ToolButton(R.drawable.ic_apps, R.string.tool_less, onClick = { expanded = false })
+        }
+    }
+}
+
+@Composable
+private fun RowScope.AllTools(canSplit: Boolean, hasClips: Boolean, actions: ToolbarActions) {
         ToolButton(R.drawable.ic_auto_awesome, R.string.tool_ai_edit, hasClips, actions::onAiEdit)
         ToolButton(R.drawable.ic_split, R.string.tool_split, canSplit, actions::onSplit)
         ToolButton(R.drawable.ic_crop, R.string.tool_edit, hasClips, actions::onEdit)
@@ -80,5 +106,4 @@ fun EditorToolbar(canSplit: Boolean, hasClips: Boolean, actions: ToolbarActions,
         ToolButton(R.drawable.ic_select, R.string.tool_select, hasClips, actions::onSelect)
         ToolButton(R.drawable.ic_duplicate, R.string.tool_duplicate, hasClips, actions::onDuplicate)
         ToolButton(R.drawable.ic_delete, R.string.tool_delete, hasClips, actions::onDelete)
-    }
 }

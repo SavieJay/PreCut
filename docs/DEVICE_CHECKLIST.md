@@ -238,6 +238,23 @@ Needs the `app_config` migration on the server (`npx supabase db push --linked`)
 | After that update, with `whats_new` set | "What's new" with the bullets, once | |
 | Open a draft saved by an older PreCut build | It opens as before | |
 
+## 4n. Onboarding (Phase 24)
+Clear the app's data first (Settings → Apps → PreCut → Storage → Clear storage), or use Settings → Replay intro for the pages alone.
+
+| Check | Expected | Result |
+|---|---|---|
+| Open PreCut | Welcome: moving tiles, the logo, "Edit like a pro. In minutes.", Get started, I already have projects, Skip, dots | |
+| Get started → pick YouTube videos → Continue → New to editing → Continue | Android 13+: the notifications page; Allow asks the system; then Projects | |
+| New project | Starts in 16:9 | |
+| Templates tab | Vlog templates first | |
+| Open a project | Three tips in turn: timeline, tools, Export; a tap moves on; the toolbar shows six tools and More | |
+| More, then Less | The full row, then the six again | |
+| Settings → Simple mode off | The full toolbar in the editor | |
+| Settings → Replay intro → Skip | Back in Settings; the earlier answers were kept | |
+| Clear data again, then Skip on Welcome | Projects with the usual defaults (9:16, full toolbar); onboarding doesn't come back after a restart | |
+| Not now on the notifications page, then export | The export still asks for notifications | |
+| Android 12 or older | No notifications page | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

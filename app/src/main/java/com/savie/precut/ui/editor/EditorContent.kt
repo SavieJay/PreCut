@@ -1,5 +1,8 @@
 package com.savie.precut.ui.editor
 
+import com.savie.precut.ui.editor.coach.CoachTarget
+import com.savie.precut.ui.editor.coach.LocalCoachTargets
+import com.savie.precut.ui.editor.coach.coachTarget
 import com.savie.precut.ui.editor.aiedit.AiEditReviewPanel
 import com.savie.precut.ui.editor.aiedit.rememberReviewActions
 import androidx.activity.compose.BackHandler
@@ -109,7 +112,9 @@ fun EditorContent(
             AiEditReviewPanel(review, rememberReviewActions(viewModel.aiEdit), Modifier.navigationBarsPadding())
             return@Column
         }
+        val coach = LocalCoachTargets.current
         TimelineSection(
+            modifier = Modifier.coachTarget(coach, CoachTarget.TIMELINE),
             state = state,
             positionMs = { previewState.value.positionMs },
             loader = viewModel.thumbnails,
@@ -123,7 +128,7 @@ fun EditorContent(
         state.reframing?.let { ReframeDialog(it, onCancel = viewModel.reframe::onCancel) }
         state.measuringNoise?.let { NoiseDialog(it, onCancel = viewModel.noise::onCancel) }
         // The panel's surface continues behind the navigation bar.
-        Column(Modifier.background(Ink1).navigationBarsPadding()) {
+        Column(Modifier.background(Ink1).navigationBarsPadding().coachTarget(coach, CoachTarget.TOOLS)) {
             EditorBottomPanel(state, canSplit, { previewState.value.positionMs }, viewModel)
         }
     }

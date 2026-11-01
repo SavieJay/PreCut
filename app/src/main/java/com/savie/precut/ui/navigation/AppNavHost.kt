@@ -9,18 +9,31 @@ import com.savie.precut.data.ShareInbox
 import com.savie.precut.ui.editor.EditorScreen
 import com.savie.precut.ui.export.ExportScreen
 import com.savie.precut.ui.home.HomeScreen
+import com.savie.precut.ui.onboarding.OnboardingScreen
 import com.savie.precut.ui.settings.LicencesScreen
 import com.savie.precut.ui.settings.SettingsScreen
 import com.savie.precut.ui.templates.TemplateScreen
 
 @Composable
-fun AppNavHost(shareInbox: ShareInbox) {
+fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
     val navController = rememberNavController()
     // Shared media becomes a new project on the Projects screen, wherever the user was.
     LaunchedEffect(shareInbox) {
         shareInbox.arrivals.collect { navController.popBackStack(HomeRoute, inclusive = false) }
     }
-    NavHost(navController = navController, startDestination = HomeRoute) {
+    NavHost(navController = navController, startDestination = if (showOnboarding) OnboardingRoute else HomeRoute) {
+        composable<OnboardingRoute> {
+            OnboardingScreen(
+                onDone = {
+                    // From a first run, Projects replaces onboarding; from Replay intro, back to where it was.
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } }
+                    }
+                },
+            )
+        }
         composable<HomeRoute> {
             HomeScreen(
                 onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) },
@@ -35,7 +48,11 @@ fun AppNavHost(shareInbox: ShareInbox) {
             )
         }
         composable<SettingsRoute> {
-            SettingsScreen(onBack = { navController.popBackStack() }, onLicences = { navController.navigate(LicencesRoute) })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onLicences = { navController.navigate(LicencesRoute) },
+                onReplayIntro = { navController.navigate(OnboardingRoute) },
+            )
         }
         composable<TemplateRoute> {
             TemplateScreen(

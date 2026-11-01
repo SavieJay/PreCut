@@ -1,7 +1,9 @@
 package com.savie.precut.ui.editor
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.savie.precut.ui.editor.tools.EditorToolbar
@@ -45,9 +47,11 @@ fun OverlayToolbarFor(viewModel: EditorViewModel) {
 @Composable
 fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: EditorViewModel) {
     val haptics = LocalHapticFeedback.current
+    val settings by viewModel.appSettingsForUi.values.collectAsStateWithLifecycle()
     EditorToolbar(
         canSplit = canSplit,
         hasClips = state.project.clips.isNotEmpty(),
+        simple = settings.simpleMode,
         actions = object : ToolbarActions {
             override fun onSplit() {
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)

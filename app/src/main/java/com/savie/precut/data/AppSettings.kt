@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.DEFAULT_IMAGE_DURATION_MS
 import com.savie.precut.model.export.ExportSettings
+import com.savie.precut.model.onboarding.CreationGoal
 import com.savie.precut.model.text.CaptionStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,14 @@ data class SettingsValues(
     val captionStyleId: String = CaptionStyle.DEFAULT.id,
     /** The AI edit sheet's note on what's sent was agreed to (Phase 22C); it stays shown, smaller. */
     val aiEditConsented: Boolean = false,
+    /** Onboarding (Phase 24) was finished or skipped; Settings → Replay intro shows it again. */
+    val onboardingDone: Boolean = false,
+    /** Onboarding's "What will you create?": the templates shown first. */
+    val creationGoals: Set<CreationGoal> = emptySet(),
+    /** Simple mode: the editor's main toolbar shows a few tools and the rest under More. */
+    val simpleMode: Boolean = false,
+    /** The editor's three first-run tips (timeline, tools, export) were shown. */
+    val coachMarksShown: Boolean = false,
 )
 
 interface AppSettings {

@@ -3,6 +3,7 @@ package com.savie.precut
 import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
+import com.savie.precut.data.AppSettings
 import com.savie.precut.ui.update.LocalUpdates
 import com.savie.precut.ui.update.UpdateHost
 import com.savie.precut.ui.update.Updates
@@ -34,6 +35,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var playUpdates: PlayUpdates
 
+    @Inject
+    lateinit var appSettings: AppSettings
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app is dark-only, so always use light system bar icons.
         enableEdgeToEdge(
@@ -43,11 +47,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // A recreated activity has already handled its launch intent.
         if (savedInstanceState == null) receiveShare(intent)
+        // Read once: finishing onboarding mustn't swap the start screen under the user.
+        val showOnboarding = !appSettings.values.value.onboardingDone
         setContent {
             PreCutTheme {
                 CompositionLocalProvider(LocalUpdates provides Updates(updateChecker, playUpdates)) {
                     Box {
-                        AppNavHost(shareInbox)
+                        AppNavHost(shareInbox, showOnboarding)
                         // Drawn last, over everything: the forced-update screen and What's new.
                         UpdateHost(updateChecker, playUpdates)
                     }

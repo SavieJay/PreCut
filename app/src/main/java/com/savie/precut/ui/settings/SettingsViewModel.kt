@@ -68,6 +68,9 @@ class SettingsViewModel @Inject constructor(
 
     fun onAspectRatio(ratio: AspectRatio) = settings.update { it.copy(aspectRatio = ratio) }
 
+    /** Simple mode (Phase 24): the editor's toolbar shows a few tools, the rest under More. */
+    fun onSimpleMode(simple: Boolean) = settings.update { it.copy(simpleMode = simple) }
+
     fun onExportSettings(export: ExportSettings) = settings.update { it.copy(export = export.fittedTo(_capabilities.value)) }
 
     /** The newest crash report, to share; null when there's none. */

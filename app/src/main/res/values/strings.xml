@@ -1100,8 +1100,8 @@
     <string name="ai_failure_steps_used">Claude ran out of steps before making a change. Try a simpler request.</string>
 
     <!-- Forced updates (Phase 23) -->
-    <string name="update_required_title">Update PreCut</string>
-    <string name="update_required_body">This version of PreCut can no longer be used. Update to keep editing; your projects are saved and will be there after the update.</string>
+    <string name="update_required_title">Update required</string>
+    <string name="update_required_body">A new version of PreCut is available. Update to keep editing; your projects are saved.</string>
     <string name="update_now">Update now</string>
     <string name="update_available">A new version of PreCut is ready.</string>
     <string name="update_downloaded">The update is downloaded.</string>
@@ -1109,4 +1109,43 @@
     <string name="update_restart">Restart</string>
     <string name="whats_new_title">What\'s new</string>
     <string name="whats_new_done">Got it</string>
+
+    <!-- Onboarding (Phase 24) -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_welcome_title">Edit like a pro. In minutes.</string>
+    <string name="onboarding_welcome_body">Free pro-level tools, no watermark.</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_have_projects">I already have projects</string>
+    <string name="onboarding_goals_title">What will you create?</string>
+    <string name="onboarding_goals_subtitle">Pick all that apply.</string>
+    <string name="onboarding_goal_social">Short videos for social</string>
+    <string name="onboarding_goal_youtube">YouTube videos</string>
+    <string name="onboarding_goal_memories">Travel and family memories</string>
+    <string name="onboarding_goal_business">Business and brand</string>
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_experience_title">Your editing experience</string>
+    <string name="onboarding_experience_new">New to editing</string>
+    <string name="onboarding_experience_new_body">Keep it simple</string>
+    <string name="onboarding_experience_some">Some experience</string>
+    <string name="onboarding_experience_some_body">All the tools, ready when I need them</string>
+    <string name="onboarding_experience_pro">Pro</string>
+    <string name="onboarding_experience_pro_body">Show me everything</string>
+    <string name="onboarding_experience_note">You can change this any time in Settings.</string>
+    <string name="onboarding_notifications_title">Know when your video is ready</string>
+    <string name="onboarding_notifications_body">We\'ll only notify you about exports and important updates.</string>
+    <string name="onboarding_notifications_mock">Exporting your video… 62%</string>
+    <string name="onboarding_notifications_allow">Allow notifications</string>
+    <string name="onboarding_not_now">Not now</string>
+    <string name="coach_timeline">Your video, clip by clip. Drag to move through it; pinch to zoom.</string>
+    <string name="coach_tools">Every tool lives here. Select a clip first to change just that clip.</string>
+    <string name="coach_export">When it looks right, export it to your gallery.</string>
+    <string name="coach_step">%1$d of %2$d</string>
+    <string name="coach_next">Next</string>
+    <string name="coach_done">Got it</string>
+    <string name="tool_more">More</string>
+    <string name="tool_less">Less</string>
+    <string name="settings_editor">Editor</string>
+    <string name="settings_simple_mode">Simple mode</string>
+    <string name="settings_simple_mode_summary">A few everyday tools; the rest under More</string>
+    <string name="settings_replay_intro">Replay intro</string>
 </resources>

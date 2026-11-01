@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
+import com.savie.precut.ui.components.PreCutSwitch
 import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.editor.export.ExportSheetActions
@@ -49,7 +50,7 @@ private enum class SettingsDialog { PHOTO, RATIO, EXPORT }
 
 /** H-09: new-project defaults, default export settings, the preview cache and About. */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, onReplayIntro: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
     val values by viewModel.values.collectAsStateWithLifecycle()
     val storage by viewModel.storageInfo.collectAsStateWithLifecycle()
     val capabilities by viewModel.capabilities.collectAsStateWithLifecycle()
@@ -65,6 +66,11 @@ fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, viewModel: Settin
             Header(R.string.settings_new_projects)
             SettingRow(R.drawable.ic_schedule, stringResource(R.string.settings_photo_duration), seconds(values.photoDurationMs)) { dialog = SettingsDialog.PHOTO }
             SettingRow(R.drawable.ic_aspect_ratio, stringResource(R.string.settings_aspect_ratio), values.aspectRatio.label()) { dialog = SettingsDialog.RATIO }
+            Header(R.string.settings_editor)
+            SettingRow(
+                R.drawable.ic_apps, stringResource(R.string.settings_simple_mode), stringResource(R.string.settings_simple_mode_summary),
+                trailing = { PreCutSwitch(values.simpleMode, viewModel::onSimpleMode) },
+            ) { viewModel.onSimpleMode(!values.simpleMode) }
             Header(R.string.settings_export)
             val export = values.export
             SettingRow(
@@ -82,6 +88,7 @@ fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, viewModel: Settin
             Header(R.string.settings_about)
             SettingRow(R.drawable.ic_info, stringResource(R.string.settings_about_app), stringResource(R.string.settings_version, viewModel.version))
             SettingRow(R.drawable.ic_description, stringResource(R.string.settings_licences), null, chevron = true, onClick = onLicences)
+            SettingRow(R.drawable.ic_history, stringResource(R.string.settings_replay_intro), null, chevron = true, onClick = onReplayIntro)
             CrashReportsRow(crashes, viewModel::newestCrashReport, viewModel::onDeleteCrashReports)
         }
     }

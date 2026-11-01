@@ -1,5 +1,8 @@
 package com.savie.precut.ui.editor
 
+import com.savie.precut.ui.editor.coach.CoachTarget
+import com.savie.precut.ui.editor.coach.LocalCoachTargets
+import com.savie.precut.ui.editor.coach.coachTarget
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -108,7 +111,12 @@ fun EditorTopBar(
         }
         BarIcon(R.drawable.ic_undo, stringResource(R.string.action_undo), enabled = canUndo, onClick = actions::onUndo)
         BarIcon(R.drawable.ic_redo, stringResource(R.string.action_redo), enabled = canRedo, onClick = actions::onRedo)
-        AccentPill(stringResource(R.string.action_export), enabled = canExport, onClick = actions::onExport, modifier = Modifier.padding(start = 4.dp))
+        AccentPill(
+            stringResource(R.string.action_export),
+            enabled = canExport,
+            onClick = actions::onExport,
+            modifier = Modifier.padding(start = 4.dp).coachTarget(LocalCoachTargets.current, CoachTarget.EXPORT),
+        )
         MoreMenu(canExport, actions)
     }
 }

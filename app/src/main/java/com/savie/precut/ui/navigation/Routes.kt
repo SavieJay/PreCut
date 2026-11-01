@@ -5,6 +5,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object HomeRoute
 
+/** First-run onboarding (Phase 24), and Settings → Replay intro. */
+@Serializable
+data object OnboardingRoute
+
 @Serializable
 data class EditorRoute(val projectId: String)
 

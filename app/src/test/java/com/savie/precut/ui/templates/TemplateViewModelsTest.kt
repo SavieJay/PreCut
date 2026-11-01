@@ -18,6 +18,9 @@ import com.savie.precut.model.audio.BeatResult
 import com.savie.precut.model.project
 import com.savie.precut.model.template.ProjectTemplate
 import com.savie.precut.model.template.TemplateCategory
+import com.savie.precut.data.InMemoryAppSettings
+import com.savie.precut.data.SettingsValues
+import com.savie.precut.model.onboarding.CreationGoal
 import com.savie.precut.model.template.TemplateRef
 import com.savie.precut.model.template.toTemplate
 import com.savie.precut.model.videoClip
@@ -131,8 +134,17 @@ class TemplateViewModelsTest {
     }
 
     @Test
+    fun onboardingGoals_putTheirCategoriesFirst() = runTest(dispatcher) {
+        val vm = TemplatesViewModel(store, history, InMemoryAppSettings(SettingsValues(creationGoals = setOf(CreationGoal.BUSINESS))))
+        vm.refresh()
+        advanceUntilIdle()
+        assertEquals(listOf("p", "t"), vm.state.value.shown?.map { it.template.id })
+        assertEquals(TemplateFilter.Category(TemplateCategory.BUSINESS), vm.state.value.filters[1])
+    }
+
+    @Test
     fun theList_isNewestFirst_andFiltersByCategory() = runTest(dispatcher) {
-        val vm = TemplatesViewModel(store, history)
+        val vm = TemplatesViewModel(store, history, InMemoryAppSettings())
         vm.refresh()
         advanceUntilIdle()
         assertEquals(listOf("t", "p"), vm.state.value.shown?.map { it.template.id })

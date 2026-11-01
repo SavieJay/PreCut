@@ -21,6 +21,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,6 +51,9 @@ import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
 import com.savie.precut.ui.editor.captions.CaptionsHost
 import com.savie.precut.ui.editor.aiedit.AiEditHost
+import com.savie.precut.ui.editor.coach.CoachMarksOverlay
+import com.savie.precut.ui.editor.coach.CoachTargets
+import com.savie.precut.ui.editor.coach.LocalCoachTargets
 import com.savie.precut.ui.editor.export.EditorExportHost
 import com.savie.precut.ui.editor.export.rememberExportNavigator
 
@@ -288,56 +292,65 @@ fun EditorScreen(
     }
     BackHandler(enabled = renaming) { renaming = false }
 
+    val coachTargets = remember { CoachTargets() }
+    val settingsValues by viewModel.appSettingsForUi.values.collectAsStateWithLifecycle()
     Box(Modifier.fillMaxSize()) {
-        Scaffold(
-            topBar = {
-                val ready = uiState as? EditorUiState.Ready
-                if (ready?.cropDraft != null) {
-                    CropTopBar(onCancel = viewModel.frame::onCropCancel, onApply = viewModel.frame::onCropApply)
-                } else {
-                    EditorTopBar(
-                        title = ready?.project?.let { projectDisplayName(it.name, it.createdAt) }.orEmpty(),
-                        canExport = ready != null && ready.project.clips.isNotEmpty() && ready.missingIds.isEmpty(),
-                        canUndo = ready?.canUndo == true,
-                        canRedo = ready?.canRedo == true,
-                        renaming = renaming && ready != null,
-                        actions = topBarActions,
-                    )
-                }
-            },
-            snackbarHost = {
-                // Above the toolbar, which reaches down behind the navigation bar.
-                SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding().padding(bottom = 72.dp))
-            },
-            // The top bar pads for the status bar and the bottom panel for the navigation bar.
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        ) { innerPadding ->
-            val modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-            when (val state = uiState) {
-                EditorUiState.Loading -> Box(modifier, contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                EditorUiState.NotFound -> Box(modifier, contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.editor_not_found))
-                }
-                is EditorUiState.Ready -> {
-                    EditorContent(
-                        state = state,
-                        dimmed = renaming,
-                        previewState = previewState,
-                        canSplit = canSplit,
-                        viewModel = viewModel,
-                        timelineActions = timelineActions,
-                        onAddMedia = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
-                        modifier = modifier,
-                    )
-                    EditorExportHost(state, viewModel, exportNavigator, viewModel.appSettingsForUi)
-                    CaptionsHost(viewModel.captions)
-                    AiEditHost(viewModel.aiEdit)
+        CompositionLocalProvider(LocalCoachTargets provides coachTargets) {
+            Scaffold(
+                topBar = {
+                    val ready = uiState as? EditorUiState.Ready
+                    if (ready?.cropDraft != null) {
+                        CropTopBar(onCancel = viewModel.frame::onCropCancel, onApply = viewModel.frame::onCropApply)
+                    } else {
+                        EditorTopBar(
+                            title = ready?.project?.let { projectDisplayName(it.name, it.createdAt) }.orEmpty(),
+                            canExport = ready != null && ready.project.clips.isNotEmpty() && ready.missingIds.isEmpty(),
+                            canUndo = ready?.canUndo == true,
+                            canRedo = ready?.canRedo == true,
+                            renaming = renaming && ready != null,
+                            actions = topBarActions,
+                        )
+                    }
+                },
+                snackbarHost = {
+                    // Above the toolbar, which reaches down behind the navigation bar.
+                    SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding().padding(bottom = 72.dp))
+                },
+                // The top bar pads for the status bar and the bottom panel for the navigation bar.
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            ) { innerPadding ->
+                val modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                when (val state = uiState) {
+                    EditorUiState.Loading -> Box(modifier, contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                    EditorUiState.NotFound -> Box(modifier, contentAlignment = Alignment.Center) {
+                        Text(stringResource(R.string.editor_not_found))
+                    }
+                    is EditorUiState.Ready -> {
+                        EditorContent(
+                            state = state,
+                            dimmed = renaming,
+                            previewState = previewState,
+                            canSplit = canSplit,
+                            viewModel = viewModel,
+                            timelineActions = timelineActions,
+                            onAddMedia = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
+                            modifier = modifier,
+                        )
+                        EditorExportHost(state, viewModel, exportNavigator, viewModel.appSettingsForUi)
+                        CaptionsHost(viewModel.captions)
+                        AiEditHost(viewModel.aiEdit)
+                    }
                 }
             }
+        }
+        // First-run tips (Phase 24), once a project with clips is open.
+        val ready = uiState as? EditorUiState.Ready
+        if (!settingsValues.coachMarksShown && ready != null && ready.project.clips.isNotEmpty() && !ready.fullScreen) {
+            CoachMarksOverlay(coachTargets, onDone = { viewModel.appSettingsForUi.update { it.copy(coachMarksShown = true) } })
         }
         // Drawn over the whole screen, top bar included.
         (uiState as? EditorUiState.Ready)?.takeIf { it.fullScreen && it.project.clips.isNotEmpty() }?.let {

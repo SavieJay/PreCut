@@ -1,5 +1,8 @@
 package com.savie.precut.ui.templates
 
+import com.savie.precut.data.AppSettings
+import com.savie.precut.model.onboarding.preferredTemplateCategories
+import com.savie.precut.model.onboarding.preferringCategories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.StoredTemplate
@@ -29,10 +32,12 @@ data class TemplatesState(
     val filter: TemplateFilter = TemplateFilter.All,
     val favourites: Set<String> = emptySet(),
     val recent: List<String> = emptyList(),
+    /** Categories to show first, from onboarding's "What will you create?" (Phase 24). */
+    val preferred: List<TemplateCategory> = emptyList(),
 ) {
     val shown: List<StoredTemplate>? get() = templates?.let { all ->
         when (filter) {
-            TemplateFilter.All -> all
+            TemplateFilter.All -> all.preferringCategories(preferred) { it.template.category }
             TemplateFilter.Favourites -> all.filter { it.template.id in favourites }
             TemplateFilter.Recent -> recent.mapNotNull { id -> all.firstOrNull { it.template.id == id } }
             is TemplateFilter.Category -> all.filter { it.template.category == filter.category }
@@ -44,13 +49,13 @@ data class TemplatesState(
         val ids = templates.orEmpty().map { it.template.id }.toSet()
         return listOf(TemplateFilter.All) +
             listOfNotNull(TemplateFilter.Favourites.takeIf { favourites.any(ids::contains) }, TemplateFilter.Recent.takeIf { recent.any(ids::contains) }) +
-            templates.orEmpty().map { it.template.category }.distinct().sorted().map(TemplateFilter::Category)
+            templates.orEmpty().map { it.template.category }.distinct().sorted().preferringCategories(preferred) { it }.map(TemplateFilter::Category)
     }
 }
 
 @HiltViewModel
-class TemplatesViewModel @Inject constructor(private val store: TemplateStore, history: TemplateHistory) : ViewModel() {
-    private val _state = MutableStateFlow(TemplatesState())
+class TemplatesViewModel @Inject constructor(private val store: TemplateStore, history: TemplateHistory, settings: AppSettings) : ViewModel() {
+    private val _state = MutableStateFlow(TemplatesState(preferred = preferredTemplateCategories(settings.values.value.creationGoals)))
     val state: StateFlow<TemplatesState> = _state.asStateFlow()
 
     init {
