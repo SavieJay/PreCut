@@ -1,10 +1,21 @@
+import {
+  EditAgentError,
+  type EditStep,
+  ScriptedEditAgent,
+} from "../_shared/edit_agent.ts";
 import { utf8 } from "../_shared/encoding.ts";
 import type { Deps } from "../_shared/handler.ts";
 import type {
   IntegrityResult,
   IntegrityVerifier,
 } from "../_shared/integrity.ts";
-import type { CloudStatus, QuotaStore, Reservation } from "../_shared/quota.ts";
+import type {
+  CloudStatus,
+  EditGrant,
+  EditUsageRecord,
+  QuotaStore,
+  Reservation,
+} from "../_shared/quota.ts";
 import { FakeTranscriber, type Transcript } from "../_shared/transcriber.ts";
 
 /** Fakes for handler tests. The real quota rules are the SQL's, tested in sql_test.ts. */
@@ -17,6 +28,13 @@ export class MemoryQuota implements QuotaStore {
   readonly installs = new Map<string, { used: number; reserved: number }>();
   freeSeconds = 1800;
   maxUploadSeconds = 600;
+  freeEditRuns = 10;
+  maxEditSteps = 8;
+  /** AI edit runs: their install, steps taken and usage recorded. */
+  readonly runs = new Map<
+    string,
+    { installId: string; steps: number; usage: EditUsageRecord[] }
+  >();
   failWith: Error | null = null;
 
   register(installId: string): Promise<CloudStatus> {
@@ -77,6 +95,62 @@ export class MemoryQuota implements QuotaStore {
     return Promise.resolve(this.installs.delete(installId));
   }
 
+  beginEdit(installId: string, runId: string): Promise<EditGrant> {
+    this.check();
+    if (!this.installs.has(installId)) {
+      return Promise.resolve({ ok: false, code: "not_registered" });
+    }
+    const run = this.runs.get(runId);
+    if (run) {
+      if (run.installId !== installId) {
+        return Promise.resolve({ ok: false, code: "bad_request" });
+      }
+      if (run.steps >= this.maxEditSteps) {
+        return Promise.resolve({
+          ok: false,
+          code: "steps_used",
+          maxEditSteps: this.maxEditSteps,
+        });
+      }
+      run.steps++;
+    } else {
+      if (this.runsOf(installId) >= this.freeEditRuns) {
+        return Promise.resolve({
+          ok: false,
+          code: "runs_used",
+          editRunsLeft: 0,
+          resetsAt: "2026-11-01T00:00:00+00:00",
+        });
+      }
+      this.runs.set(runId, { installId, steps: 1, usage: [] });
+    }
+    const steps = this.runs.get(runId)?.steps ?? 0;
+    return Promise.resolve({
+      ok: true,
+      month: "2026-10",
+      stepsLeft: this.maxEditSteps - steps,
+      editRunsLeft: this.freeEditRuns - this.runsOf(installId),
+    });
+  }
+
+  settleEdit(runId: string, usage: EditUsageRecord): Promise<void> {
+    this.check();
+    this.runs.get(runId)?.usage.push(usage);
+    return Promise.resolve();
+  }
+
+  releaseEdit(runId: string): Promise<void> {
+    this.check();
+    const run = this.runs.get(runId);
+    if (run && --run.steps === 0) this.runs.delete(runId);
+    return Promise.resolve();
+  }
+
+  private runsOf(installId: string): number {
+    return [...this.runs.values()].filter((run) => run.installId === installId)
+      .length;
+  }
+
   private statusOf(installId: string): CloudStatus {
     const install = this.installs.get(installId) ?? { used: 0, reserved: 0 };
     return {
@@ -85,6 +159,10 @@ export class MemoryQuota implements QuotaStore {
       secondsPerMonth: this.freeSeconds,
       resetsAt: "2026-11-01T00:00:00+00:00",
       maxUploadSeconds: this.maxUploadSeconds,
+      editEnabled: true,
+      editRunsLeft: this.freeEditRuns - this.runsOf(installId),
+      editRunsPerMonth: this.freeEditRuns,
+      maxEditSteps: this.maxEditSteps,
     };
   }
 
@@ -144,10 +222,46 @@ export class RecordingTranscriber extends FakeTranscriber {
   }
 }
 
+/** A step of Claude saying [text] (or calling [tools]), costing a little. */
+export function stepReply(
+  text: string,
+  tools: { id: string; name: string; input: unknown }[] = [],
+): EditStep {
+  return {
+    content: [
+      { type: "text", text },
+      ...tools.map((tool) => ({ type: "tool_use", ...tool })),
+    ],
+    stopReason: tools.length > 0 ? "tool_use" : "end_turn",
+    usage: {
+      inputTokens: 1_200,
+      outputTokens: 80,
+      cacheReadTokens: 900,
+      cacheWriteTokens: 0,
+      costMicrousd: 6_580,
+    },
+    model: "claude-opus-5-5",
+  };
+}
+
+/** A scripted Claude that can be told to fail. */
+export class FailingEditAgent extends ScriptedEditAgent {
+  error: EditAgentError | null = null;
+
+  override step(messages: unknown[]): Promise<EditStep> {
+    if (this.error) {
+      this.asked.push(messages);
+      return Promise.reject(this.error);
+    }
+    return super.step(messages);
+  }
+}
+
 export interface TestDeps extends Deps {
   quota: MemoryQuota;
   integrity: ScriptedIntegrity;
   transcriber: RecordingTranscriber;
+  editAgent: FailingEditAgent;
   logs: Record<string, unknown>[];
   now: { value: Date };
 }
@@ -159,6 +273,7 @@ export function testDeps(): TestDeps {
     quota: new MemoryQuota(),
     integrity: new ScriptedIntegrity(),
     transcriber: new RecordingTranscriber(),
+    editAgent: new FailingEditAgent([stepReply("Trimmed the first clip.")]),
     installTokenSecret: SECRET,
     maxUploadBytes: 1024,
     minApiVersion: 1,

@@ -19,3 +19,13 @@ export async function transcribeHash(
     await sha256(`precut-transcribe:${installId}:${hex(await sha256(audio))}`),
   );
 }
+
+/** An AI edit step: the install and the exact request body (the conversation so far). */
+export async function editHash(
+  installId: string,
+  body: Bytes,
+): Promise<string> {
+  return base64Url(
+    await sha256(`precut-edit:${installId}:${hex(await sha256(body))}`),
+  );
+}

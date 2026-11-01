@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Free minutes per install and the monthly budget, kept by the database functions in
- * supabase/migrations/*_cloud.sql (which do the locking). All in seconds of audio.
+ * supabase/migrations/ (which do the locking), in seconds of audio; and AI edit runs, steps and
+ * their monthly cost (Phase 22C).
  */
 
 export interface CloudStatus {
@@ -13,6 +14,11 @@ export interface CloudStatus {
   /** When the free minutes start again (ISO 8601). */
   resetsAt: string;
   maxUploadSeconds: number;
+  /** False while AI edits are paused or this month's AI edit budget is used up. */
+  editEnabled: boolean;
+  editRunsLeft: number;
+  editRunsPerMonth: number;
+  maxEditSteps: number;
 }
 
 export type ReservationRefusal =
@@ -33,6 +39,33 @@ export type Reservation =
     maxUploadSeconds?: number;
   };
 
+export type EditRefusal =
+  | "paused"
+  | "not_registered"
+  | "bad_request"
+  | "runs_used"
+  | "steps_used"
+  | "budget_reached";
+
+export type EditGrant =
+  | { ok: true; month: string; stepsLeft: number; editRunsLeft: number }
+  | {
+    ok: false;
+    code: EditRefusal;
+    editRunsLeft?: number;
+    maxEditSteps?: number;
+    resetsAt?: string;
+  };
+
+/** What one AI edit step used: tokens, and their cost in millionths of a US dollar. */
+export interface EditUsageRecord {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  costMicrousd: number;
+}
+
 export interface QuotaStore {
   /** Adds the install (or touches it again). */
   register(installId: string): Promise<CloudStatus>;
@@ -49,6 +82,12 @@ export interface QuotaStore {
   ): Promise<CloudStatus | null>;
   /** Deletes what's kept about the install. True when there was something. */
   forget(installId: string): Promise<boolean>;
+  /** Starts AI edit run [runId] (one of the install's runs) or takes its next step. */
+  beginEdit(installId: string, runId: string): Promise<EditGrant>;
+  /** Adds what a step used to its run and to the month's cost. */
+  settleEdit(runId: string, usage: EditUsageRecord): Promise<void>;
+  /** Gives back a step that failed at the provider (and the run, when it was the first step). */
+  releaseEdit(runId: string): Promise<void>;
 }
 
 /** The database functions through PostgREST, with the project's secret key (they're granted to service_role only). */
@@ -86,6 +125,28 @@ export class PostgresQuotaStore implements QuotaStore {
 
   async forget(installId: string): Promise<boolean> {
     return await this.call("cloud_forget", { p_install: installId });
+  }
+
+  async beginEdit(installId: string, runId: string): Promise<EditGrant> {
+    return await this.call("cloud_edit_begin", {
+      p_install: installId,
+      p_run: runId,
+    });
+  }
+
+  async settleEdit(runId: string, usage: EditUsageRecord): Promise<void> {
+    await this.call("cloud_edit_settle", {
+      p_run: runId,
+      p_input: usage.inputTokens,
+      p_output: usage.outputTokens,
+      p_cache_read: usage.cacheReadTokens,
+      p_cache_write: usage.cacheWriteTokens,
+      p_cost: usage.costMicrousd,
+    });
+  }
+
+  async releaseEdit(runId: string): Promise<void> {
+    await this.call("cloud_edit_release", { p_run: runId });
   }
 
   private async call<T>(

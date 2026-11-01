@@ -2,7 +2,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import { PGlite } from "@electric-sql/pglite";
 
 /**
- * The quota SQL in supabase/migrations/*_cloud.sql, run in PGlite (Postgres in-process). Supabase's
+ * The quota SQL in supabase/migrations/, run in PGlite (Postgres in-process). Supabase's
  * roles are recreated as the platform has them: service_role bypasses RLS and gets table grants by
  * default; anon and authenticated stand for the public API.
  */
@@ -18,10 +18,13 @@ async function database(): Promise<PGlite> {
   await db.exec(
     "create role anon; create role authenticated; create role service_role bypassrls;",
   );
+  // Every migration, in the order Supabase applies them (by name).
+  const names: string[] = [];
   for await (const entry of Deno.readDir(MIGRATIONS)) {
-    if (entry.name.endsWith("_cloud.sql")) {
-      await db.exec(await Deno.readTextFile(new URL(entry.name, MIGRATIONS)));
-    }
+    if (entry.name.endsWith(".sql")) names.push(entry.name);
+  }
+  for (const name of names.sort()) {
+    await db.exec(await Deno.readTextFile(new URL(name, MIGRATIONS)));
   }
   await db.exec(`
     grant usage on schema public to service_role, anon, authenticated;
@@ -240,5 +243,153 @@ sqlTest(
     }
     await db.exec("reset role; set role service_role;");
     assert((await status(db, A)).secondsLeft === 1800);
+  },
+);
+
+// AI edits (Phase 22C).
+
+const RUN1 = "11111111-1111-4111-8111-111111111111";
+const RUN2 = "22222222-2222-4222-8222-222222222222";
+const beginEdit = (db: PGlite, id: string, run: string, at = OCT) =>
+  call(db, "public.cloud_edit_begin($1, $2, $3)", [id, run, at]);
+const settleEdit = (db: PGlite, run: string, cost: number, at = OCT) =>
+  call(db, "public.cloud_edit_settle($1, $2, $3, $4, $5, $6, $7)", [
+    run,
+    1000,
+    100,
+    500,
+    0,
+    cost,
+    at,
+  ]);
+const releaseEdit = (db: PGlite, run: string) =>
+  db.query("select public.cloud_edit_release($1)", [run]);
+
+sqlTest(
+  "edit: a run uses one of the month's runs, and each step one of its steps",
+  async (db) => {
+    await register(db, A);
+    const s = await status(db, A);
+    assertEquals([
+      s.editEnabled,
+      s.editRunsLeft,
+      s.editRunsPerMonth,
+      s.maxEditSteps,
+    ], [true, 10, 10, 8]);
+    assertEquals(await beginEdit(db, A, RUN1), {
+      ok: true,
+      month: "2026-10",
+      stepsLeft: 7,
+      editRunsLeft: 9,
+    });
+    assertEquals(await beginEdit(db, A, RUN1), {
+      ok: true,
+      month: "2026-10",
+      stepsLeft: 6,
+      editRunsLeft: 9,
+    });
+    await db.exec("update public.cloud_config set max_edit_steps = 2");
+    const used = await beginEdit(db, A, RUN1);
+    assertEquals([used.ok, used.code, used.maxEditSteps], [
+      false,
+      "steps_used",
+      2,
+    ]);
+    assertEquals((await status(db, A)).editRunsLeft, 9);
+  },
+);
+
+sqlTest(
+  "edit: the month's free runs run out, and come back next month",
+  async (db) => {
+    await register(db, A);
+    await db.exec(
+      "update public.cloud_config set free_edit_runs_per_month = 1",
+    );
+    assert((await beginEdit(db, A, RUN1)).ok);
+    const refused = await beginEdit(db, A, RUN2);
+    assertEquals([refused.ok, refused.code, refused.editRunsLeft], [
+      false,
+      "runs_used",
+      0,
+    ]);
+    assertEquals(
+      new Date(refused.resetsAt).toISOString(),
+      "2026-11-01T00:00:00.000Z",
+    );
+    assert((await beginEdit(db, A, RUN2, NOV)).ok);
+  },
+);
+
+sqlTest(
+  "edit: settling adds tokens and cost; the month's budget stops new runs, not running ones",
+  async (db) => {
+    await register(db, A);
+    await db.exec(
+      "update public.cloud_config set edit_budget_microusd_per_month = 10000",
+    );
+    await beginEdit(db, A, RUN1);
+    await settleEdit(db, RUN1, 12_000);
+    const run = (await db.query<
+      { steps: number; input_tokens: number; cost_microusd: number }
+    >(
+      "select steps, input_tokens, cost_microusd from public.cloud_edit_runs where id = $1",
+      [RUN1],
+    )).rows[0];
+    assertEquals([
+      run.steps,
+      Number(run.input_tokens),
+      Number(run.cost_microusd),
+    ], [1, 1000, 12_000]);
+    assertEquals((await status(db, A)).editEnabled, false);
+    assertEquals((await beginEdit(db, A, RUN2)).code, "budget_reached");
+    assert((await beginEdit(db, A, RUN1)).ok);
+  },
+);
+
+sqlTest(
+  "edit: a failed first step gives the run back; a run belongs to its install",
+  async (db) => {
+    await register(db, A);
+    await register(db, B);
+    await beginEdit(db, A, RUN1);
+    assertEquals((await beginEdit(db, B, RUN1)).code, "bad_request");
+    await releaseEdit(db, RUN1);
+    assertEquals((await status(db, A)).editRunsLeft, 10);
+    assertEquals(
+      (await db.query("select * from public.cloud_edit_runs")).rows.length,
+      0,
+    );
+    assertEquals((await beginEdit(db, A, RUN1)).editRunsLeft, 9);
+  },
+);
+
+sqlTest(
+  "edit: paused, unregistered, and forgotten installs",
+  async (db) => {
+    assertEquals((await beginEdit(db, A, RUN1)).code, "not_registered");
+    await register(db, A);
+    await beginEdit(db, A, RUN1);
+    await call(db, "public.cloud_forget($1)", [A]);
+    assertEquals(
+      (await db.query("select * from public.cloud_edit_runs")).rows.length,
+      0,
+    );
+    await register(db, A);
+    await db.exec("update public.cloud_config set edit_paused = true");
+    assertEquals((await beginEdit(db, A, RUN2)).code, "paused");
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`reset role; set role ${role};`);
+      await assertRejects(
+        () => beginEdit(db, A, RUN2),
+        Error,
+        "permission denied",
+      );
+      await assertRejects(
+        () => db.query("select * from public.cloud_edit_runs"),
+        Error,
+        "permission denied",
+      );
+    }
   },
 );

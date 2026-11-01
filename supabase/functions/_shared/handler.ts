@@ -1,8 +1,9 @@
+import { type EditAgent, EditAgentError } from "./edit_agent.ts";
 import { type Bytes, hex, isUuid, sha256 } from "./encoding.ts";
 import { signInstallToken, verifyInstallToken } from "./install_token.ts";
 import { IntegrityUnavailable, type IntegrityVerifier } from "./integrity.ts";
-import type { QuotaStore, ReservationRefusal } from "./quota.ts";
-import { registerHash, transcribeHash } from "./request_hash.ts";
+import type { EditRefusal, QuotaStore, ReservationRefusal } from "./quota.ts";
+import { editHash, registerHash, transcribeHash } from "./request_hash.ts";
 import {
   TranscribeError,
   type Transcriber,
@@ -13,14 +14,16 @@ import {
  * The `cloud` function's routes (docs/CLOUD_API.md). Every request names the API version it
  * speaks (`X-PreCut-Api`); an install proves itself with its token (`X-Install-Token`), and
  * registration and uploads also carry a Play Integrity token (`X-Integrity-Token`) bound to that
- * request. Logs never hold audio, words or tokens: only a short hash of the install, lengths and
- * the outcome.
+ * request. Logs never hold audio, words, conversations or tokens: only a short hash of the install,
+ * lengths, token counts and the outcome.
  */
 
 export interface Deps {
   quota: QuotaStore;
   integrity: IntegrityVerifier;
   transcriber: Transcriber;
+  /** Claude for AI edits; null when no Anthropic key is set (the other routes still work). */
+  editAgent: EditAgent | null;
   installTokenSecret: Bytes;
   maxUploadBytes: number;
   minApiVersion: number;
@@ -30,6 +33,7 @@ export interface Deps {
 
 export type ErrorCode =
   | ReservationRefusal
+  | EditRefusal
   | "bad_request"
   | "unsupported_audio"
   | "app_not_verified"
@@ -52,6 +56,8 @@ const STATUS: Record<ErrorCode, number> = {
   too_large: 413,
   too_long: 413,
   quota_used: 429,
+  runs_used: 429,
+  steps_used: 429,
   budget_reached: 503,
   paused: 503,
   integrity_unavailable: 503,
@@ -123,6 +129,8 @@ function route(request: Request, deps: Deps): Promise<Response> {
       return transcribe(request, deps);
     case "DELETE /me":
       return forget(request, deps);
+    case "POST /edit":
+      return edit(request, deps);
     default:
       return Promise.resolve(errorResponse("not_found"));
   }
@@ -248,6 +256,109 @@ async function transcribe(request: Request, deps: Deps): Promise<Response> {
     transcript,
     secondsLeft: status?.secondsLeft ?? 0,
     ...install.renewal,
+  });
+}
+
+/** A conversation's size limit: a large project's brief plus a few steps of tool results. */
+export const MAX_EDIT_BYTES = 512 * 1024;
+const MAX_EDIT_MESSAGES = 200;
+
+/**
+ * One AI edit step (Phase 22C): the conversation so far, the Play Integrity verdict for exactly
+ * this body, and a step of the install's run; then Claude's reply, which the app appends and acts
+ * on (its tools run on the phone). Only token counts and the cost are kept. A provider failure
+ * gives the step back.
+ */
+async function edit(request: Request, deps: Deps): Promise<Response> {
+  const install = await authenticate(request, deps);
+  if (install instanceof Response) return install;
+  if (!deps.editAgent) return errorResponse("not_configured");
+  if (Number(request.headers.get("content-length") ?? "0") > MAX_EDIT_BYTES) {
+    return errorResponse("too_large", { maxUploadBytes: MAX_EDIT_BYTES });
+  }
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.length > MAX_EDIT_BYTES) {
+    return errorResponse("too_large", { maxUploadBytes: MAX_EDIT_BYTES });
+  }
+  let body: { runId?: unknown; messages?: unknown };
+  try {
+    body = JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return errorResponse("bad_request");
+  }
+  const runId = body?.runId;
+  if (!isUuid(runId) || !isConversation(body.messages)) {
+    return errorResponse("bad_request");
+  }
+  const refused = await checkIntegrity(
+    request,
+    await editHash(install.installId, bytes),
+    deps,
+  );
+  if (refused) return refused;
+  const grant = await deps.quota.beginEdit(install.installId, runId);
+  if (!grant.ok) {
+    const { ok: _refused, code, ...extra } = grant;
+    return errorResponse(code, extra);
+  }
+  const who = {
+    install: await shortHash(install.installId),
+    run: await shortHash(runId),
+  };
+  let step;
+  try {
+    step = await deps.editAgent.step(body.messages);
+  } catch (e) {
+    if (!(e instanceof EditAgentError)) throw e;
+    await deps.quota.releaseEdit(runId);
+    deps.log({ event: "edit", ...who, outcome: e.code, reason: e.message });
+    return errorResponse(e.code);
+  }
+  await deps.quota.settleEdit(runId, step.usage);
+  deps.log({
+    event: "edit",
+    ...who,
+    messages: body.messages.length,
+    bytes: bytes.length,
+    model: step.model,
+    stopReason: step.stopReason,
+    inputTokens: step.usage.inputTokens,
+    outputTokens: step.usage.outputTokens,
+    cacheReadTokens: step.usage.cacheReadTokens,
+    costMicrousd: step.usage.costMicrousd,
+    outcome: "ok",
+  });
+  return json(200, {
+    content: step.content,
+    stopReason: step.stopReason,
+    stepsLeft: grant.stepsLeft,
+    editRunsLeft: grant.editRunsLeft,
+    ...install.renewal,
+  });
+}
+
+/**
+ * A conversation as the app sends it: user and assistant turns taking turns, starting with the
+ * user; the user's turns hold text and tool results only (Claude's own turns come back as they were).
+ */
+function isConversation(messages: unknown): messages is unknown[] {
+  if (
+    !Array.isArray(messages) || messages.length === 0 ||
+    messages.length > MAX_EDIT_MESSAGES
+  ) return false;
+  return messages.every((message, i) => {
+    if (typeof message !== "object" || message === null) return false;
+    const { role, content } = message as { role?: unknown; content?: unknown };
+    if (role !== (i % 2 === 0 ? "user" : "assistant")) return false;
+    if (typeof content === "string") {
+      return role === "user" && content.length > 0;
+    }
+    if (!Array.isArray(content) || content.length === 0) return false;
+    return content.every((block) => {
+      const type = (block as { type?: unknown } | null)?.type;
+      if (typeof type !== "string") return false;
+      return role === "assistant" || type === "text" || type === "tool_result";
+    });
   });
 }
 

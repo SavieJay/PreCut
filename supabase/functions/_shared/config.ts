@@ -1,4 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  AnthropicEditAgent,
+  type EditAgent,
+  type Effort,
+  ScriptedEditAgent,
+} from "./edit_agent.ts";
 import { ElevenLabsTranscriber } from "./elevenlabs.ts";
 import { utf8 } from "./encoding.ts";
 import type { Deps } from "./handler.ts";
@@ -47,6 +53,7 @@ export function depsFromEnv(
     ),
     integrity: integrityFrom(env, local, fetchFn),
     transcriber: transcriberFrom(env, local, fetchFn),
+    editAgent: editAgentFrom(env, local, fetchFn),
     installTokenSecret: utf8(secret),
     maxUploadBytes: MAX_UPLOAD_BYTES,
     minApiVersion: MIN_API_VERSION,
@@ -108,6 +115,56 @@ function transcriberFrom(
   return new ElevenLabsTranscriber(
     required(env, "ELEVENLABS_API_KEY"),
     env.ELEVENLABS_ZERO_RETENTION === "true",
+    fetchFn,
+  );
+}
+
+/** Claude's default for AI edits; ANTHROPIC_MODEL picks another (e.g. a cheaper one). */
+export const DEFAULT_EDIT_MODEL = "claude-opus-5-5";
+const EFFORTS: readonly Effort[] = ["low", "medium", "high", "xhigh", "max"];
+
+/**
+ * Claude for AI edits (Phase 22C) when ANTHROPIC_API_KEY is set; null without it, so the other
+ * routes keep working and /edit answers not_configured. EDIT_AGENT=fake (local stack only) answers
+ * every step with a short reply.
+ */
+function editAgentFrom(
+  env: Record<string, string | undefined>,
+  local: boolean,
+  fetchFn: typeof fetch,
+): EditAgent | null {
+  if (env.EDIT_AGENT === "fake") {
+    if (!local) {
+      throw new ConfigError("EDIT_AGENT=fake is only allowed on a local stack");
+    }
+    return new ScriptedEditAgent([{
+      content: [{
+        type: "text",
+        text: "This is a test reply: nothing was changed.",
+      }],
+      stopReason: "end_turn",
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        costMicrousd: 0,
+      },
+      model: "fake",
+    }]);
+  }
+  const key = env.ANTHROPIC_API_KEY?.trim();
+  if (!key) return null;
+  const effort = (env.ANTHROPIC_EFFORT ?? "medium") as Effort;
+  if (!EFFORTS.includes(effort)) {
+    throw new ConfigError(
+      `ANTHROPIC_EFFORT must be one of ${EFFORTS.join(", ")}`,
+    );
+  }
+  return new AnthropicEditAgent(
+    key,
+    env.ANTHROPIC_MODEL?.trim() || DEFAULT_EDIT_MODEL,
+    effort,
     fetchFn,
   );
 }
