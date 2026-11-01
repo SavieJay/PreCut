@@ -42,6 +42,10 @@ android {
         buildConfigField("String", "CLOUD_URL", "\"${cloud?.getProperty("cloudUrl").orEmpty()}\"")
         buildConfigField("String", "CLOUD_REGION", "\"${cloud?.getProperty("cloudRegion").orEmpty()}\"")
         buildConfigField("long", "PLAY_CLOUD_PROJECT_NUMBER", "${cloud?.getProperty("playCloudProjectNumber")?.toLongOrNull() ?: 0L}L")
+        // Template links (Phase 28): the website's host, for links and Android App Links.
+        val webHost = cloud?.getProperty("webHost")?.takeIf { it.isNotBlank() } ?: "precut.app"
+        buildConfigField("String", "WEB_HOST", "\"$webHost\"")
+        manifestPlaceholders["webHost"] = webHost
     }
 
     signingConfigs {
@@ -126,6 +130,7 @@ dependencies {
     implementation(libs.play.integrity)
     implementation(libs.play.app.update)
     implementation(libs.play.billing)
+    implementation(libs.play.review)
     // Remove background (Phase 22A): runs MediaPipe's selfie segmenter on the phone.
     implementation(libs.litert)
 

@@ -12,6 +12,7 @@ import com.savie.precut.model.Project
 import com.savie.precut.model.export.ExportBitrate
 import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.model.export.estimatedBytes
+import com.savie.precut.model.export.withEndCard
 import com.savie.precut.model.outputSize
 import com.savie.precut.model.totalDurationMs
 import kotlinx.coroutines.CoroutineScope
@@ -84,6 +85,8 @@ class ExportController @Inject constructor(
     private val clock: Clock,
     private val serviceStarter: ExportServiceStarter,
     @ApplicationScope appScope: CoroutineScope,
+    /** The "Made with PreCut" end card, when chosen (Phase 28). */
+    private val endCards: EndCards = EndCards.NONE,
 ) {
     private val scope = CoroutineScope(appScope.coroutineContext + Dispatchers.Main.immediate)
     private val _state = MutableStateFlow<ExportJobState>(ExportJobState.Idle)
@@ -126,9 +129,16 @@ class ExportController @Inject constructor(
     }
 
     /** Exports [project] as [job] and saves it; false when it failed. */
-    private suspend fun exportOne(project: Project, job: ExportJob): Boolean {
+    private suspend fun exportOne(edit: Project, job: ExportJob): Boolean {
         val settings = job.settings
         val kind = job.kind
+        // The end card only on videos, and only when chosen.
+        val project = if (settings.endCard && kind == ExportKind.VIDEO) {
+            val size = edit.outputSize()
+            endCards.make(size.width, size.height)?.let { (uri, info) -> edit.withEndCard(uri, info) } ?: edit
+        } else {
+            edit
+        }
         // The file is written to the cache, then copied to the gallery.
         val needed = neededBytes(project, settings, kind, job.durationMs) + STORAGE_MARGIN_BYTES
         val free = storage.freeBytes()

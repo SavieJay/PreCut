@@ -27,6 +27,10 @@ internal object RequestHashes {
     fun translate(installId: String, body: ByteArray): String =
         base64Url(sha256("precut-translate:$installId:${hex(sha256(body))}".toByteArray()))
 
+    /** A template shared as a link (Phase 28): the install and the exact request body. */
+    fun template(installId: String, body: ByteArray): String =
+        base64Url(sha256("precut-template:$installId:${hex(sha256(body))}".toByteArray()))
+
     private fun sha256(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
 
     private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it.toInt() and 0xFF) }

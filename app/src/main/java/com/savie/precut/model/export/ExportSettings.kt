@@ -26,6 +26,8 @@ data class ExportSettings(
     val keepHdr: Boolean = false,
     /** Size and frame rate when exporting a GIF. */
     val gif: GifSettings = GifSettings(),
+    /** A two-second "Made with PreCut" card at the end of videos (Phase 28); off unless chosen. */
+    val endCard: Boolean = false,
 )
 
 /** GIF sizes by the frame's short side: GIFs are big, so they stay small. */

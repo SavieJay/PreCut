@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.lifecycleScope
 import com.savie.precut.data.AppSettings
+import com.savie.precut.data.TemplateLinkInbox
+import com.savie.precut.model.template.TemplateLinks
 import com.savie.precut.pro.EntitlementRepository
 import kotlinx.coroutines.launch
 import com.savie.precut.ui.update.LocalUpdates
@@ -44,6 +46,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var entitlements: EntitlementRepository
 
+    @Inject
+    lateinit var templateLinks: TemplateLinkInbox
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app is dark-only, so always use light system bar icons.
         enableEdgeToEdge(
@@ -52,14 +57,14 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         // A recreated activity has already handled its launch intent.
-        if (savedInstanceState == null) receiveShare(intent)
+        if (savedInstanceState == null) receive(intent)
         // Read once: finishing onboarding mustn't swap the start screen under the user.
         val showOnboarding = !appSettings.values.value.onboardingDone
         setContent {
             PreCutTheme {
                 CompositionLocalProvider(LocalUpdates provides Updates(updateChecker, playUpdates)) {
                     Box {
-                        AppNavHost(shareInbox, showOnboarding)
+                        AppNavHost(shareInbox, showOnboarding, templateLinks)
                         // Drawn last, over everything: the forced-update screen and What's new.
                         UpdateHost(updateChecker, playUpdates)
                     }
@@ -77,7 +82,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        receiveShare(intent)
+        receive(intent)
+    }
+
+    /** A template link (Phase 28), or media shared to PreCut. */
+    private fun receive(intent: Intent) {
+        val link = intent.data?.takeIf { intent.action == Intent.ACTION_VIEW }?.toString()
+        val id = link?.let { TemplateLinks.idOf(it, BuildConfig.WEB_HOST) }
+        if (id != null) templateLinks.offer(id) else receiveShare(intent)
     }
 
     /** "Share to PreCut": queue the shared videos/photos for the Projects screen. */

@@ -1366,4 +1366,17 @@
     <string name="home_ai_edit">AI Edit: pick clips and describe your video</string>
     <string name="ai_change_remove_time">Cut %1$s of pauses and dull parts</string>
     <string name="ai_change_captions">Add captions (made after you apply)</string>
+
+    <!-- Template links (Phase 28) -->
+    <string name="template_share">Share template link</string>
+    <string name="template_not_shareable">This template uses your own photos or stickers besides its slots, so it can\'t be shared as a link yet. Music is never shared.</string>
+    <string name="template_share_failed">The link couldn\'t be made. Try again when you\'re online.</string>
+    <string name="template_link_failed">That template link doesn\'t work any more, or you\'re offline.</string>
+    <string name="ai_failure_too_many">That\'s the limit for today. Try again tomorrow.</string>
+    <string name="ai_failure_not_found">That isn\'t there any more.</string>
+
+    <!-- End card (Phase 28) -->
+    <string name="export_end_card">"Made with PreCut" end card</string>
+    <string name="export_end_card_note">Adds two seconds with PreCut\'s logo at the end of videos. Off unless you turn it on; there\'s never a watermark.</string>
+    <string name="end_card_text">Made with PreCut</string>
 </resources>

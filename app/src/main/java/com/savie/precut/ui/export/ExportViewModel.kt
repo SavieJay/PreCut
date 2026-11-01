@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.AppStorage
+import com.savie.precut.data.ReviewPrompter
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.export.ExportController
 import com.savie.precut.export.ExportFailure
@@ -61,6 +62,8 @@ class ExportViewModel @Inject constructor(
     private val repository: ProjectRepository,
     private val controller: ExportController,
     private val storage: AppStorage,
+    /** Play's in-app review after a good export (Phase 28). */
+    val reviews: ReviewPrompter,
 ) : ViewModel() {
 
     private val projectId = savedStateHandle.requireProjectId()

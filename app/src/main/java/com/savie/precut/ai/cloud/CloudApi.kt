@@ -10,6 +10,7 @@ import com.savie.precut.model.pro.ProPlan
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 
@@ -59,6 +60,15 @@ internal data class PlanDto(
 
 @Serializable
 internal data class PurchaseRequest(val purchaseToken: String)
+
+@Serializable
+internal data class ShareTemplateRequest(val template: JsonElement)
+
+@Serializable
+internal data class ShareTemplateResponse(val id: String, val installToken: String? = null)
+
+@Serializable
+internal data class OpenTemplateResponse(val template: JsonElement)
 
 /** A caption line to translate, or translated (Phase 26B). */
 @Serializable
@@ -132,6 +142,7 @@ internal fun failureFor(error: ErrorDto): AiFailure = when (error.code) {
     "runs_used" -> AiFailure.EditRunsUsed(error.resetsAt?.let(::epochMs))
     "steps_used" -> AiFailure.StepsUsed
     "bad_purchase" -> AiFailure.BadPurchase
+    "templates_used" -> AiFailure.TooMany
     "bad_audio", "unsupported_audio" -> AiFailure.BadAudio
     else -> AiFailure.Busy
 }

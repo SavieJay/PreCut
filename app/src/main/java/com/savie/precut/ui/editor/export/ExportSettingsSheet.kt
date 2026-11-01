@@ -119,6 +119,13 @@ fun ExportSettingsSheet(
                 SwitchRow(label = stringResource(R.string.export_hdr), checked = settings.keepHdr, onCheckedChange = { actions.onSettings(settings.copy(keepHdr = it)) })
                 Text(stringResource(R.string.export_hdr_note), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }
+            // Off unless chosen (Phase 28): PreCut never marks a video on its own.
+            SwitchRow(
+                label = stringResource(R.string.export_end_card),
+                description = stringResource(R.string.export_end_card_note),
+                checked = settings.endCard,
+                onCheckedChange = { actions.onSettings(settings.copy(endCard = it)) },
+            )
             if (defaultsOnly) return@Column
             Text(
                 stringResource(

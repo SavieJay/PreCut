@@ -34,6 +34,10 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import com.savie.precut.data.ShareResult
+import com.savie.precut.data.TemplateSharing
+import com.savie.precut.model.ai.AiResult
+import com.savie.precut.model.template.forSharing
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -65,8 +69,17 @@ class TemplateViewModelsTest {
     private val history = FakeHistory()
     private val beats = FakeBeats()
 
+    private val sharing = object : TemplateSharing {
+        val shared = mutableListOf<ProjectTemplate>()
+        override suspend fun share(template: ProjectTemplate): ShareResult {
+            shared += template
+            return template.forSharing()?.let { ShareResult.Shared("https://precut.app/t/Abcdefgh") } ?: ShareResult.HasOwnMedia
+        }
+        override suspend fun open(id: String): AiResult<String> = AiResult.Ok("shared-$id")
+    }
+
     private fun templateViewModel(id: String, result: ImportResult = media(), song: ImportedAudio? = null) =
-        TemplateViewModel(SavedStateHandle(mapOf(TEMPLATE_ID_ARG to id)), store, FakeImporter(result, song), repository, clock, history, beats)
+        TemplateViewModel(SavedStateHandle(mapOf(TEMPLATE_ID_ARG to id)), store, FakeImporter(result, song), repository, clock, history, beats, sharing)
 
     @Test
     fun usingATemplate_makesANormalProjectFromThePicks() = runTest(dispatcher) {
@@ -131,6 +144,18 @@ class TemplateViewModelsTest {
             assertEquals(TemplateEvent.Deleted, awaitItem())
         }
         assertEquals(setOf("t"), store.templates.keys)
+    }
+
+    @Test
+    fun sharingATemplate_offersItsLink() = runTest(dispatcher) {
+        val vm = templateViewModel("t")
+        advanceUntilIdle()
+        vm.events.test {
+            vm.onShare()
+            val event = awaitItem()
+            assertTrue(event is TemplateEvent.ShareLink || event == TemplateEvent.NotShareable)
+        }
+        assertEquals(1, sharing.shared.size)
     }
 
     @Test

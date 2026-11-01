@@ -126,6 +126,16 @@ export interface QuotaStore {
   ): Promise<{ ok: true } | { ok: false; code: "not_registered" }>;
   /** Whether a purchase was ever sent by an app (notifications for others are ignored). */
   purchaseKnown(tokenHash: string): Promise<boolean>;
+  /** Stores a shared template (Phase 28) under [id], within the install's daily limit. */
+  shareTemplate(
+    installId: string,
+    id: string,
+    template: unknown,
+  ): Promise<
+    { ok: true } | { ok: false; code: "not_registered" | "templates_used" }
+  >;
+  /** The shared template [id], or null. */
+  openTemplate(id: string): Promise<unknown | null>;
 }
 
 /** The database functions through PostgREST, with the project's secret key (they're granted to service_role only). */
@@ -212,6 +222,23 @@ export class PostgresQuotaStore implements QuotaStore {
     return await this.call("cloud_purchase_known", {
       p_token_hash: tokenHash,
     });
+  }
+  async shareTemplate(
+    installId: string,
+    id: string,
+    template: unknown,
+  ): Promise<
+    { ok: true } | { ok: false; code: "not_registered" | "templates_used" }
+  > {
+    return await this.call("cloud_share_template", {
+      p_install: installId,
+      p_id: id,
+      p_template: template,
+    });
+  }
+
+  async openTemplate(id: string): Promise<unknown | null> {
+    return await this.call("cloud_open_template", { p_id: id });
   }
 
   private async call<T>(

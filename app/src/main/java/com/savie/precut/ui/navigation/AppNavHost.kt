@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.savie.precut.data.ShareInbox
+import com.savie.precut.data.TemplateLinkInbox
 import com.savie.precut.ui.editor.EditorScreen
 import com.savie.precut.ui.export.ExportScreen
 import com.savie.precut.ui.home.HomeScreen
@@ -17,8 +18,10 @@ import com.savie.precut.ui.settings.SettingsScreen
 import com.savie.precut.ui.templates.TemplateScreen
 
 @Composable
-fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
+fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean, templateLinks: TemplateLinkInbox? = null) {
     val navController = rememberNavController()
+    // Template links (Phase 28): fetched, kept in Templates, then opened.
+    templateLinks?.let { TemplateLinkOpener(it, navController) }
     // Shared media becomes a new project on the Projects screen, wherever the user was.
     LaunchedEffect(shareInbox) {
         shareInbox.arrivals.collect { navController.popBackStack(HomeRoute, inclusive = false) }

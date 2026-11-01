@@ -13,6 +13,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -162,6 +163,42 @@ class CloudClient @Inject constructor(
             }
         }
         return busy()
+    }
+
+    /**
+     * Template links (Phase 28): stores [template] (a template's JSON, without media) on the server
+     * and returns its link id. Not cloud AI: works with the switch off.
+     */
+    suspend fun shareTemplate(template: JsonElement): AiResult<String> {
+        blocked(needsSwitch = false)?.let { return AiResult.Failed(it) }
+        val bytes = cloudJson.encodeToString(ShareTemplateRequest.serializer(), ShareTemplateRequest(template)).toByteArray()
+        repeat(2) { attempt ->
+            val token = installs.token ?: when (val registered = register()) {
+                is AiResult.Ok -> registered.value
+                is AiResult.Failed -> return registered
+            }
+            val proof = when (val result = integrity.token(RequestHashes.template(installs.installId(), bytes))) {
+                is AiResult.Ok -> result.value
+                is AiResult.Failed -> return result
+            }
+            val call = request("templates").header(HEADER_TOKEN, token).header(HEADER_INTEGRITY, proof).post(bytes.toRequestBody(JSON)).build()
+            when (val reply = send(call)) {
+                is Reply.Ok -> return decode<ShareTemplateResponse>(reply.body)?.let { keep(it.installToken); AiResult.Ok(it.id) } ?: busy()
+                is Reply.Refused -> if (reply.error.code == NOT_REGISTERED && attempt == 0) installs.token = null else return AiResult.Failed(failureFor(reply.error))
+                is Reply.Failed -> return AiResult.Failed(reply.failure)
+            }
+        }
+        return busy()
+    }
+
+    /** A shared template's JSON by link id (public: no install needed). */
+    suspend fun openTemplate(id: String): AiResult<JsonElement> {
+        blocked(needsSwitch = false)?.let { return AiResult.Failed(it) }
+        return when (val reply = send(request("templates/$id").get().build())) {
+            is Reply.Ok -> decode<OpenTemplateResponse>(reply.body)?.let { AiResult.Ok(it.template) } ?: busy()
+            is Reply.Refused -> AiResult.Failed(if (reply.error.code == "not_found") AiFailure.NotFound else failureFor(reply.error))
+            is Reply.Failed -> AiResult.Failed(reply.failure)
+        }
     }
 
     /**

@@ -315,6 +315,19 @@ Needs the Anthropic key on the server (as 4l). Use four or five clips with someo
 | A free account after its free requests | The paywall opens from Send | |
 | Airplane mode, then Send | Offline message; nothing changed | |
 
+## 4s. Growth and sharing (Phase 28)
+Template links need the `shared_templates` migration and the function deployed; links open the app only after the website serves `assetlinks.json` for `webHost`.
+
+| Check | Expected | Result |
+|---|---|---|
+| A template made from your own clips (slots only) → Share | The share sheet with `https://<webHost>/t/<id>` | |
+| A template with a sticker of your own photo → Share | "…uses your own photos or stickers… can't be shared…" | |
+| Open the link on another phone with PreCut (from a chat app) | PreCut opens the template page; it's in Templates; no music | |
+| The link with the app not installed | The website's template page with the Play button | |
+| Export settings → "Made with PreCut" end card on, export | The video ends with 2 s of the logo and words; off: no card | |
+| Export twice successfully | After the second, Play's rating card may show (Play decides) | |
+| A failed export | No rating card | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

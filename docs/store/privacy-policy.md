@@ -22,6 +22,9 @@ Cloud AI needs the internet. Without a connection, PreCut tells you and sends no
 ## PreCut Pro (optional subscription)
 PreCut Pro is sold through Google Play, which handles the payment under Google's terms; PreCut never sees your card or Google account details. To confirm a purchase, the app sends PreCut's server the purchase token Google Play gives it. The server checks it with Google and keeps the token, the plan, its state (active, cancelled, payment problem) and end date, linked to the random ID of each phone you use it on, so Pro works there. Google Play tells the server when the subscription renews, is cancelled or refunded. This is deleted after 13 months without use, or when you tap Settings → Cloud AI → Delete my cloud data (and no other phone of yours uses the purchase); deleting it doesn't cancel the subscription (do that in Google Play).
 
+## Template links (optional)
+When you share a template as a link, PreCut's server keeps the template (its layout, texts, effects and timing; never your photos, videos or music) under a short code, so anyone with the link can open it in PreCut or on PreCut's website. It's kept until you tap Settings → Cloud AI → Delete my cloud data.
+
 ## What stays on your phone
 To edit, PreCut works with files on your device:
 

@@ -33,6 +33,8 @@ fun aiFailureMessage(failure: AiFailure): String {
             ?: stringResource(R.string.ai_failure_edit_runs_used_soon)
         AiFailure.StepsUsed -> stringResource(R.string.ai_failure_steps_used)
         AiFailure.BadPurchase -> stringResource(R.string.ai_failure_bad_purchase)
+        AiFailure.TooMany -> stringResource(R.string.ai_failure_too_many)
+        AiFailure.NotFound -> stringResource(R.string.ai_failure_not_found)
         AiFailure.UpdateApp -> stringResource(R.string.ai_failure_update_app)
         AiFailure.Busy -> stringResource(R.string.ai_failure_busy)
     }

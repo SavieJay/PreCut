@@ -552,3 +552,39 @@ sqlTest("pro: AI edit runs follow the plan", async (db) => {
   assertEquals(begun.ok, true);
   assertEquals(begun.editRunsLeft, 99);
 });
+
+sqlTest(
+  "templates: a daily limit per install, opens counted, gone with the install",
+  async (db) => {
+    await register(db, A);
+    await db.exec("update public.cloud_config set templates_per_day = 1");
+    const share = (id: string) =>
+      call(db, "public.cloud_share_template($1, $2, $3, $4)", [
+        A,
+        id,
+        JSON.stringify({ title: id }),
+        OCT,
+      ]);
+    assertEquals((await share("Abcdefgh")).ok, true);
+    assertEquals((await share("Bcdefghj")).code, "templates_used");
+    assertEquals(
+      (await call(db, "public.cloud_open_template($1)", ["Abcdefgh"])).title,
+      "Abcdefgh",
+    );
+    assertEquals(
+      (await db.query<{ opens: number }>(
+        "select opens from public.shared_templates",
+      )).rows[0].opens,
+      1,
+    );
+    assertEquals(
+      await call(db, "public.cloud_open_template($1)", ["Zzzzzzzz"]),
+      null,
+    );
+    await call(db, "public.cloud_forget($1)", [A]);
+    assertEquals(
+      (await db.query("select * from public.shared_templates")).rows.length,
+      0,
+    );
+  },
+);

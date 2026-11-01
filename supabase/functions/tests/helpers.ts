@@ -195,6 +195,40 @@ export class MemoryQuota implements QuotaStore {
     return Promise.resolve(this.purchases.has(tokenHash));
   }
 
+  readonly templates = new Map<
+    string,
+    { installId: string; template: unknown; opens: number }
+  >();
+  templatesPerDay = 20;
+
+  shareTemplate(
+    installId: string,
+    id: string,
+    template: unknown,
+  ): Promise<
+    { ok: true } | { ok: false; code: "not_registered" | "templates_used" }
+  > {
+    this.check();
+    if (!this.installs.has(installId)) {
+      return Promise.resolve({ ok: false, code: "not_registered" });
+    }
+    if (
+      [...this.templates.values()].filter((t) => t.installId === installId)
+        .length >= this.templatesPerDay
+    ) {
+      return Promise.resolve({ ok: false, code: "templates_used" });
+    }
+    this.templates.set(id, { installId, template, opens: 0 });
+    return Promise.resolve({ ok: true });
+  }
+
+  openTemplate(id: string): Promise<unknown | null> {
+    this.check();
+    const saved = this.templates.get(id);
+    if (saved) saved.opens++;
+    return Promise.resolve(saved?.template ?? null);
+  }
+
   private runsOf(installId: string): number {
     return [...this.runs.values()].filter((run) => run.installId === installId)
       .length;

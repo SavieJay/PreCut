@@ -6,7 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.ProjectRepository
 import com.savie.precut.data.StoredTemplate
 import com.savie.precut.data.TemplateHistory
+import com.savie.precut.data.ShareResult
+import com.savie.precut.data.TemplateSharing
 import com.savie.precut.data.TemplateStore
+import com.savie.precut.model.ai.AiFailure
 import com.savie.precut.media.MediaImporter
 import com.savie.precut.media.audio.BeatDetector
 import com.savie.precut.model.AudioClip
@@ -29,7 +32,14 @@ import java.util.UUID
 import javax.inject.Inject
 
 /** One template: [template] null while loading; [busy] while a project is being made from it. */
-data class TemplateState(val template: StoredTemplate? = null, val missing: Boolean = false, val busy: Boolean = false, val favourite: Boolean = false)
+data class TemplateState(
+    val template: StoredTemplate? = null,
+    val missing: Boolean = false,
+    val busy: Boolean = false,
+    val favourite: Boolean = false,
+    /** A template link is being made (Phase 28). */
+    val sharing: Boolean = false,
+)
 
 sealed interface TemplateEvent {
     data class OpenEditor(val projectId: String) : TemplateEvent
@@ -45,6 +55,11 @@ sealed interface TemplateEvent {
     /** Use with a song: no steady beat, so the clips keep the template's timing (the song is still added). */
     data object NoBeats : TemplateEvent
     data object Deleted : TemplateEvent
+    /** The screen should offer [url] (a template link, Phase 28) to other apps. */
+    data class ShareLink(val url: String) : TemplateEvent
+    /** The template holds the maker's own photos or stickers, which a link can't carry. */
+    data object NotShareable : TemplateEvent
+    data class ShareFailed(val failure: AiFailure) : TemplateEvent
 }
 
 /**
@@ -60,6 +75,7 @@ class TemplateViewModel @Inject constructor(
     private val clock: Clock,
     private val history: TemplateHistory,
     private val beats: BeatDetector,
+    private val sharing: TemplateSharing,
 ) : ViewModel() {
     private val id = savedStateHandle.requireTemplateId()
 
@@ -121,6 +137,26 @@ class TemplateViewModel @Inject constructor(
                 _events.send(TemplateEvent.OpenEditor(project.id))
             } finally {
                 _state.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    /** Template links (Phase 28): stores the template without media and offers its link. */
+    fun onShare() {
+        val template = _state.value.template?.template ?: return
+        if (_state.value.sharing) return
+        _state.update { it.copy(sharing = true) }
+        viewModelScope.launch {
+            try {
+                _events.send(
+                    when (val result = sharing.share(template)) {
+                        is ShareResult.Shared -> TemplateEvent.ShareLink(result.url)
+                        ShareResult.HasOwnMedia -> TemplateEvent.NotShareable
+                        is ShareResult.Failed -> TemplateEvent.ShareFailed(result.failure)
+                    },
+                )
+            } finally {
+                _state.update { it.copy(sharing = false) }
             }
         }
     }

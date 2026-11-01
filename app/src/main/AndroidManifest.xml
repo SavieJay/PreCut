@@ -56,6 +56,16 @@
                 <data android:mimeType="video/*" />
                 <data android:mimeType="image/*" />
             </intent-filter>
+            <!-- Template links (Phase 28): https://<website>/t/<id> opens here when the site's
+                 assetlinks.json names this app (Android App Links). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="${webHost}" />
+                <data android:pathPrefix="/t/" />
+            </intent-filter>
         </activity>
 
         <!-- Exports: mediaProcessing on Android 15+, dataSync before. -->

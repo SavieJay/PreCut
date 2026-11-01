@@ -51,3 +51,13 @@ export async function translateHash(
     await sha256(`precut-translate:${installId}:${hex(await sha256(body))}`),
   );
 }
+
+/** A template shared as a link (Phase 28): the install and the exact request body. */
+export async function templateHash(
+  installId: string,
+  body: Bytes,
+): Promise<string> {
+  return base64Url(
+    await sha256(`precut-template:${installId}:${hex(await sha256(body))}`),
+  );
+}

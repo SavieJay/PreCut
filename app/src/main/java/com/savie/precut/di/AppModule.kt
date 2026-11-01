@@ -16,6 +16,11 @@ import com.savie.precut.data.AndroidSubtitleFiles
 import com.savie.precut.data.SubtitleFiles
 import com.savie.precut.data.AndroidAppStorage
 import com.savie.precut.data.AppMediaJanitor
+import com.savie.precut.data.CloudTemplateSharing
+import com.savie.precut.export.EndCards
+import com.savie.precut.media.export.EndCardMaker
+import com.savie.precut.data.TemplateSharing
+import com.savie.precut.data.WebConfig
 import com.savie.precut.data.AppSettings
 import com.savie.precut.data.AppStorage
 import com.savie.precut.data.FileTemplateStore
@@ -75,6 +80,12 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindMediaImporter(impl: AndroidMediaImporter): MediaImporter
+
+    @Binds
+    abstract fun bindTemplateSharing(impl: CloudTemplateSharing): TemplateSharing
+
+    @Binds
+    abstract fun bindEndCards(impl: EndCardMaker): EndCards
 
     @Binds
     abstract fun bindBeatDetector(impl: AndroidBeatDetector): BeatDetector
@@ -144,6 +155,10 @@ abstract class AppModule {
         @Provides
         fun provideCloudConfig(): CloudConfig =
             CloudConfig(BuildConfig.CLOUD_URL, BuildConfig.CLOUD_REGION, BuildConfig.PLAY_CLOUD_PROJECT_NUMBER)
+
+        /** The website template links point at (Phase 28), from cloud.properties' `webHost`. */
+        @Provides
+        fun provideWebConfig(): WebConfig = WebConfig(BuildConfig.WEB_HOST)
 
         /**
          * One client for the cloud API. Long write and read timeouts: a 10 MB upload on a slow

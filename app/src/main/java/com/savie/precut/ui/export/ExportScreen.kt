@@ -3,6 +3,7 @@ package com.savie.precut.ui.export
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import androidx.activity.compose.LocalActivity
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -46,6 +47,11 @@ fun ExportScreen(
         if (viewModel.uiState.value == ExportUiState.Idle) startExport()
     }
 
+    // A good export (only): Play's review card now and then, never after an error.
+    val activity = LocalActivity.current
+    LaunchedEffect(uiState is ExportUiState.Done) {
+        if (uiState is ExportUiState.Done && activity != null) viewModel.reviews.onExportDone(activity)
+    }
     val info by viewModel.info.collectAsStateWithLifecycle()
     val cacheBytes by viewModel.cacheBytes.collectAsStateWithLifecycle()
     // A finished or failed export is forgotten once the user leaves it.

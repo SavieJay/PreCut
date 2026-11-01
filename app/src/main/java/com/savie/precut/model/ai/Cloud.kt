@@ -88,6 +88,12 @@ sealed interface AiFailure {
     /** One request used all the steps it may take. */
     data object StepsUsed : AiFailure
 
+    /** Too many of something today (shared templates): try again tomorrow. */
+    data object TooMany : AiFailure
+
+    /** Not there (a template link that no longer works). */
+    data object NotFound : AiFailure
+
     /** Google Play doesn't know this purchase (or it's for something else). */
     data object BadPurchase : AiFailure
 

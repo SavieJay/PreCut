@@ -1,5 +1,6 @@
 package com.savie.precut.ui.templates
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -64,6 +65,13 @@ fun TemplateScreen(onBack: () -> Unit, onOpenEditor: (projectId: String) -> Unit
             is TemplateEvent.SomeClipsShort -> resources.getQuantityString(R.plurals.template_clips_short, event.count, event.count)
             TemplateEvent.SongUnreadable -> resources.getString(R.string.autocut_music_unreadable)
             TemplateEvent.NoBeats -> resources.getString(R.string.template_no_beats)
+            is TemplateEvent.ShareLink -> {
+                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, event.url)
+                context.startActivity(Intent.createChooser(send, resources.getString(R.string.template_share)))
+                return@ObserveAsEvents
+            }
+            TemplateEvent.NotShareable -> resources.getString(R.string.template_not_shareable)
+            is TemplateEvent.ShareFailed -> resources.getString(R.string.template_share_failed)
         }
         // A toast outlives the move to the editor that follows.
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -73,6 +81,9 @@ fun TemplateScreen(onBack: () -> Unit, onOpenEditor: (projectId: String) -> Unit
             IconButton(onClick = onBack) { Icon(painterResource(R.drawable.ic_back), stringResource(R.string.action_back), tint = TextPrimary) }
             Text(state.template?.template?.title.orEmpty(), style = MaterialTheme.typography.titleLarge, color = TextPrimary, modifier = Modifier.weight(1f))
             if (state.template != null) {
+                IconButton(onClick = viewModel::onShare, enabled = !state.sharing) {
+                    Icon(painterResource(R.drawable.ic_share), stringResource(R.string.template_share), tint = TextSecondary)
+                }
                 IconButton(onClick = viewModel::onToggleFavourite) {
                     Icon(
                         painterResource(if (state.favourite) R.drawable.ic_star_filled else R.drawable.ic_star),

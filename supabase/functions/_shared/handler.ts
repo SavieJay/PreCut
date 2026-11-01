@@ -12,6 +12,7 @@ import {
   editHash,
   purchaseHash,
   registerHash,
+  templateHash,
   transcribeHash,
   translateHash,
 } from "./request_hash.ts";
@@ -71,6 +72,7 @@ export type ErrorCode =
   | "bad_purchase"
   | "billing_unavailable"
   | "forbidden"
+  | "templates_used"
   | "server_error";
 
 const STATUS: Record<ErrorCode, number> = {
@@ -95,6 +97,7 @@ const STATUS: Record<ErrorCode, number> = {
   bad_purchase: 400,
   billing_unavailable: 503,
   forbidden: 403,
+  templates_used: 429,
   server_error: 500,
 };
 
@@ -154,6 +157,12 @@ function route(request: Request, deps: Deps): Promise<Response> {
   if (`${request.method} ${routePath(request)}` === "POST /rtdn") {
     return rtdn(request, deps);
   }
+  // Shared templates open from the website too, which sends no API version.
+  const opened = routePath(request).match(/^\/templates\/([A-Za-z0-9]{8})$/);
+  if (opened && request.method === "GET") return openTemplate(opened[1], deps);
+  if (opened && request.method === "OPTIONS") {
+    return Promise.resolve(cors(new Response(null, { status: 204 })));
+  }
   const api = Number(request.headers.get("x-precut-api") ?? "0");
   if (!(api >= deps.minApiVersion)) {
     return Promise.resolve(errorResponse("upgrade_required"));
@@ -173,9 +182,78 @@ function route(request: Request, deps: Deps): Promise<Response> {
       return purchase(request, deps);
     case "POST /translate":
       return translate(request, deps);
+    case "POST /templates":
+      return shareTemplate(request, deps);
     default:
       return Promise.resolve(errorResponse("not_found"));
   }
+}
+
+const MAX_TEMPLATE_BYTES = 256 * 1024;
+const TEMPLATE_ID_CHARS =
+  "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+
+/**
+ * Template links (Phase 28): stores the template (no media; the app checks) under a new short id,
+ * bound by Play Integrity to the exact body, within the install's daily limit.
+ */
+async function shareTemplate(request: Request, deps: Deps): Promise<Response> {
+  const install = await authenticate(request, deps);
+  if (install instanceof Response) return install;
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.length > MAX_TEMPLATE_BYTES) {
+    return errorResponse("too_large", { maxUploadBytes: MAX_TEMPLATE_BYTES });
+  }
+  let body: { template?: unknown };
+  try {
+    body = JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return errorResponse("bad_request");
+  }
+  const template = body?.template as { project?: unknown } | undefined;
+  if (
+    typeof template !== "object" || template === null ||
+    typeof template.project !== "object"
+  ) {
+    return errorResponse("bad_request");
+  }
+  const refused = await checkIntegrity(
+    request,
+    await templateHash(install.installId, bytes),
+    deps,
+  );
+  if (refused) return refused;
+  const random = crypto.getRandomValues(new Uint8Array(8));
+  const id = Array.from(
+    random,
+    (b) => TEMPLATE_ID_CHARS[b % TEMPLATE_ID_CHARS.length],
+  ).join("");
+  const saved = await deps.quota.shareTemplate(install.installId, id, template);
+  if (!saved.ok) return errorResponse(saved.code);
+  deps.log({
+    event: "template",
+    install: await shortHash(install.installId),
+    bytes: bytes.length,
+    outcome: "ok",
+  });
+  return json(200, { id, ...install.renewal });
+}
+
+/** A shared template, public (the app, and the website's /t/<id> page), cacheable for a minute. */
+async function openTemplate(id: string, deps: Deps): Promise<Response> {
+  const template = await deps.quota.openTemplate(id);
+  if (template === null || template === undefined) {
+    return cors(errorResponse("not_found"));
+  }
+  const response = json(200, { template });
+  response.headers.set("cache-control", "public, max-age=60");
+  return cors(response);
+}
+
+function cors(response: Response): Response {
+  response.headers.set("access-control-allow-origin", "*");
+  response.headers.set("access-control-allow-methods", "GET, OPTIONS");
+  return response;
 }
 
 const MAX_TRANSLATE_BYTES = 64 * 1024;
