@@ -5,7 +5,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.savie.precut.ui.editor.broll.hasGalleryAccess
 import com.savie.precut.ui.editor.tools.EditorToolbar
 import com.savie.precut.ui.editor.tools.OverlayToolbar
 import com.savie.precut.ui.editor.tools.OverlayToolbarActions
@@ -47,6 +49,7 @@ fun OverlayToolbarFor(viewModel: EditorViewModel) {
 @Composable
 fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: EditorViewModel) {
     val haptics = LocalHapticFeedback.current
+    val context = LocalContext.current
     val settings by viewModel.appSettingsForUi.values.collectAsStateWithLifecycle()
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     EditorToolbar(
@@ -89,6 +92,7 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onBrand() = viewModel.brand.onApply()
             override fun onFormats() = viewModel.formats.open()
             override fun onShorts() = viewModel.shorts.open()
+            override fun onBroll() = viewModel.broll.open(hasGalleryAccess(context))
             override fun onStickers() = viewModel.onToolSelected(EditorTool.STICKERS)
             override fun onDraw() = viewModel.onToolSelected(EditorTool.DRAW)
             override fun onEffects() = viewModel.onToolSelected(EditorTool.EFFECTS)

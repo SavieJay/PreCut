@@ -847,6 +847,7 @@
     <string name="notice_google_play_libraries" translatable="false">Google Play Integrity and Play services</string>
     <string name="notice_litert" translatable="false">LiteRT (TensorFlow Lite)</string>
     <string name="notice_selfie_segmenter" translatable="false">MediaPipe Selfie Segmentation model</string>
+    <string name="notice_image_classifier" translatable="false">MediaPipe EfficientNet-Lite0 image classifier</string>
     <string name="notice_font_roboto_flex" translatable="false">Roboto Flex</string>
     <string name="notice_font_anton" translatable="false">Anton</string>
     <string name="notice_font_bebas_neue" translatable="false">Bebas Neue</string>
@@ -1323,4 +1324,24 @@
     <string name="shorts_export_all">Export all</string>
     <string name="shorts_too_short">Shorts need a video of at least a minute.</string>
     <string name="shorts_none">No moment long enough was found.</string>
+
+    <!-- Smart B-roll (Phase 26B) -->
+    <string name="tool_broll">B-roll</string>
+    <string name="broll_title">B-roll from your gallery</string>
+    <string name="broll_access_why">Find photos and videos in your gallery by what\'s in them (beach, dog, food) and drop one over your video. PreCut needs to read your gallery for this; it looks at your newest photos and videos on your phone only, and nothing is uploaded. On Android 14 and newer you can allow only the photos you choose.</string>
+    <string name="broll_allow">Allow access</string>
+    <string name="broll_indexing_start">Looking at your gallery…</string>
+    <plurals name="broll_indexing">
+        <item quantity="one">Looking at your photos and videos… %1$d of %2$d</item>
+        <item quantity="other">Looking at your photos and videos… %1$d of %2$d</item>
+    </plurals>
+    <string name="broll_hint">Search: beach, dog, food, city…</string>
+    <string name="broll_empty">No photos or videos to look at. Allow more of your gallery in Android\'s settings for PreCut.</string>
+    <string name="broll_no_match">Nothing like that among your newest photos and videos.</string>
+    <plurals name="broll_looked_at">
+        <item quantity="one">%d photo or video looked at, on your phone</item>
+        <item quantity="other">%d photos and videos looked at, on your phone</item>
+    </plurals>
+    <string name="broll_added">B-roll added at the playhead</string>
+    <string name="broll_no_access">B-roll needs access to your gallery.</string>
 </resources>

@@ -55,6 +55,9 @@ import com.savie.precut.ui.editor.captions.TranslateSheet
 import com.savie.precut.ui.editor.aiedit.AiEditHost
 import com.savie.precut.ui.editor.coach.CoachMarksOverlay
 import com.savie.precut.ui.editor.coach.HookCoachSheet
+import com.savie.precut.model.broll.GalleryItem
+import com.savie.precut.ui.editor.broll.BrollActions
+import com.savie.precut.ui.editor.broll.BrollSheet
 import com.savie.precut.ui.editor.export.FormatsSheet
 import com.savie.precut.ui.editor.export.ShortsActions
 import com.savie.precut.ui.editor.export.ShortsSheet
@@ -192,8 +195,9 @@ fun EditorScreen(
             }
             EditorEvent.FollowNoPerson -> resources.getString(R.string.follow_no_person)
             EditorEvent.BrandKitEmpty -> resources.getString(R.string.brand_empty)
-            EditorEvent.FrozeFrame, EditorEvent.ClipReversed, EditorEvent.ClipUnreversed, EditorEvent.CutoutDone, EditorEvent.FollowDone, EditorEvent.BrandApplied -> {
+            EditorEvent.FrozeFrame, EditorEvent.ClipReversed, EditorEvent.ClipUnreversed, EditorEvent.CutoutDone, EditorEvent.FollowDone, EditorEvent.BrandApplied, EditorEvent.BrollAdded -> {
                 val text = when (event) {
+                    EditorEvent.BrollAdded -> R.string.broll_added
                     EditorEvent.BrandApplied -> R.string.brand_applied
                     EditorEvent.FollowDone -> R.string.follow_done
                     EditorEvent.FrozeFrame -> R.string.freeze_added
@@ -208,6 +212,7 @@ fun EditorScreen(
                 return@ObserveAsEvents
             }
             EditorEvent.ShortsTooShort -> resources.getString(R.string.shorts_too_short)
+            EditorEvent.BrollNoAccess -> resources.getString(R.string.broll_no_access)
             EditorEvent.ShortsNoneFound -> resources.getString(R.string.shorts_none)
             is EditorEvent.OpenProject -> {
                 onOpenProject(event.projectId)
@@ -397,6 +402,16 @@ fun EditorScreen(
                         translating?.let {
                             TranslateSheet(it, viewModel.translate::onLanguage, viewModel.translate::onDub, viewModel.translate::onTranslate, viewModel.translate::onDismiss)
                         }
+                        val broll by viewModel.broll.state.collectAsStateWithLifecycle()
+                        val brollActions = remember(viewModel) {
+                            object : BrollActions {
+                                override fun onAccessResult(granted: Boolean) = viewModel.broll.onAccessResult(granted)
+                                override fun onQuery(query: String) = viewModel.broll.onQuery(query)
+                                override fun onPick(item: GalleryItem) = viewModel.broll.onPick(item)
+                                override fun onDismiss() = viewModel.broll.onDismiss()
+                            }
+                        }
+                        broll?.let { BrollSheet(it, brollActions) }
                         val shorts by viewModel.shorts.state.collectAsStateWithLifecycle()
                         val shortsActions = remember(viewModel) {
                             object : ShortsActions {

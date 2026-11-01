@@ -14,6 +14,15 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Smart B-roll (Phase 26B, Pro): asked only when B-roll is opened, to find gallery photos and
+         videos by what's in them on the phone. Android 14+ can grant only chosen photos. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
     <!-- Only Android 8–9 need this to save exports to Movies/PreCut. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"

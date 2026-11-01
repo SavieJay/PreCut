@@ -26,6 +26,7 @@ PreCut Pro is sold through Google Play, which handles the payment under Google's
 To edit, PreCut works with files on your device:
 
 - **Photos and videos you pick.** You choose them with Android's picker, and PreCut can read only those. If the picker can't keep access to a file, PreCut saves a copy in its own storage so your project still works later.
+- **Your gallery, for B-roll (optional).** If you open B-roll, PreCut asks to read your photos and videos (on Android 14 and newer you can allow only some). It looks at the newest few hundred on your phone with an on-device image model to find them by what's in them, and keeps that list of labels in its own storage. Nothing from your gallery is uploaded. You can take the access back in Android's settings at any time.
 - **Microphone.** PreCut asks for the microphone only when you record a voiceover. The recording is saved in the app's storage as part of your project.
 - **Your projects.** PreCut saves drafts, covers, preview copies and other working files in its own storage on your phone.
 - **Exports.** Videos, GIFs, audio and photos you export are saved to your phone's gallery or music folders, where other apps can see them like any other media.

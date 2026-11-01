@@ -14,6 +14,7 @@ import com.savie.precut.data.OpenProjects
 import com.savie.precut.data.ProTastes
 import com.savie.precut.export.ExportController
 import com.savie.precut.media.shorts.MomentAnalyzer
+import com.savie.precut.media.broll.GalleryIndexer
 import com.savie.precut.model.pro.ProFeature
 import com.savie.precut.pro.EntitlementRepository
 import com.savie.precut.data.SubtitleFiles
@@ -246,6 +247,9 @@ sealed interface EditorEvent {
     /** Shown with Undo: captions translated, [dubbed] lines spoken; [noVoice] when the phone has no voice for the language. */
     data class Translated(val dubbed: Int, val noVoice: Boolean) : EditorEvent
     data object ShortsTooShort : EditorEvent
+    /** Shown with Undo. */
+    data object BrollAdded : EditorEvent
+    data object BrollNoAccess : EditorEvent
     data object ShortsNoneFound : EditorEvent
     /** The screen should open another project's editor (a short just made). */
     data class OpenProject(val projectId: String) : EditorEvent
@@ -292,6 +296,7 @@ class EditorViewModel @Inject constructor(
     proTastes: ProTastes,
     exportController: ExportController,
     momentAnalyzer: MomentAnalyzer,
+    galleryIndexer: GalleryIndexer,
     exportCapabilities: ExportCapabilitiesProbe,
     frameGrabber: FrameGrabber,
     mediaSaver: MediaSaver,
@@ -441,6 +446,9 @@ class EditorViewModel @Inject constructor(
 
     /** Translate and dub captions (Pro). */
     val translate = EditorTranslate(host, pro, cloudClient, tts, importer)
+
+    /** Smart B-roll from the gallery (Pro). */
+    val broll = EditorBroll(host, pro, galleryIndexer, importer) { appSettings.values.value.photoDurationMs }
 
     /** Long video to shorts (Pro). */
     val shorts = EditorShorts(

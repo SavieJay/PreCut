@@ -27,6 +27,15 @@ Notes:
 ## Privacy policy
 The URL of the hosted `privacy-policy.md`. Play requires one because the app requests the microphone and, with cloud AI, sends audio.
 
+## Photo and video permissions (Phase 26B Smart B-roll)
+The app declares `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` (and `READ_MEDIA_VISUAL_USER_SELECTED`; `READ_EXTERNAL_STORAGE` up to Android 12). Play requires a declaration (Policy → App content → Photo and video permissions), and may refuse apps whose use the Photo Picker could cover. Proposed text:
+
+> PreCut's Smart B-roll lets a creator search their own gallery by what's in the pictures ("beach", "dog", "food") while editing, and drop a match over the video as B-roll. Searching by content needs to look at many photos and videos at once, which the Photo Picker can't provide; the picker only returns items the user already chose. The permission is asked only when the user opens B-roll; the photos and videos are classified on the phone (an on-device image model) and never uploaded; on Android 14 and newer the user can grant access to selected photos only. Every other way of adding media in PreCut uses the Photo Picker.
+
+If Play refuses the declaration, the fallback is to remove the permissions and let B-roll search only media the user picks with the Photo Picker or already used in projects (the merge review's second option).
+
+Data safety: the gallery's photos and videos are processed only on the phone and never collected, so nothing new is ticked above.
+
 ## Ads
 **No**, the app doesn't contain ads.
 
