@@ -14,6 +14,7 @@ import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
+import com.savie.precut.data.WebConfig
 import com.savie.precut.data.await
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,9 +35,12 @@ class PlayUpdates internal constructor(
     managerFactory: () -> AppUpdateManager,
     /** Who installed this copy; tests pass Play's package. */
     private val installer: () -> String?,
+    /** The website, whose download page updates a copy not installed from Play. */
+    private val webHost: String,
 ) {
     @Inject
-    constructor(@ApplicationContext context: Context) : this(context, { AppUpdateManagerFactory.create(context) }, { installerOf(context) })
+    constructor(@ApplicationContext context: Context, web: WebConfig) :
+        this(context, { AppUpdateManagerFactory.create(context) }, { installerOf(context) }, web.host)
 
     private val manager: AppUpdateManager by lazy { managerFactory().also { it.registerListener(listener) } }
 
@@ -81,9 +85,12 @@ class PlayUpdates internal constructor(
         manager.completeUpdate()
     }
 
-    /** The Play listing, or [downloadUrl] for a copy not installed from Play when the server gives one. */
+    /**
+     * The Play listing; for a copy not installed from Play (the website's APK), [downloadUrl] when the
+     * server gives one, else the website's download page.
+     */
     fun storeIntent(downloadUrl: String?): Intent {
-        val target = if (!installedFromPlay && downloadUrl != null) downloadUrl else "market://details?id=${context.packageName}"
+        val target = if (installedFromPlay) "market://details?id=${context.packageName}" else downloadUrl ?: "https://$webHost/download"
         return Intent(Intent.ACTION_VIEW, target.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 

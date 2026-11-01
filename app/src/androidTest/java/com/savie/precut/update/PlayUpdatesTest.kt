@@ -32,7 +32,7 @@ class PlayUpdatesTest {
         override fun unregister() = Unit
     }
 
-    private fun updates(installer: String?) = PlayUpdates(context, { fake }, { installer })
+    private fun updates(installer: String?) = PlayUpdates(context, { fake }, { installer }, "precut.netlify.app")
 
     @Test
     fun requiredUpdateStartsPlaysImmediateFlowAndInstalls() = runBlocking {

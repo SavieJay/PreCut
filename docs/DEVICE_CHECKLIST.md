@@ -327,6 +327,8 @@ Template links need the `shared_templates` migration and the function deployed; 
 | Export settings → "Made with PreCut" end card on, export | The video ends with 2 s of the logo and words; off: no card | |
 | Export twice successfully | After the second, Play's rating card may show (Play decides) | |
 | A failed export | No rating card | |
+| Settings → About → Privacy policy, Terms of use, Help and support | Each opens the website's page in the browser | |
+| An APK copy (not from Play) below `latest_version_code` → the banner's Update | The website's `/download` page (or `download_url`) | |
 
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.

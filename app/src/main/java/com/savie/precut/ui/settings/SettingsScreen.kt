@@ -96,6 +96,7 @@ fun SettingsScreen(
             SettingRow(R.drawable.ic_palette, stringResource(R.string.settings_luts), pluralStringResource(R.plurals.settings_luts_count, storage.lutCount, storage.lutCount))
             Header(R.string.settings_about)
             SettingRow(R.drawable.ic_info, stringResource(R.string.settings_about_app), stringResource(R.string.settings_version, viewModel.version))
+            WebsiteRows(viewModel.websitePages)
             SettingRow(R.drawable.ic_description, stringResource(R.string.settings_licences), null, chevron = true, onClick = onLicences)
             SettingRow(R.drawable.ic_history, stringResource(R.string.settings_replay_intro), null, chevron = true, onClick = onReplayIntro)
             CrashReportsRow(crashes, viewModel::newestCrashReport, viewModel::onDeleteCrashReports)

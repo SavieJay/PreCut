@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.AppSettings
 import com.savie.precut.data.AppStorage
 import com.savie.precut.data.SettingsValues
+import com.savie.precut.data.WebConfig
 import com.savie.precut.di.IoDispatcher
 import com.savie.precut.diagnostics.CrashLog
 import com.savie.precut.diagnostics.appVersion
@@ -29,6 +30,13 @@ import javax.inject.Inject
 /** What the Settings screen (H-09) shows besides the settings themselves. */
 data class StorageInfo(val cacheBytes: Long? = null, val clearing: Boolean = false, val lutCount: Int = 0)
 
+/** PreCut's website pages that Settings → About opens (Play asks for the privacy policy in the app). */
+data class WebsitePages(val host: String) {
+    val privacy: String get() = "https://$host/privacy"
+    val terms: String get() = "https://$host/terms"
+    val support: String get() = "https://$host/support"
+}
+
 /** Saved crash reports: how many, and when the newest was written (null for none). */
 data class CrashInfo(val count: Int = 0, val newestMs: Long? = null)
 
@@ -40,7 +48,11 @@ class SettingsViewModel @Inject constructor(
     private val probe: ExportCapabilitiesProbe,
     @ApplicationContext private val context: Context,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    web: WebConfig,
 ) : ViewModel() {
+
+    /** The website's pages About links to: privacy policy, terms and support. */
+    val websitePages: WebsitePages = WebsitePages(web.host)
 
     val values: StateFlow<SettingsValues> = settings.values
 
