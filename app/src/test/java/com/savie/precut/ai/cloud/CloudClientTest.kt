@@ -17,6 +17,8 @@ import mockwebserver3.MockWebServer
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import org.junit.After
+import com.savie.precut.model.pro.PlanState
+import com.savie.precut.model.pro.ProPlan
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -203,6 +205,23 @@ class CloudClientTest {
     }
 
     /** Vouches with a token naming the hash it was asked for, unless told to fail. */
+    @Test
+    fun `a purchase is sent bound to its token, works with cloud AI off, and the plan comes back`() {
+        installs.token = "tok"
+        settings.update { it.copy(cloudAiEnabled = false) }
+        val status = """{"cloudEnabled":true,"secondsLeft":18000,"secondsPerMonth":18000,"resetsAt":"2026-11-01T00:00:00+00:00","maxUploadSeconds":600,""" +
+            """"pro":{"pro":true,"state":"active","basePlanId":"yearly","expiresAt":"2026-11-01T00:00:00+00:00","autoRenewing":true,"trial":false}}"""
+        reply(200, """{"status":$status}""")
+        val result = runBlocking { client().purchase("purchase-token-123") }
+        val plan = (result as AiResult.Ok).value.plan
+        assertEquals(ProPlan(pro = true, state = PlanState.ACTIVE, basePlanId = "yearly", expiresAtMs = NOV_1, autoRenewing = true), plan)
+        val request = next()
+        assertEquals("/functions/v1/cloud/purchase", request.url.encodedPath)
+        assertEquals("proof:${RequestHashes.purchase(installs.installId(), "purchase-token-123")}", request.headers["X-Integrity-Token"])
+        reply(400, """{"error":{"code":"bad_purchase"}}""")
+        assertEquals(AiResult.Failed(AiFailure.BadPurchase), runBlocking { client().purchase("purchase-token-123") })
+    }
+
     private class FakeIntegrity : IntegrityTokens {
         var failure: AiFailure? = null
         override suspend fun token(requestHash: String): AiResult<String> =

@@ -10,6 +10,7 @@ import com.savie.precut.ui.editor.EditorScreen
 import com.savie.precut.ui.export.ExportScreen
 import com.savie.precut.ui.home.HomeScreen
 import com.savie.precut.ui.onboarding.OnboardingScreen
+import com.savie.precut.ui.pro.PaywallScreen
 import com.savie.precut.ui.settings.LicencesScreen
 import com.savie.precut.ui.settings.SettingsScreen
 import com.savie.precut.ui.templates.TemplateScreen
@@ -24,13 +25,15 @@ fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
     NavHost(navController = navController, startDestination = if (showOnboarding) OnboardingRoute else HomeRoute) {
         composable<OnboardingRoute> {
             OnboardingScreen(
-                onDone = {
+                onDone = { openPaywall ->
                     // From a first run, Projects replaces onboarding; from Replay intro, back to where it was.
                     if (navController.previousBackStackEntry != null) {
                         navController.popBackStack()
                     } else {
                         navController.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } }
                     }
+                    // "Start free trial" (A5) goes on to the paywall over Projects.
+                    if (openPaywall) navController.navigate(PaywallRoute())
                 },
             )
         }
@@ -52,6 +55,7 @@ fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
                 onBack = { navController.popBackStack() },
                 onLicences = { navController.navigate(LicencesRoute) },
                 onReplayIntro = { navController.navigate(OnboardingRoute) },
+                onGetPro = { navController.navigate(PaywallRoute()) },
             )
         }
         composable<TemplateRoute> {
@@ -60,6 +64,9 @@ fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
                 // The new project replaces the template page: Back from the editor returns to Projects.
                 onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) { popUpTo<HomeRoute>() } },
             )
+        }
+        composable<PaywallRoute> {
+            PaywallScreen(onClose = { navController.popBackStack() })
         }
         composable<LicencesRoute> {
             LicencesScreen(onBack = { navController.popBackStack() })

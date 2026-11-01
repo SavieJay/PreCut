@@ -1,5 +1,7 @@
 package com.savie.precut.model.ai
 
+import com.savie.precut.model.pro.ProPlan
+
 /**
  * What cloud AI (Phase 20) gives and how it can fail, independent of the backend's wire format
  * (docs/CLOUD_API.md) and of the provider behind it.
@@ -25,6 +27,8 @@ data class CloudStatus(
     /** AI edit requests left this month, and how many a month brings. */
     val editRunsLeft: Int = 0,
     val editRunsPerMonth: Int = 0,
+    /** This install's PreCut Pro (Phase 25); null from a server without it. */
+    val plan: ProPlan? = null,
 )
 
 /**
@@ -83,6 +87,9 @@ sealed interface AiFailure {
 
     /** One request used all the steps it may take. */
     data object StepsUsed : AiFailure
+
+    /** Google Play doesn't know this purchase (or it's for something else). */
+    data object BadPurchase : AiFailure
 
     /** The server speaks a newer version of the API than this app. */
     data object UpdateApp : AiFailure

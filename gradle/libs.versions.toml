@@ -22,6 +22,7 @@ turbine = "1.2.1"
 okhttp = "5.5.0"
 play-integrity = "1.6.0"
 play-app-update = "2.1.0"
+play-billing = "9.1.0"
 litert = "1.4.2"
 
 [libraries]
@@ -69,6 +70,7 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver3", version.ref = "okhttp" }
 play-integrity = { group = "com.google.android.play", name = "integrity", version.ref = "play-integrity" }
 play-app-update = { group = "com.google.android.play", name = "app-update", version.ref = "play-app-update" }
+play-billing = { group = "com.android.billingclient", name = "billing", version.ref = "play-billing" }
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
 
 [plugins]

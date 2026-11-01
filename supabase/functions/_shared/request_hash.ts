@@ -29,3 +29,15 @@ export async function editHash(
     await sha256(`precut-edit:${installId}:${hex(await sha256(body))}`),
   );
 }
+
+/** A purchase sent for checking: the install and the purchase token. */
+export async function purchaseHash(
+  installId: string,
+  purchaseToken: string,
+): Promise<string> {
+  return base64Url(
+    await sha256(
+      `precut-purchase:${installId}:${hex(await sha256(purchaseToken))}`,
+    ),
+  );
+}

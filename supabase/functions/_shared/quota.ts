@@ -1,3 +1,4 @@
+import type { Subscription } from "./play_billing.ts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -19,6 +20,19 @@ export interface CloudStatus {
   editRunsLeft: number;
   editRunsPerMonth: number;
   maxEditSteps: number;
+  /** The install's plan (Phase 25); absent from stores that predate it. */
+  pro?: Plan;
+}
+
+/** PreCut Pro for an install: whether it's Pro now, and its newest purchase's state for messages. */
+export interface Plan {
+  pro: boolean;
+  state: string | null;
+  productId?: string;
+  basePlanId?: string | null;
+  expiresAt?: string | null;
+  autoRenewing?: boolean;
+  trial?: boolean;
 }
 
 export type ReservationRefusal =
@@ -100,6 +114,18 @@ export interface QuotaStore {
   releaseEdit(runId: string): Promise<void>;
   /** The update rules for [platform] (zeros when there are none). */
   appConfig(platform: string): Promise<AppConfig>;
+  /**
+   * Saves Google's record of a purchase (keyed by [tokenHash]) and, with [installId], links it to
+   * that install. Refused for an unregistered install.
+   */
+  savePurchase(
+    installId: string | null,
+    tokenHash: string,
+    token: string,
+    subscription: Subscription,
+  ): Promise<{ ok: true } | { ok: false; code: "not_registered" }>;
+  /** Whether a purchase was ever sent by an app (notifications for others are ignored). */
+  purchaseKnown(tokenHash: string): Promise<boolean>;
 }
 
 /** The database functions through PostgREST, with the project's secret key (they're granted to service_role only). */
@@ -162,6 +188,30 @@ export class PostgresQuotaStore implements QuotaStore {
   }
   async appConfig(platform: string): Promise<AppConfig> {
     return await this.call("cloud_app_config", { p_platform: platform });
+  }
+  async savePurchase(
+    installId: string | null,
+    tokenHash: string,
+    token: string,
+    sub: Subscription,
+  ): Promise<{ ok: true } | { ok: false; code: "not_registered" }> {
+    return await this.call("cloud_save_purchase", {
+      p_install: installId,
+      p_token_hash: tokenHash,
+      p_token: token,
+      p_product: sub.productId,
+      p_base_plan: sub.basePlanId,
+      p_state: sub.state,
+      p_expires: sub.expiresAt,
+      p_auto_renewing: sub.autoRenewing,
+      p_trial: sub.trial,
+    });
+  }
+
+  async purchaseKnown(tokenHash: string): Promise<boolean> {
+    return await this.call("cloud_purchase_known", {
+      p_token_hash: tokenHash,
+    });
   }
 
   private async call<T>(

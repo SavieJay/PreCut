@@ -435,3 +435,120 @@ sqlTest(
     }
   },
 );
+
+const TOKEN_HASH = "a".repeat(64);
+const YEAR_LATER = "2027-10-22T10:00:00Z";
+
+function savePurchase(
+  db: PGlite,
+  install: string | null,
+  state: string,
+  expires: string | null,
+  hash = TOKEN_HASH,
+) {
+  return call(
+    db,
+    "public.cloud_save_purchase($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+    [
+      install,
+      hash,
+      "token",
+      "precut_pro",
+      "yearly",
+      state,
+      expires,
+      true,
+      false,
+      OCT,
+    ],
+  );
+}
+
+sqlTest(
+  "pro: a linked active purchase gives the Pro quotas; cancelled stays Pro until it ends",
+  async (db) => {
+    await register(db, A);
+    assertEquals((await status(db, A)).pro.pro, false);
+    assertEquals((await status(db, A)).secondsPerMonth, 1800);
+    const saved = await savePurchase(db, A, "active", YEAR_LATER);
+    assertEquals(saved.plan.pro, true);
+    const pro = await status(db, A);
+    assertEquals(pro.secondsPerMonth, 18000);
+    assertEquals(pro.editRunsPerMonth, 100);
+    // The reservation follows the plan too: a fourth 10-minute upload is past the free 30.
+    for (let i = 0; i < 4; i++) {
+      assertEquals(
+        (await call(db, "public.cloud_reserve($1, $2, $3)", [A, 600, OCT])).ok,
+        true,
+      );
+    }
+    await savePurchase(db, null, "canceled", YEAR_LATER);
+    assertEquals((await status(db, A)).pro.pro, true);
+    await savePurchase(db, null, "canceled", "2026-10-01T00:00:00Z");
+    const ended = await status(db, A);
+    assertEquals(ended.pro.pro, false);
+    assertEquals(ended.pro.state, "canceled");
+    assertEquals(ended.secondsPerMonth, 1800);
+  },
+);
+
+sqlTest(
+  "pro: on hold isn't Pro; one purchase restores onto another install; forgetting drops unlinked purchases",
+  async (db) => {
+    await register(db, A);
+    await register(db, B);
+    await savePurchase(db, A, "on_hold", YEAR_LATER);
+    assertEquals((await status(db, A)).pro, {
+      pro: false,
+      state: "on_hold",
+      productId: "precut_pro",
+      basePlanId: "yearly",
+      expiresAt: "2027-10-22T10:00:00+00:00",
+      autoRenewing: true,
+      trial: false,
+    });
+    await savePurchase(db, B, "active", YEAR_LATER);
+    assertEquals((await status(db, A)).pro.pro, true);
+    assertEquals((await status(db, B)).pro.pro, true);
+    assert(await call(db, "public.cloud_purchase_known($1)", [TOKEN_HASH]));
+    await call(db, "public.cloud_forget($1)", [A]);
+    assert(await call(db, "public.cloud_purchase_known($1)", [TOKEN_HASH]));
+    await call(db, "public.cloud_forget($1)", [B]);
+    assert(!(await call(db, "public.cloud_purchase_known($1)", [TOKEN_HASH])));
+    assertEquals(
+      (await savePurchase(
+        db,
+        "00000000-0000-4000-8000-000000000000",
+        "active",
+        YEAR_LATER,
+      )).code,
+      "not_registered",
+    );
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`reset role; set role ${role};`);
+      await assertRejects(
+        () => db.query("select * from public.cloud_purchases"),
+        Error,
+        "permission denied",
+      );
+    }
+  },
+);
+
+sqlTest("pro: AI edit runs follow the plan", async (db) => {
+  await register(db, A);
+  await db.exec("update public.cloud_config set free_edit_runs_per_month = 0");
+  const RUN = "6b0c2f8e-1d3a-4e5b-9c6d-0a1b2c3d4e5f";
+  assertEquals(
+    (await call(db, "public.cloud_edit_begin($1, $2, $3)", [A, RUN, OCT])).code,
+    "runs_used",
+  );
+  await savePurchase(db, A, "grace", YEAR_LATER);
+  const begun = await call(db, "public.cloud_edit_begin($1, $2, $3)", [
+    A,
+    RUN,
+    OCT,
+  ]);
+  assertEquals(begun.ok, true);
+  assertEquals(begun.editRunsLeft, 99);
+});

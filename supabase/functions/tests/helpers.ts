@@ -14,16 +14,19 @@ import type {
   CloudStatus,
   EditGrant,
   EditUsageRecord,
+  Plan,
   QuotaStore,
   Reservation,
 } from "../_shared/quota.ts";
 import { FakeTranscriber, type Transcript } from "../_shared/transcriber.ts";
+import { FakePlayBilling, type Subscription } from "../_shared/play_billing.ts";
 
 /** Fakes for handler tests. The real quota rules are the SQL's, tested in sql_test.ts. */
 
 export const INSTALL = "3f6c1d2e-8a4b-4c5d-9e0f-1a2b3c4d5e6f";
 export const SECRET = utf8("a-test-secret-that-is-long-enough-1234");
 export const NOW = new Date("2026-10-22T10:00:00Z");
+export const RTDN_SECRET = "a-push-endpoint-secret";
 
 export class MemoryQuota implements QuotaStore {
   readonly installs = new Map<string, { used: number; reserved: number }>();
@@ -162,6 +165,35 @@ export class MemoryQuota implements QuotaStore {
     return Promise.resolve(this.config);
   }
 
+  /** Purchases by token hash, and the installs each is linked to. */
+  readonly purchases = new Map<
+    string,
+    { token: string; subscription: Subscription; installs: Set<string> }
+  >();
+
+  savePurchase(
+    installId: string | null,
+    tokenHash: string,
+    token: string,
+    subscription: Subscription,
+  ): Promise<{ ok: true } | { ok: false; code: "not_registered" }> {
+    this.check();
+    if (installId !== null && !this.installs.has(installId)) {
+      return Promise.resolve({ ok: false, code: "not_registered" });
+    }
+    const saved = this.purchases.get(tokenHash) ??
+      { token, subscription, installs: new Set<string>() };
+    saved.subscription = subscription;
+    if (installId !== null) saved.installs.add(installId);
+    this.purchases.set(tokenHash, saved);
+    return Promise.resolve({ ok: true });
+  }
+
+  purchaseKnown(tokenHash: string): Promise<boolean> {
+    this.check();
+    return Promise.resolve(this.purchases.has(tokenHash));
+  }
+
   private runsOf(installId: string): number {
     return [...this.runs.values()].filter((run) => run.installId === installId)
       .length;
@@ -179,7 +211,27 @@ export class MemoryQuota implements QuotaStore {
       editRunsLeft: this.freeEditRuns - this.runsOf(installId),
       editRunsPerMonth: this.freeEditRuns,
       maxEditSteps: this.maxEditSteps,
+      pro: this.planOf(installId),
     };
+  }
+
+  /** Pro while a linked purchase is active, in grace or cancelled but paid up (as the SQL). */
+  private planOf(installId: string): Plan {
+    const linked = [...this.purchases.values()].filter((p) =>
+      p.installs.has(installId)
+    ).map((p) => p.subscription);
+    const entitled = linked.find((sub) =>
+      ["active", "grace", "canceled"].includes(sub.state) &&
+      sub.expiresAt !== null && Date.parse(sub.expiresAt) > NOW.getTime()
+    );
+    const shown = entitled ?? linked[0];
+    return shown
+      ? {
+        pro: entitled !== undefined,
+        state: shown.state,
+        expiresAt: shown.expiresAt,
+      }
+      : { pro: false, state: null };
   }
 
   private check() {
@@ -278,6 +330,7 @@ export interface TestDeps extends Deps {
   integrity: ScriptedIntegrity;
   transcriber: RecordingTranscriber;
   editAgent: FailingEditAgent;
+  billing: FakePlayBilling;
   logs: Record<string, unknown>[];
   now: { value: Date };
 }
@@ -290,6 +343,9 @@ export function testDeps(): TestDeps {
     integrity: new ScriptedIntegrity(),
     transcriber: new RecordingTranscriber(),
     editAgent: new FailingEditAgent([stepReply("Trimmed the first clip.")]),
+    billing: new FakePlayBilling(),
+    proProducts: ["precut_pro"],
+    rtdnSecret: RTDN_SECRET,
     installTokenSecret: SECRET,
     maxUploadBytes: 1024,
     minApiVersion: 1,

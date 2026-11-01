@@ -20,6 +20,12 @@ class RequestHashesTest {
         assertEquals("Z0q_EB9us7XczEMwltQCcIlEC3rXpRzBkcJvUz6jN8c", RequestHashes.transcribe(INSTALL, ByteArray(0)))
     }
 
+    @Test
+    fun `the AI edit and purchase hashes match the server's`() {
+        assertEquals("NnxvaK91A1V6yd59eOkrNQZs_QvJlQrg9-TIB7xrkZo", RequestHashes.edit(INSTALL, """{"runId":"r","messages":[]}""".toByteArray()))
+        assertEquals("RgzR5WuTU94TxfJjfvU48HQ6bZ-6qHakMSgqbpGPaZo", RequestHashes.purchase(INSTALL, "purchase-token-123"))
+    }
+
     private companion object {
         const val INSTALL = "3f6c1d2e-8a4b-4c5d-9e0f-1a2b3c4d5e6f"
     }

@@ -9,8 +9,8 @@ Base URL: `https://auekkmbwfpqofjqugjsr.supabase.co/functions/v1/cloud`
 |---|---|---|
 | `X-PreCut-Api: 1` | every request | API version; older clients get `upgrade_required` |
 | `x-region: eu-west-1` | every request | runs the function next to the database (Ireland, the project's region) |
-| `X-Install-Token` | status, transcribe, edit, me | the token from `register` |
-| `X-Integrity-Token` | register, transcribe, edit | a Play Integrity standard token whose request hash is below |
+| `X-Install-Token` | status, transcribe, edit, purchase, me | the token from `register` |
+| `X-Integrity-Token` | register, transcribe, edit, purchase | a Play Integrity standard token whose request hash is below |
 | `X-Audio-Duration-Ms` | transcribe | the audio's length as the app measured it |
 | `Content-Type` | transcribe | `audio/mp4` (m4a), `audio/wav`, `audio/mpeg`, `audio/ogg`, `audio/webm` |
 
@@ -19,6 +19,7 @@ Each verdict is bound to one request: the server recomputes the hash and refuses
 - Register: `sha256("precut-register:" + installId)`
 - Transcribe: `sha256("precut-transcribe:" + installId + ":" + hex(sha256(audio bytes)))`
 - Edit: `sha256("precut-edit:" + installId + ":" + hex(sha256(request body bytes)))`
+- Purchase: `sha256("precut-purchase:" + installId + ":" + hex(sha256(purchase token)))`
 
 `installId` is a random UUID the app makes once and keeps (lower case). Verdicts must be under 5 minutes old, for `com.savie.precut`, signed with one of the certificates in `PLAY_CERT_SHA256`, on a device meeting `MEETS_DEVICE_INTEGRITY`.
 
@@ -34,11 +35,15 @@ Returns `{"transcript": {"language": "en", "durationMs": 2400, "words": [{"text"
 
 **`POST /edit`** (Phase 22C) — body `{"runId": "<uuid>", "messages": [...]}` (at most 512 KB, 200 messages), with `X-Install-Token` and `X-Integrity-Token`. One step of prompt-to-edit: the app keeps the conversation with Claude and runs every tool itself, on a copy of the project through its own `EditReducer` (so Claude's changes follow exactly the editor's rules); the server adds the system prompt and the tools (`supabase/functions/_shared/edit_tools.json`), asks Claude, and returns `{"content": [...], "stopReason": "tool_use|end_turn|max_tokens|refusal", "stepsLeft": int, "editRunsLeft": int}` and maybe `installToken`. `messages` alternate user and assistant, starting with the user; user messages hold only `text` and `tool_result` blocks. `content` is Claude's reply to append as it is (thinking blocks included; after a server-side fallback to another model, only what may be sent back). A run is one request: its first step uses one of the month's runs, its later steps use the run's steps (`max_edit_steps`). Nothing of the conversation is stored or logged, only token counts and cost per run (`cloud_edit_runs`). Model: `ANTHROPIC_MODEL` (default `claude-opus-5-5`), effort `ANTHROPIC_EFFORT` (default `medium`); without `ANTHROPIC_API_KEY` the route answers `not_configured`.
 
+**`POST /purchase`** (Phase 25) — body `{"purchaseToken": "..."}`, with `X-Install-Token` and `X-Integrity-Token`. The server looks the token up with the Google Play Developer API (`purchases.subscriptionsv2.get`), refuses one Google doesn't know or for another product (`bad_purchase`), saves its state and end date, links it to this install, acknowledges it, and returns `{"status": Status}`. Works with cloud AI switched off. See `docs/BILLING.md`.
+
+**`POST /rtdn?secret=...`** (Phase 25) — Google Play's Real-time developer notifications through a Pub/Sub push subscription; no `X-PreCut-Api`. The secret must match `RTDN_SECRET` (`forbidden` otherwise). A subscription notification makes the server look that purchase up again, if an app ever sent it; anything else is acknowledged and ignored. Answers 2xx except when Google can't be asked (`billing_unavailable`, so Pub/Sub retries).
+
 **`GET /config?platform=android`** (Phase 23) — public: no `X-PreCut-Api` check, no install token, no Play Integrity, so any app version learns when it must update. Returns `{"minSupportedVersionCode": int, "latestVersionCode": int, "forceMessage": string|null, "whatsNew": [string], "downloadUrl": string|null, "updatedAt": string|null}` from the `app_config` table (zeros when unset), with `Cache-Control: public, max-age=300`. How to use it: `docs/RELEASING.md`.
 
 **`DELETE /me`** — `X-Install-Token`. Deletes everything kept about the install. Returns `{"deleted": true|false}`.
 
-`Status` is `{"cloudEnabled": bool, "secondsLeft": int, "secondsPerMonth": int, "resetsAt": "<ISO 8601>", "maxUploadSeconds": int, "editEnabled": bool, "editRunsLeft": int, "editRunsPerMonth": int, "maxEditSteps": int}`. `cloudEnabled` is false while cloud AI is paused or the month's budget is used up; `editEnabled` likewise for AI edits (`edit_paused`, the edit budget).
+`Status` is `{"cloudEnabled": bool, "secondsLeft": int, "secondsPerMonth": int, "resetsAt": "<ISO 8601>", "maxUploadSeconds": int, "editEnabled": bool, "editRunsLeft": int, "editRunsPerMonth": int, "maxEditSteps": int, "pro": Plan}`; `Plan` is `{"pro": bool, "state": "active|grace|on_hold|paused|canceled|expired|pending"|null, "productId", "basePlanId", "expiresAt", "autoRenewing", "trial"}` for the install's newest purchase (Pro while active, in grace, or cancelled before its end). Quotas follow the plan. `cloudEnabled` is false while cloud AI is paused or the month's budget is used up; `editEnabled` likewise for AI edits (`edit_paused`, the edit budget).
 
 ## Errors
 Every refusal is `{"error": {"code": "<code>", ...details}}`:
@@ -59,6 +64,9 @@ Every refusal is `{"error": {"code": "<code>", ...details}}`:
 | `budget_reached` | 503 | `resetsAt` | cloud AI is busy this month |
 | `runs_used` | 429 | `editRunsLeft`, `resetsAt` | AI edit requests used; when they come back |
 | `steps_used` | 429 | `maxEditSteps` | (the run ends; its changes stay for review) |
+| `bad_purchase` | 400 | | Google Play couldn't confirm this purchase |
+| `billing_unavailable` | 503 | | try again shortly |
+| `forbidden` | 403 | | (`/rtdn` with a wrong secret) |
 | `paused` | 503 | | cloud AI is paused |
 | `provider_failed` | 502 | | try again |
 | `not_found` | 404 | | (a bug) |
@@ -74,9 +82,11 @@ Edit the single row of `public.cloud_config` in the Supabase dashboard (Table Ed
 - `max_edit_steps`: 8 (Claude steps in one request)
 - `edit_budget_microusd_per_month`: 20000000 ($20 of Claude for everyone)
 - `edit_paused`: false
+- `pro_seconds_per_month`: 18000 (300 caption minutes for Pro installs)
+- `pro_edit_runs_per_month`: 100 (AI edit requests for Pro installs)
 
 ## Secrets (`supabase/.env.secrets`, from `.env.secrets.example`)
-`ELEVENLABS_API_KEY`, `ELEVENLABS_ZERO_RETENTION`, `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT`), `GOOGLE_SERVICE_ACCOUNT_JSON`, `INSTALL_TOKEN_SECRET`, `PLAY_CERT_SHA256`. Supabase provides `SUPABASE_URL` and the project's secret key itself. `REQUIRE_INTEGRITY=false`, `TRANSCRIBER=fake` and `EDIT_AGENT=fake` exist for a local stack only; a deployed function refuses to start with them.
+`ELEVENLABS_API_KEY`, `ELEVENLABS_ZERO_RETENTION`, `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT`), `PRO_PRODUCT_IDS`, `RTDN_SECRET`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `INSTALL_TOKEN_SECRET`, `PLAY_CERT_SHA256`. Supabase provides `SUPABASE_URL` and the project's secret key itself. `REQUIRE_INTEGRITY=false`, `TRANSCRIBER=fake`, `EDIT_AGENT=fake` and `BILLING=fake` exist for a local stack only; a deployed function refuses to start with them.
 
 ## Setup (on your own accounts)
 1. **Supabase:** PreCut's project is `auekkmbwfpqofjqugjsr`, in `eu-west-1` (Ireland); a region can't be changed after creation. Free while developing, Pro before launch (Free pauses a project after a week with no database activity). On this machine, once: `npx supabase login` (opens your browser; the CLI keeps the token, so it never appears in a command).

@@ -255,6 +255,22 @@ Clear the app's data first (Settings → Apps → PreCut → Storage → Clear s
 | Not now on the notifications page, then export | The export still asks for notifications | |
 | Android 12 or older | No notifications page | |
 
+## 4o. PreCut Pro (Phase 25)
+Needs the Play Console setup and server steps in `docs/BILLING.md`, a build installed from Play (internal testing), and a license tester account on the phone.
+
+| Check | Expected | Result |
+|---|---|---|
+| Settings → PreCut Pro → Get PreCut Pro | The paywall: benefits, Yearly (Best value or Save N%) and Monthly with prices in your currency, "Start 7-day free trial" | |
+| Start the trial, pay in Play's sheet (test card) | The paywall closes; Settings shows "PreCut Pro, yearly" and "Free trial until …"; caption minutes now 300 | |
+| Settings → Cloud AI off, then back to Settings → PreCut Pro | Still Pro (Pro doesn't need cloud AI on) | |
+| Uninstall, reinstall, Settings → PreCut Pro → Restore purchases | "Pro restored on this phone." | |
+| Cancel in Google Play (Manage in Google Play) | After a moment, Settings: "Your subscription won't renew…" and still Pro until the date | |
+| Wait for the test subscription to end (test renewals take minutes) | Pro ends; quotas back to the free ones | |
+| Payment declined test card | "Google Play couldn't take your payment…" (grace), later "Pro is on hold…" and not Pro | |
+| Airplane mode with Pro | Pro stays | |
+| Onboarding's last page (Settings → Replay intro) | "Try PreCut Pro free for 7 days", Continue free, Skip; Start free trial opens the paywall over Projects | |
+| A phone without the Play Store | The paywall says Pro can't be bought right now | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

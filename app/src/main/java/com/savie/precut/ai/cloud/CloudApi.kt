@@ -5,6 +5,8 @@ import com.savie.precut.model.ai.CloudStatus
 import com.savie.precut.model.ai.Transcript
 import com.savie.precut.model.ai.TranscriptWord
 import com.savie.precut.model.ai.edit.EditStepReply
+import com.savie.precut.model.pro.PlanState
+import com.savie.precut.model.pro.ProPlan
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -27,9 +29,36 @@ internal data class StatusDto(
     val editEnabled: Boolean = false,
     val editRunsLeft: Int = 0,
     val editRunsPerMonth: Int = 0,
+    val pro: PlanDto? = null,
 ) {
-    fun toModel() = CloudStatus(cloudEnabled, secondsLeft, secondsPerMonth, epochMs(resetsAt), maxUploadSeconds, editEnabled, editRunsLeft, editRunsPerMonth)
+    fun toModel() = CloudStatus(
+        cloudEnabled, secondsLeft, secondsPerMonth, epochMs(resetsAt), maxUploadSeconds,
+        editEnabled, editRunsLeft, editRunsPerMonth, pro?.toModel(),
+    )
 }
+
+/** The server's plan for an install (docs/CLOUD_API.md, Phase 25). */
+@Serializable
+internal data class PlanDto(
+    val pro: Boolean,
+    val state: String? = null,
+    val basePlanId: String? = null,
+    val expiresAt: String? = null,
+    val autoRenewing: Boolean = false,
+    val trial: Boolean = false,
+) {
+    fun toModel() = ProPlan(
+        pro = pro,
+        state = state?.let { name -> PlanState.entries.firstOrNull { it.name.equals(name, ignoreCase = true) } },
+        basePlanId = basePlanId,
+        expiresAtMs = expiresAt?.let(::epochMs),
+        autoRenewing = autoRenewing,
+        trial = trial,
+    )
+}
+
+@Serializable
+internal data class PurchaseRequest(val purchaseToken: String)
 
 @Serializable
 internal data class RegisterRequest(val installId: String)
@@ -92,6 +121,7 @@ internal fun failureFor(error: ErrorDto): AiFailure = when (error.code) {
     "too_large" -> AiFailure.TooLarge
     "runs_used" -> AiFailure.EditRunsUsed(error.resetsAt?.let(::epochMs))
     "steps_used" -> AiFailure.StepsUsed
+    "bad_purchase" -> AiFailure.BadPurchase
     "bad_audio", "unsupported_audio" -> AiFailure.BadAudio
     else -> AiFailure.Busy
 }

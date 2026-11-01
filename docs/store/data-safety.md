@@ -15,6 +15,7 @@ Data types to tick, each **collected** and **not shared** (Supabase, which hosts
 |---|---|---|---|
 | **Audio → Voice or sound recordings** | **No**. PreCut's server keeps nothing, but ElevenLabs may keep audio for a time under its own terms (answer Yes only on an ElevenLabs plan with zero retention, `ELEVENLABS_ZERO_RETENTION=true`) | **Optional** (users can decline each upload or switch cloud AI off) | **App functionality** |
 | **App activity → Other user-generated content** (AI edit: the request and the project's description, including the user's text overlays and music file names) | **No**, as for audio: PreCut's server passes it on and keeps none of it, but Anthropic may keep API inputs for a limited time under its own terms (check them before release) | **Optional** (only when the user sends an AI edit request) | **App functionality** |
+| **Financial info → Purchase history** (PreCut Pro: the Google Play purchase token, plan, state and end date) | No (kept while the subscription is used, up to 13 months unused) | **Optional** (only for people who subscribe or restore) | **App functionality** |
 | **Device or other IDs** (the random installation ID the app makes on first cloud use) | No (kept with the minutes used, up to 13 months unused) | **Optional** | **App functionality**; **Fraud prevention, security, and compliance** |
 
 Notes:
@@ -37,7 +38,7 @@ The URL of the hosted `privacy-policy.md`. Play requires one because the app req
 - Violence, sexuality, language, controlled substances, gambling: **No**
 - Users can interact or exchange content with each other in the app: **No** (exports are shared through Android's share sheet, outside the app)
 - Shares the user's location: **No**
-- Allows purchases of digital goods: **No**
+- Allows purchases of digital goods: **Yes** (the PreCut Pro subscription, through Google Play Billing)
 - Expected result: rated for everyone (PEGI 3 / ESRB Everyone)
 
 ## Target audience and content

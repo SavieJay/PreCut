@@ -14,14 +14,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
-/** Onboarding's pages, in order. Notifications only where Android asks (13 and newer). */
-enum class OnboardingPage { WELCOME, GOALS, EXPERIENCE, NOTIFICATIONS }
+/**
+ * Onboarding's pages, in order. Notifications only where Android asks (13 and newer); the Pro
+ * trial offer (Phase 25) last, skippable, with Continue free always shown.
+ */
+enum class OnboardingPage { WELCOME, GOALS, EXPERIENCE, NOTIFICATIONS, PRO }
 
 data class OnboardingState(
     val page: OnboardingPage = OnboardingPage.WELCOME,
     val goals: Set<CreationGoal> = emptySet(),
     val experience: Experience? = null,
     val done: Boolean = false,
+    /** Finished with "Start free trial": the paywall opens next. */
+    val openPaywall: Boolean = false,
 ) {
     val pages: List<OnboardingPage> get() = pagesFor(Build.VERSION.SDK_INT)
 }
@@ -71,7 +76,10 @@ class OnboardingViewModel @Inject constructor(private val settings: AppSettings)
 
     fun onSkip() = finish()
 
-    private fun finish() {
+    /** A5's Start free trial: onboarding ends and the paywall opens. */
+    fun onStartTrial() = finish(openPaywall = true)
+
+    private fun finish(openPaywall: Boolean = false) {
         val state = _state.value
         settings.update { values ->
             values.copy(
@@ -81,6 +89,6 @@ class OnboardingViewModel @Inject constructor(private val settings: AppSettings)
                 simpleMode = state.experience?.let(::simpleModeFor) ?: values.simpleMode,
             )
         }
-        _state.update { it.copy(done = true) }
+        _state.update { it.copy(done = true, openPaywall = openPaywall) }
     }
 }

@@ -15,6 +15,11 @@ import {
   parseServiceAccount,
   PlayIntegrityVerifier,
 } from "./integrity.ts";
+import {
+  FakePlayBilling,
+  GooglePlayBilling,
+  type PlayBilling,
+} from "./play_billing.ts";
 import { PostgresQuotaStore } from "./quota.ts";
 import { FakeTranscriber, type Transcriber } from "./transcriber.ts";
 
@@ -54,6 +59,11 @@ export function depsFromEnv(
     integrity: integrityFrom(env, local, fetchFn),
     transcriber: transcriberFrom(env, local, fetchFn),
     editAgent: editAgentFrom(env, local, fetchFn),
+    billing: billingFrom(env, local, fetchFn),
+    proProducts: (env.PRO_PRODUCT_IDS ?? "precut_pro").split(",").map((id) =>
+      id.trim()
+    ).filter((id) => id !== ""),
+    rtdnSecret: rtdnSecretFrom(env),
     installTokenSecret: utf8(secret),
     maxUploadBytes: MAX_UPLOAD_BYTES,
     minApiVersion: MIN_API_VERSION,
@@ -117,6 +127,43 @@ function transcriberFrom(
     env.ELEVENLABS_ZERO_RETENTION === "true",
     fetchFn,
   );
+}
+
+/**
+ * Google Play's subscription records (Phase 25) with the same service account as Play Integrity;
+ * null without one (a local stack), so /purchase answers not_configured. BILLING=fake (local stack
+ * only) knows no purchases.
+ */
+function billingFrom(
+  env: Record<string, string | undefined>,
+  local: boolean,
+  fetchFn: typeof fetch,
+): PlayBilling | null {
+  if (env.BILLING === "fake") {
+    if (!local) {
+      throw new ConfigError("BILLING=fake is only allowed on a local stack");
+    }
+    return new FakePlayBilling();
+  }
+  const account = env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!account) return null;
+  return new GooglePlayBilling(
+    parseServiceAccount(account),
+    PACKAGE_NAME,
+    fetchFn,
+  );
+}
+
+/** The push endpoint's secret for Real-time developer notifications; without one, /rtdn refuses all. */
+function rtdnSecretFrom(
+  env: Record<string, string | undefined>,
+): string | null {
+  const secret = env.RTDN_SECRET ?? "";
+  if (secret === "") return null;
+  if (secret.length < 24) {
+    throw new ConfigError("RTDN_SECRET must be at least 24 characters");
+  }
+  return secret;
 }
 
 /** Claude's default for AI edits; ANTHROPIC_MODEL picks another (e.g. a cheaper one). */

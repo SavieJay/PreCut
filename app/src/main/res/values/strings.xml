@@ -1148,4 +1148,68 @@
     <string name="settings_simple_mode">Simple mode</string>
     <string name="settings_simple_mode_summary">A few everyday tools; the rest under More</string>
     <string name="settings_replay_intro">Replay intro</string>
+
+    <!-- PreCut Pro (Phase 25) -->
+    <string name="ai_failure_bad_purchase">Google Play couldn\'t confirm this purchase.</string>
+    <string name="pro_headline">Get more done with PreCut Pro</string>
+    <string name="pro_headline_ai_edit">Unlock AI edit with Pro</string>
+    <string name="pro_headline_transcript">Unlock editing by transcript with Pro</string>
+    <string name="pro_headline_shorts">Unlock long video to shorts with Pro</string>
+    <string name="pro_headline_formats">Unlock multi-format export with Pro</string>
+    <string name="pro_headline_brand">Unlock your brand kit with Pro</string>
+    <string name="pro_headline_translate">Unlock caption translation with Pro</string>
+    <string name="pro_headline_hook">Unlock the hook coach with Pro</string>
+    <string name="pro_headline_broll">Unlock smart B-roll with Pro</string>
+    <string name="pro_benefit_ai_edit">AI edit: describe it, we edit it</string>
+    <string name="pro_benefit_shorts">Turn long videos into shorts</string>
+    <string name="pro_benefit_transcript">Remove pauses and filler words</string>
+    <string name="pro_benefit_formats">Brand kit and one-tap multi-format export</string>
+    <string name="pro_benefit_more_cloud">More caption minutes and AI edits every month</string>
+    <string name="pro_free_forever">Free forever: no watermark, 4K export, all filters and effects.</string>
+    <string name="pro_yearly">Yearly</string>
+    <string name="pro_monthly">Monthly</string>
+    <string name="pro_price_year">%1$s a year</string>
+    <string name="pro_price_month">%1$s a month</string>
+    <plurals name="pro_trial_days">
+        <item quantity="one">%1$d day free</item>
+        <item quantity="other">%1$d days free</item>
+    </plurals>
+    <string name="pro_best_value">Best value</string>
+    <string name="pro_save_percent">Save %1$d%%</string>
+    <string name="pro_continue">Continue</string>
+    <string name="pro_start_trial">Start %1$d-day free trial</string>
+    <string name="pro_restore">Restore purchases</string>
+    <string name="pro_fine_print">Cancel any time in Google Play. With a free trial, you won\'t be charged until it ends.</string>
+    <string name="pro_no_offers">PreCut Pro can\'t be bought right now. Check that Google Play is installed and you\'re online.</string>
+    <string name="pro_play_failed">Google Play couldn\'t open the purchase. Try again.</string>
+    <string name="pro_settings_header">PreCut Pro</string>
+    <string name="pro_get">Get PreCut Pro</string>
+    <string name="pro_get_summary">AI edit, shorts, multi-format export and more</string>
+    <string name="pro_plan_yearly">PreCut Pro, yearly</string>
+    <string name="pro_plan_monthly">PreCut Pro, monthly</string>
+    <string name="pro_renews">Renews on %1$s</string>
+    <string name="pro_ends">Ends on %1$s</string>
+    <string name="pro_trial_ends">Free trial until %1$s</string>
+    <string name="pro_notice_payment">Google Play couldn\'t take your payment. Update your payment method in Google Play to keep Pro.</string>
+    <string name="pro_notice_on_hold">Pro is on hold because the payment didn\'t go through. Fix it in Google Play to get Pro back.</string>
+    <string name="pro_notice_paused">Your Pro subscription is paused in Google Play.</string>
+    <string name="pro_notice_ending">Your subscription won\'t renew. Pro stays until the date above.</string>
+    <string name="pro_usage_minutes">Cloud caption minutes</string>
+    <plurals name="pro_usage_minutes_left">
+        <item quantity="one">%1$d of %2$d minutes left this month</item>
+        <item quantity="other">%1$d of %2$d minutes left this month</item>
+    </plurals>
+    <string name="pro_usage_ai_edits">AI edit requests</string>
+    <plurals name="pro_usage_runs">
+        <item quantity="one">%1$d of %2$d left this month</item>
+        <item quantity="other">%1$d of %2$d left this month</item>
+    </plurals>
+    <string name="pro_manage">Manage in Google Play</string>
+    <string name="pro_restoring">Checking with Google Play…</string>
+    <string name="pro_restored">Pro restored on this phone.</string>
+    <string name="pro_nothing_to_restore">No PreCut Pro purchase found for this Google account.</string>
+    <string name="pro_badge">PRO</string>
+    <string name="onboarding_pro_title">Try PreCut Pro free for 7 days</string>
+    <string name="onboarding_pro_start">Start free trial</string>
+    <string name="onboarding_pro_continue_free">Continue free</string>
 </resources>

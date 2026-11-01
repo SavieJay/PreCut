@@ -20,8 +20,10 @@ class OnboardingViewModelTest {
         vm.onGoal(CreationGoal.YOUTUBE)
         vm.onNext()
         vm.onExperience(Experience.NEW)
-        // Android 12 and below (and the JVM) have no notifications page: this finishes.
+        // Android 12 and below (and the JVM) have no notifications page: next is the Pro offer.
         vm.onNext()
+        assertEquals(OnboardingPage.PRO, vm.state.value.page)
+        vm.onSkip()
         val values = settings.values.value
         assertTrue(vm.state.value.done)
         assertTrue(values.onboardingDone)
@@ -51,6 +53,14 @@ class OnboardingViewModelTest {
         assertTrue(vm.state.value.goals.isEmpty())
         assertTrue(vm.onBack())
         assertEquals(OnboardingPage.WELCOME, vm.state.value.page)
+    }
+
+    @Test
+    fun `start free trial finishes onboarding and opens the paywall`() {
+        val vm = OnboardingViewModel(InMemoryAppSettings())
+        vm.onStartTrial()
+        assertTrue(vm.state.value.done)
+        assertTrue(vm.state.value.openPaywall)
     }
 
     @Test

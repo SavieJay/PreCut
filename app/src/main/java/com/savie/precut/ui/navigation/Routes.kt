@@ -19,6 +19,10 @@ data class ExportRoute(val projectId: String, val settings: String = "", val kin
 @Serializable
 data object SettingsRoute
 
+/** PreCut Pro's paywall (Phase 25); [feature] is the `ProFeature` name that opened it, if any. */
+@Serializable
+data class PaywallRoute(val feature: String? = null)
+
 @Serializable
 data object LicencesRoute
 

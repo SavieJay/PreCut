@@ -44,9 +44,12 @@ class CloudClient @Inject constructor(
     private val settings: AppSettings,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
-    /** This install's free minutes; null before its first upload, when there's nothing to ask. */
-    suspend fun status(): AiResult<CloudStatus?> {
-        blocked(needsSwitch = true)?.let { return AiResult.Failed(it) }
+    /**
+     * This install's free minutes and plan; null before its first upload, when there's nothing to
+     * ask. [forPro] asks with cloud AI switched off too: Pro is checked with the same server.
+     */
+    suspend fun status(forPro: Boolean = false): AiResult<CloudStatus?> {
+        blocked(needsSwitch = !forPro)?.let { return AiResult.Failed(it) }
         val token = installs.token ?: return AiResult.Ok(null)
         return when (val reply = send(request("status").header(HEADER_TOKEN, token).get().build())) {
             is Reply.Ok -> decode<StatusResponse>(reply.body)?.let { keep(it.installToken); AiResult.Ok(it.status.toModel()) } ?: busy()
@@ -124,6 +127,36 @@ class CloudClient @Inject constructor(
                     // Without a Claude key on the server, AI edits simply aren't on yet.
                     reply.error.code == NOT_CONFIGURED -> return AiResult.Failed(AiFailure.EditNotReady)
                     else -> return AiResult.Failed(failureFor(reply.error))
+                }
+                is Reply.Failed -> return AiResult.Failed(reply.failure)
+            }
+        }
+        return busy()
+    }
+
+    /**
+     * PreCut Pro (Phase 25): sends a subscription's [purchaseToken] (after buying, or to restore)
+     * for the server to check with Google Play and link to this install; returns the install's
+     * status with its plan. Works with cloud AI switched off: no media or text is sent.
+     */
+    suspend fun purchase(purchaseToken: String): AiResult<CloudStatus> {
+        blocked(needsSwitch = false)?.let { return AiResult.Failed(it) }
+        val body = cloudJson.encodeToString(PurchaseRequest.serializer(), PurchaseRequest(purchaseToken)).toRequestBody(JSON)
+        repeat(2) { attempt ->
+            val token = installs.token ?: when (val registered = register()) {
+                is AiResult.Ok -> registered.value
+                is AiResult.Failed -> return registered
+            }
+            val proof = when (val result = integrity.token(RequestHashes.purchase(installs.installId(), purchaseToken))) {
+                is AiResult.Ok -> result.value
+                is AiResult.Failed -> return result
+            }
+            when (val reply = send(request("purchase").header(HEADER_TOKEN, token).header(HEADER_INTEGRITY, proof).post(body).build())) {
+                is Reply.Ok -> return decode<StatusResponse>(reply.body)?.let { keep(it.installToken); AiResult.Ok(it.status.toModel()) } ?: busy()
+                is Reply.Refused -> if (reply.error.code == NOT_REGISTERED && attempt == 0) {
+                    installs.token = null
+                } else {
+                    return AiResult.Failed(failureFor(reply.error))
                 }
                 is Reply.Failed -> return AiResult.Failed(reply.failure)
             }

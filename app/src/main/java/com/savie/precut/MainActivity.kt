@@ -3,7 +3,10 @@ package com.savie.precut
 import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.lifecycle.lifecycleScope
 import com.savie.precut.data.AppSettings
+import com.savie.precut.pro.EntitlementRepository
+import kotlinx.coroutines.launch
 import com.savie.precut.ui.update.LocalUpdates
 import com.savie.precut.ui.update.UpdateHost
 import com.savie.precut.ui.update.Updates
@@ -38,6 +41,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var appSettings: AppSettings
 
+    @Inject
+    lateinit var entitlements: EntitlementRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app is dark-only, so always use light system bar icons.
         enableEdgeToEdge(
@@ -66,6 +72,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         updateChecker.onForeground()
+        lifecycleScope.launch { entitlements.refreshIfStale() }
     }
 
     override fun onNewIntent(intent: Intent) {

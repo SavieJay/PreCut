@@ -50,7 +50,13 @@ private enum class SettingsDialog { PHOTO, RATIO, EXPORT }
 
 /** H-09: new-project defaults, default export settings, the preview cache and About. */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, onReplayIntro: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onLicences: () -> Unit,
+    onReplayIntro: () -> Unit = {},
+    onGetPro: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val values by viewModel.values.collectAsStateWithLifecycle()
     val storage by viewModel.storageInfo.collectAsStateWithLifecycle()
     val capabilities by viewModel.capabilities.collectAsStateWithLifecycle()
@@ -63,6 +69,7 @@ fun SettingsScreen(onBack: () -> Unit, onLicences: () -> Unit, onReplayIntro: ()
             Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleLarge, color = TextPrimary)
         }
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+            ProSection(onGetPro)
             Header(R.string.settings_new_projects)
             SettingRow(R.drawable.ic_schedule, stringResource(R.string.settings_photo_duration), seconds(values.photoDurationMs)) { dialog = SettingsDialog.PHOTO }
             SettingRow(R.drawable.ic_aspect_ratio, stringResource(R.string.settings_aspect_ratio), values.aspectRatio.label()) { dialog = SettingsDialog.RATIO }

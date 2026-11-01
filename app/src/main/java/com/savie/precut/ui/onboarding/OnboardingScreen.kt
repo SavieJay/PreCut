@@ -37,13 +37,14 @@ import com.savie.precut.ui.theme.Ink4
 import com.savie.precut.ui.theme.TextSecondary
 
 /**
- * First-run onboarding (Phase 24): Welcome, What will you create?, Your editing experience, and
- * (Android 13+) the notifications prompt. Skip on every page; [onDone] goes to Projects.
+ * First-run onboarding (Phase 24): Welcome, What will you create?, Your editing experience,
+ * (Android 13+) the notifications prompt and the Pro trial offer. Skip on every page; [onDone]
+ * goes to Projects (and on to the paywall after Start free trial).
  */
 @Composable
-fun OnboardingScreen(onDone: () -> Unit, viewModel: OnboardingViewModel = hiltViewModel()) {
+fun OnboardingScreen(onDone: (openPaywall: Boolean) -> Unit, viewModel: OnboardingViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(state.done) { if (state.done) onDone() }
+    LaunchedEffect(state.done) { if (state.done) onDone(state.openPaywall) }
     BackHandler(enabled = state.page != OnboardingPage.WELCOME) { viewModel.onBack() }
     val notifications = rememberLauncherForActivityResult(RequestPermission()) { viewModel.onNotificationsAnswered() }
     Column(Modifier.fillMaxSize().background(Ink0).systemBarsPadding()) {
@@ -64,6 +65,7 @@ fun OnboardingScreen(onDone: () -> Unit, viewModel: OnboardingViewModel = hiltVi
                     // Not now: the export screen can still ask later.
                     onNotNow = viewModel::onNext,
                 )
+                OnboardingPage.PRO -> ProTrialPage(onStartTrial = viewModel::onStartTrial, onContinueFree = viewModel::onSkip)
             }
         }
     }

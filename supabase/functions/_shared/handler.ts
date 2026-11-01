@@ -3,7 +3,17 @@ import { type Bytes, hex, isUuid, sha256 } from "./encoding.ts";
 import { signInstallToken, verifyInstallToken } from "./install_token.ts";
 import { IntegrityUnavailable, type IntegrityVerifier } from "./integrity.ts";
 import type { EditRefusal, QuotaStore, ReservationRefusal } from "./quota.ts";
-import { editHash, registerHash, transcribeHash } from "./request_hash.ts";
+import {
+  BillingUnavailable,
+  type PlayBilling,
+  type Subscription,
+} from "./play_billing.ts";
+import {
+  editHash,
+  purchaseHash,
+  registerHash,
+  transcribeHash,
+} from "./request_hash.ts";
 import {
   TranscribeError,
   type Transcriber,
@@ -24,6 +34,12 @@ export interface Deps {
   transcriber: Transcriber;
   /** Claude for AI edits; null when no Anthropic key is set (the other routes still work). */
   editAgent: EditAgent | null;
+  /** Google Play's subscription records (Phase 25); null when not configured. */
+  billing: PlayBilling | null;
+  /** The subscription product ids that make an install Pro. */
+  proProducts: readonly string[];
+  /** The secret in the Real-time developer notifications push URL; null switches /rtdn off. */
+  rtdnSecret: string | null;
   installTokenSecret: Bytes;
   maxUploadBytes: number;
   minApiVersion: number;
@@ -44,6 +60,9 @@ export type ErrorCode =
   | "upgrade_required"
   | "not_found"
   | "not_configured"
+  | "bad_purchase"
+  | "billing_unavailable"
+  | "forbidden"
   | "server_error";
 
 const STATUS: Record<ErrorCode, number> = {
@@ -65,6 +84,9 @@ const STATUS: Record<ErrorCode, number> = {
   upgrade_required: 426,
   not_found: 404,
   not_configured: 500,
+  bad_purchase: 400,
+  billing_unavailable: 503,
+  forbidden: 403,
   server_error: 500,
 };
 
@@ -120,6 +142,10 @@ function route(request: Request, deps: Deps): Promise<Response> {
   if (`${request.method} ${routePath(request)}` === "GET /config") {
     return appConfig(request, deps);
   }
+  // Google's Pub/Sub sends no API version.
+  if (`${request.method} ${routePath(request)}` === "POST /rtdn") {
+    return rtdn(request, deps);
+  }
   const api = Number(request.headers.get("x-precut-api") ?? "0");
   if (!(api >= deps.minApiVersion)) {
     return Promise.resolve(errorResponse("upgrade_required"));
@@ -135,9 +161,139 @@ function route(request: Request, deps: Deps): Promise<Response> {
       return forget(request, deps);
     case "POST /edit":
       return edit(request, deps);
+    case "POST /purchase":
+      return purchase(request, deps);
     default:
       return Promise.resolve(errorResponse("not_found"));
   }
+}
+
+/**
+ * PreCut Pro (Phase 25): the app sends a subscription's purchase token (after buying, or to
+ * restore); Google's record of it decides, it's linked to this install, acknowledged if needed,
+ * and the install's status (plan and quotas) comes back. The verdict is bound to this token.
+ */
+async function purchase(request: Request, deps: Deps): Promise<Response> {
+  const install = await authenticate(request, deps);
+  if (install instanceof Response) return install;
+  if (!deps.billing) return errorResponse("not_configured");
+  const body = await request.json().catch(() => null);
+  const token = body?.purchaseToken;
+  if (typeof token !== "string" || token.length < 10 || token.length > 4096) {
+    return errorResponse("bad_request");
+  }
+  const refused = await checkIntegrity(
+    request,
+    await purchaseHash(install.installId, token),
+    deps,
+  );
+  if (refused) return refused;
+  const who = { install: await shortHash(install.installId) };
+  let sub: Subscription | null;
+  try {
+    sub = await deps.billing.subscription(token);
+  } catch (e) {
+    if (!(e instanceof BillingUnavailable)) throw e;
+    deps.log({
+      event: "purchase",
+      ...who,
+      outcome: "unavailable",
+      reason: e.message,
+    });
+    return errorResponse("billing_unavailable");
+  }
+  if (!sub || !deps.proProducts.includes(sub.productId)) {
+    deps.log({ event: "purchase", ...who, outcome: "bad_purchase" });
+    return errorResponse("bad_purchase");
+  }
+  const saved = await deps.quota.savePurchase(
+    install.installId,
+    hex(await sha256(token)),
+    token,
+    sub,
+  );
+  if (!saved.ok) return errorResponse(saved.code);
+  if (!sub.acknowledged && (sub.state === "active" || sub.state === "grace")) {
+    try {
+      await deps.billing.acknowledge(sub.productId, token);
+    } catch (e) {
+      // Not fatal: the next check acknowledges it (Google allows three days).
+      if (!(e instanceof BillingUnavailable)) throw e;
+      deps.log({
+        event: "acknowledge",
+        ...who,
+        outcome: "unavailable",
+        reason: e.message,
+      });
+    }
+  }
+  deps.log({ event: "purchase", ...who, state: sub.state, outcome: "ok" });
+  const status = await deps.quota.status(install.installId);
+  return json(200, { status, ...install.renewal });
+}
+
+/**
+ * Real-time developer notifications (Phase 25), pushed by Google Cloud Pub/Sub to
+ * `/rtdn?secret=...`. A notification only says "look again": the purchase is looked up with
+ * Google, and only purchases an app already sent are updated. Pub/Sub retries anything but 2xx,
+ * so only a failure worth retrying (Google unreachable) answers otherwise.
+ */
+async function rtdn(request: Request, deps: Deps): Promise<Response> {
+  const secret = new URL(request.url).searchParams.get("secret") ?? "";
+  if (!deps.rtdnSecret || !(await sameSecret(secret, deps.rtdnSecret))) {
+    deps.log({ event: "rtdn", outcome: "forbidden" });
+    return errorResponse("forbidden");
+  }
+  const envelope = await request.json().catch(() => null);
+  let note: {
+    packageName?: string;
+    subscriptionNotification?: {
+      purchaseToken?: string;
+      notificationType?: number;
+    };
+  } | null = null;
+  try {
+    note = JSON.parse(atob(envelope?.message?.data ?? ""));
+  } catch {
+    note = null;
+  }
+  const token = note?.subscriptionNotification?.purchaseToken;
+  if (typeof token !== "string" || !deps.billing) {
+    // A test notification, one-time products, or not set up: nothing to do, and nothing to retry.
+    deps.log({ event: "rtdn", outcome: "ignored" });
+    return json(200, { ok: true });
+  }
+  const tokenHash = hex(await sha256(token));
+  if (!(await deps.quota.purchaseKnown(tokenHash))) {
+    deps.log({ event: "rtdn", outcome: "unknown_purchase" });
+    return json(200, { ok: true });
+  }
+  let sub: Subscription | null;
+  try {
+    sub = await deps.billing.subscription(token);
+  } catch (e) {
+    if (!(e instanceof BillingUnavailable)) throw e;
+    deps.log({ event: "rtdn", outcome: "unavailable", reason: e.message });
+    return errorResponse("billing_unavailable");
+  }
+  if (sub && deps.proProducts.includes(sub.productId)) {
+    await deps.quota.savePurchase(null, tokenHash, token, sub);
+  }
+  deps.log({
+    event: "rtdn",
+    type: note?.subscriptionNotification?.notificationType,
+    state: sub?.state,
+    outcome: "ok",
+  });
+  return json(200, { ok: true });
+}
+
+/** Compares secrets in constant time (through their hashes, so lengths don't leak either). */
+async function sameSecret(given: string, expected: string): Promise<boolean> {
+  const [a, b] = [await sha256(given), await sha256(expected)];
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
 }
 
 /**

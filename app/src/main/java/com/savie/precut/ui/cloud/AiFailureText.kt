@@ -32,6 +32,7 @@ fun aiFailureMessage(failure: AiFailure): String {
         is AiFailure.EditRunsUsed -> day(failure.resetsAtMs)?.let { stringResource(R.string.ai_failure_edit_runs_used, it) }
             ?: stringResource(R.string.ai_failure_edit_runs_used_soon)
         AiFailure.StepsUsed -> stringResource(R.string.ai_failure_steps_used)
+        AiFailure.BadPurchase -> stringResource(R.string.ai_failure_bad_purchase)
         AiFailure.UpdateApp -> stringResource(R.string.ai_failure_update_app)
         AiFailure.Busy -> stringResource(R.string.ai_failure_busy)
     }
