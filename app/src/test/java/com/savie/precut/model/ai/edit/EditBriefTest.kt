@@ -42,6 +42,17 @@ class EditBriefTest {
     }
 
     @Test
+    fun `the media section carries loudness, shots and spoken lines`() {
+        val facts = MediaFacts(listOf(0.5f, 1f, 0.123f), listOf(Shot(0L, 5_000L, listOf("seashore"))))
+        val media = editProject().editBrief(IdAliases(), 0L, emptySet(), facts).getValue("media").jsonObject
+        assertEquals(listOf(0.5, 1.0, 0.12), media.getValue("loudness_per_second").jsonArray.map { it.jsonPrimitive.content.toDouble() })
+        assertEquals("seashore", media.getValue("shots").jsonArray[0].jsonObject.getValue("seen").jsonArray[0].jsonPrimitive.content)
+        assertTrue(media.getValue("lines").jsonArray.isEmpty())
+        // Picture changes and clip starts make the shots; slivers under half a second are dropped.
+        assertEquals(listOf(0L to 3_000L, 3_200L to 10_000L), shotsFrom(10_000L, listOf(3_000L, 3_200L), listOf(0L)))
+    }
+
+    @Test
     fun `ratios round-trip by name`() {
         com.savie.precut.model.AspectRatio.entries.forEach { assertEquals(it, EditCatalog.ratio(EditCatalog.ratioName(it))) }
         assertEquals(0.12, seconds(123L), 0.0)

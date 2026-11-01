@@ -62,6 +62,8 @@ fun HomeContent(
     onCamera: (video: Boolean) -> Unit,
     onAutoCut: () -> Unit,
     actions: ProjectActions,
+    /** AI Edit (Phase 27): pick media, then describe the video. */
+    onAiEdit: () -> Unit = {},
     onSettings: () -> Unit = {},
     tab: HomeTab = HomeTab.DRAFTS,
     onTab: (HomeTab) -> Unit = {},
@@ -76,7 +78,7 @@ fun HomeContent(
     val fabVisible by remember { derivedStateOf { !gridState.canScrollBackward || !gridState.lastScrolledForward } }
 
     Scaffold(
-        topBar = { HomeTopBar(cameraEnabled = !isImporting, onCamera = onCamera, onSettings = onSettings) },
+        topBar = { HomeTopBar(cameraEnabled = !isImporting, onCamera = onCamera, onSettings = onSettings, onAiEdit = onAiEdit) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             AnimatedVisibility(tab == HomeTab.DRAFTS && !isImporting && !projects.isNullOrEmpty() && fabVisible, enter = scaleIn(), exit = scaleOut()) {

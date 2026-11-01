@@ -20,7 +20,7 @@ fun AiEditHost(aiEdit: EditorAiEdit) {
     }
     when (val current = state) {
         is AiEditUi.Prompt -> AiEditPromptSheet(current, actions)
-        is AiEditUi.Working -> AiEditWorkingDialog(current.progress, aiEdit::onStop)
+        is AiEditUi.Working -> AiEditWorkingDialog(current.progress, current.understanding, aiEdit::onStop)
         AiEditUi.Closed, is AiEditUi.Review -> Unit
     }
 }
@@ -31,6 +31,7 @@ fun rememberReviewActions(aiEdit: EditorAiEdit): AiEditReviewActions = remember(
     object : AiEditReviewActions {
         override fun onToggle(index: Int) = aiEdit.onToggle(index)
         override fun onApply() = aiEdit.onApply()
+        override fun onApplyAll() = aiEdit.onApplyAll()
         override fun onRefine() = aiEdit.onRefine()
         override fun onDiscard() = aiEdit.onDiscard()
     }

@@ -9,8 +9,9 @@ data object HomeRoute
 @Serializable
 data object OnboardingRoute
 
+/** [aiEdit] opens the AI edit sheet once the project has loaded (Home's AI Edit, Phase 27). */
 @Serializable
-data class EditorRoute(val projectId: String)
+data class EditorRoute(val projectId: String, val aiEdit: Boolean = false)
 
 /** [settings] is an [com.savie.precut.model.export.ExportSettings] as JSON; [kind] an `ExportKind` name. */
 @Serializable

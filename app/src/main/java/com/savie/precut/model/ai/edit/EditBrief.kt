@@ -23,7 +23,7 @@ import kotlin.math.roundToLong
  * seconds, and the catalogs to pick looks from. Never media, file names of clips, or anything
  * outside the project; texts' words and music names are included, as the consent says.
  */
-fun Project.editBrief(aliases: IdAliases, playheadMs: Long, selectedIds: Set<String>): JsonObject = buildJsonObject {
+fun Project.editBrief(aliases: IdAliases, playheadMs: Long, selectedIds: Set<String>, media: MediaFacts? = null): JsonObject = buildJsonObject {
     put("duration_seconds", seconds(totalDurationMs()))
     put("aspect_ratio", EditCatalog.ratioName(aspectRatio))
     put("playhead_seconds", seconds(playheadMs))
@@ -56,6 +56,8 @@ fun Project.editBrief(aliases: IdAliases, playheadMs: Long, selectedIds: Set<Str
             }
         })
     }
+    // AI Edit (Phase 27): what the phone read from the media, and the spoken lines.
+    put("media", mediaBrief(media))
     put("catalog", buildJsonObject {
         put("filters", strings(EditCatalog.filters))
         put("effects", strings(EditCatalog.effects))
@@ -63,6 +65,7 @@ fun Project.editBrief(aliases: IdAliases, playheadMs: Long, selectedIds: Set<Str
         put("animations", strings(EditCatalog.animations))
         put("combos", strings(EditCatalog.combos))
         put("text_templates", strings(EditCatalog.textTemplates))
+        put("caption_styles", strings(EditCatalog.captionStyles))
     })
 }
 

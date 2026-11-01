@@ -44,9 +44,12 @@ interface AiEditPromptActions {
 
 /** Ideas shown under an empty request; tapping one fills it in. */
 private val SUGGESTIONS = listOf(
+    R.string.ai_edit_suggestion_tiktok,
+    R.string.ai_edit_suggestion_travel,
+    R.string.ai_edit_suggestion_pauses,
+    R.string.ai_edit_suggestion_highlight,
     R.string.ai_edit_suggestion_shorter,
     R.string.ai_edit_suggestion_title,
-    R.string.ai_edit_suggestion_transitions,
     R.string.ai_edit_suggestion_warm,
     R.string.ai_edit_suggestion_beats,
 )

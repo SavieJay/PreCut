@@ -41,6 +41,7 @@ fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
         composable<HomeRoute> {
             HomeScreen(
                 onOpenEditor = { projectId -> navController.navigate(EditorRoute(projectId)) },
+                onOpenAiEdit = { projectId -> navController.navigate(EditorRoute(projectId, aiEdit = true)) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 onOpenTemplate = { navController.navigate(TemplateRoute(it)) },
             )

@@ -34,9 +34,27 @@ import com.savie.precut.ui.theme.Ink2
 import com.savie.precut.ui.theme.Ink3
 import com.savie.precut.ui.theme.TextSecondary
 
-/** Claude at work: the step being asked and the changes so far. Stop keeps them for review. */
+/** What Claude is doing, from the last tool it used. */
+private fun activity(tool: String?): Int = when (tool) {
+    null -> R.string.ai_edit_activity_thinking
+    "trim_clip", "split_clip", "delete_clips", "move_clip", "duplicate_clip", "remove_time_ranges" -> R.string.ai_edit_activity_cutting
+    "set_clip_speed" -> R.string.ai_edit_activity_pace
+    "set_clip_sound", "set_audio_track" -> R.string.ai_edit_activity_sound
+    "set_clip_look", "add_effect" -> R.string.ai_edit_activity_look
+    "set_transition", "set_clip_animation" -> R.string.ai_edit_activity_motion
+    "add_text", "edit_text", "delete_texts" -> R.string.ai_edit_activity_text
+    "set_aspect_ratio" -> R.string.ai_edit_activity_shape
+    "cut_to_beats" -> R.string.ai_edit_activity_beats
+    "add_captions" -> R.string.ai_edit_activity_captions
+    else -> R.string.ai_edit_activity_thinking
+}
+
+/**
+ * AI Edit at work (D2): first reading the media on the phone ([understanding] %), then Claude's
+ * steps with what it's doing and the changes so far. Stop keeps them for review.
+ */
 @Composable
-fun AiEditWorkingDialog(progress: EditProgress, onStop: () -> Unit) {
+fun AiEditWorkingDialog(progress: EditProgress, understanding: Int?, onStop: () -> Unit) {
     Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
         Column(
             Modifier.fillMaxWidth().background(Ink2, RoundedCornerShape(28.dp)).padding(24.dp),
@@ -45,15 +63,22 @@ fun AiEditWorkingDialog(progress: EditProgress, onStop: () -> Unit) {
             Box(Modifier.size(48.dp).background(AccentContainer, CircleShape), contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = Accent)
             }
-            Text(stringResource(R.string.ai_edit_working), style = MaterialTheme.typography.titleLarge)
             Text(
-                listOf(
-                    stringResource(R.string.ai_edit_step, progress.step),
-                    pluralStringResource(R.plurals.ai_edit_changes_so_far, progress.changes, progress.changes),
-                ).joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                if (understanding != null) stringResource(R.string.ai_edit_understanding, understanding) else stringResource(activity(progress.lastTool)),
+                style = MaterialTheme.typography.titleLarge,
             )
+            if (understanding == null) {
+                Text(
+                    listOf(
+                        stringResource(R.string.ai_edit_step, progress.step),
+                        pluralStringResource(R.plurals.ai_edit_changes_so_far, progress.changes, progress.changes),
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                )
+            } else {
+                Text(stringResource(R.string.ai_edit_understanding_body), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            }
             LinearProgressIndicator(
                 modifier = Modifier.fillMaxWidth().height(6.dp),
                 color = Accent,

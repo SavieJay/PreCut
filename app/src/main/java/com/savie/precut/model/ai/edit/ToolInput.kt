@@ -39,6 +39,16 @@ internal class ToolInput(private val json: JsonObject) {
         else -> fail("$name must be true or false")
     }
 
+    /** The "ranges" list of {start_seconds, end_seconds}, in milliseconds. */
+    fun ranges(): List<Pair<Long, Long>> {
+        val array = json["ranges"] as? JsonArray ?: fail("ranges must be a list")
+        if (array.isEmpty()) fail("ranges is empty")
+        return array.map { element ->
+            val range = ToolInput(element as? JsonObject ?: fail("each range must be an object"))
+            ms(range.number("start_seconds")) to ms(range.number("end_seconds"))
+        }
+    }
+
     fun strings(name: String): List<String> {
         val array = json[name] as? JsonArray ?: fail("$name must be a list")
         return array.map { (it as? JsonPrimitive)?.takeIf(JsonPrimitive::isString)?.content ?: fail("$name must hold text ids") }

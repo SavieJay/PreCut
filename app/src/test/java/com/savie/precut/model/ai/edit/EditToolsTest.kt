@@ -36,6 +36,8 @@ class EditToolsTest {
         "set_aspect_ratio" to """{"ratio":"1:1"}""",
         "set_audio_track" to """{"audio_id":"a1","volume_percent":60,"fade_in_seconds":null,"fade_out_seconds":2,"start_seconds":1}""",
         "cut_to_beats" to """{"audio_id":"a1"}""",
+        "remove_time_ranges" to """{"ranges":[{"start_seconds":2,"end_seconds":4},{"start_seconds":12,"end_seconds":13.5}]}""",
+        "add_captions" to """{"style":"bold"}""",
     )
 
     private fun run(name: String, input: String, project: Project = editProject()): ToolOutcome =
@@ -126,6 +128,18 @@ class EditToolsTest {
         assertReason("delete_texts", """{"text_ids":["c1"]}""", "isn't a text")
         assertReason("unknown_tool", "{}", "no tool")
         assertReason("add_text", """{"text":"x","start_seconds":"soon","end_seconds":4,"position":"top","template_id":null}""", "must be a number")
+    }
+
+    @Test
+    fun `time cuts close the gaps, captions wait for the person's consent`() {
+        val cut = applied("remove_time_ranges", samples.getValue("remove_time_ranges"))
+        assertEquals(editProject().totalDurationMs() - 3_500L, cut.project.totalDurationMs())
+        assertEquals(AiChangeLabel.RemoveTime(3_500L), cut.label)
+        val captions = applied("add_captions", samples.getValue("add_captions"))
+        assertEquals(AiChangeLabel.Captions("bold"), captions.label)
+        assertEquals(editProject(), captions.project)
+        assertReason("add_captions", """{"style":"comic"}""", "catalog.caption_styles")
+        assertReason("remove_time_ranges", """{"ranges":[{"start_seconds":0,"end_seconds":99}]}""", "whole video")
     }
 
     @Test

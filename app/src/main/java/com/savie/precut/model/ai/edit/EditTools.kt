@@ -18,6 +18,7 @@ object EditTools {
         "trim_clip", "split_clip", "delete_clips", "move_clip", "duplicate_clip", "set_clip_speed",
         "set_clip_sound", "set_clip_look", "set_transition", "set_clip_animation", "add_text",
         "edit_text", "delete_texts", "add_effect", "set_aspect_ratio", "set_audio_track", "cut_to_beats",
+        "remove_time_ranges", "add_captions",
     )
 
     /** Runs [call] on [project]; [newId] makes ids for anything new (passed in to keep this pure). */
@@ -41,10 +42,13 @@ object EditTools {
             "set_aspect_ratio" -> tools.aspectRatio()
             "set_audio_track" -> tools.audioTrack()
             "cut_to_beats" -> tools.cutToBeats()
+            "remove_time_ranges" -> tools.removeTimeRanges()
+            "add_captions" -> tools.addCaptions()
             else -> fail("There's no tool called ${call.name}")
         }
         val edited = EditReducer.reduce(project, made.action)
-        if (edited == project) {
+        // Captions are made after applying (they need the person's consent to send the sound).
+        if (edited == project && made.label !is AiChangeLabel.Captions) {
             ToolOutcome.Rejected("That changes nothing: the project is already like that.")
         } else {
             ToolOutcome.Applied(made.action, edited, tools.madeIds, made.label, result(edited, made, aliases))

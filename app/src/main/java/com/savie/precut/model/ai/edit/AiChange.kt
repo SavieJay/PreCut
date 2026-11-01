@@ -22,8 +22,8 @@ sealed interface ToolOutcome {
     data class Rejected(val reason: String) : ToolOutcome
 }
 
-/** A change Claude made, kept for review: run again (with the same [newIds]) to apply it. */
-data class AiChange(val call: EditToolCall, val newIds: List<String>, val label: AiChangeLabel)
+/** A change Claude made at [step] (counted across requests), kept for review: run again (with the same [newIds]) to apply it. */
+data class AiChange(val call: EditToolCall, val newIds: List<String>, val label: AiChangeLabel, val step: Int = 1)
 
 /**
  * What the review list says about a change, in the app's words (the UI turns each into a string).
@@ -47,6 +47,9 @@ sealed interface AiChangeLabel {
     data class Ratio(val ratio: String) : AiChangeLabel
     data class Music(val name: String) : AiChangeLabel
     data class CutToBeats(val clips: Int) : AiChangeLabel
+    data class RemoveTime(val removedMs: Long) : AiChangeLabel
+    /** Automatic captions in style [styleId], made once the changes are applied. */
+    data class Captions(val styleId: String) : AiChangeLabel
 }
 
 /** The project with the [kept] changes (indexes into [changes]) applied, as one undo step. */

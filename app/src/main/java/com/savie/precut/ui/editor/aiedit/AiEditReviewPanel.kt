@@ -34,6 +34,7 @@ import com.savie.precut.ui.theme.TextSecondary
 interface AiEditReviewActions {
     fun onToggle(index: Int)
     fun onApply()
+    fun onApplyAll()
     fun onRefine()
     fun onDiscard()
 }
@@ -52,6 +53,10 @@ fun AiEditReviewPanel(review: AiEditUi.Review, actions: AiEditReviewActions, mod
         review.note?.let { Text(noteText(it), style = MaterialTheme.typography.bodySmall, color = TextSecondary) }
         LazyColumn(Modifier.fillMaxWidth().heightIn(max = 220.dp)) {
             itemsIndexed(review.changes) { index, label ->
+                val step = review.steps.getOrNull(index)
+                if (step != null && step != review.steps.getOrNull(index - 1)) {
+                    Text(stringResource(R.string.ai_edit_step, step), style = MaterialTheme.typography.labelLarge, color = TextSecondary, modifier = Modifier.padding(top = 6.dp))
+                }
                 Row(
                     Modifier.fillMaxWidth().clickable { actions.onToggle(index) }.padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -67,11 +72,15 @@ fun AiEditReviewPanel(review: AiEditUi.Review, actions: AiEditReviewActions, mod
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
                 TonalButton(stringResource(R.string.ai_edit_refine), actions::onRefine)
             }
-            FilledButton(
-                pluralStringResource(R.plurals.ai_edit_apply, review.kept.size, review.kept.size),
-                actions::onApply,
-                enabled = review.kept.isNotEmpty(),
-            )
+            if (review.kept.size == review.changes.size) {
+                FilledButton(stringResource(R.string.ai_edit_apply_all), actions::onApplyAll)
+            } else {
+                FilledButton(
+                    pluralStringResource(R.plurals.ai_edit_apply, review.kept.size, review.kept.size),
+                    actions::onApply,
+                    enabled = review.kept.isNotEmpty(),
+                )
+            }
         }
     }
 }

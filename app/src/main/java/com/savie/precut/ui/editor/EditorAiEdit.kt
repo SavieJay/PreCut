@@ -8,7 +8,12 @@ import com.savie.precut.model.ai.edit.AiChangeLabel
 import com.savie.precut.model.ai.edit.EditEnd
 import com.savie.precut.model.ai.edit.EditProgress
 import com.savie.precut.model.ai.edit.EditSession
+import com.savie.precut.model.ai.edit.MediaFacts
 import com.savie.precut.model.ai.edit.replayChanges
+import com.savie.precut.media.ai.MediaBriefMaker
+import com.savie.precut.model.edit.EditAction
+import com.savie.precut.model.pro.ProAccess
+import com.savie.precut.model.pro.ProFeature
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,11 +40,14 @@ sealed interface AiEditUi {
         val failure: AiFailure? = null,
     ) : AiEditUi
 
-    data class Working(val progress: EditProgress) : AiEditUi
+    /** Claude at work; [understanding] is the media brief's progress (0–100) before the first step. */
+    data class Working(val progress: EditProgress, val understanding: Int? = null) : AiEditUi
 
     /** The changes, each kept or not ([kept] indexes [changes]); [note] says why a run ended early. */
     data class Review(
         val changes: List<AiChangeLabel>,
+        /** Each change's step, for grouping. */
+        val steps: List<Int>,
         val kept: Set<Int>,
         val message: String,
         val note: ReviewNote?,
@@ -62,7 +70,14 @@ class EditorAiEdit(
     private val host: EditorHost,
     private val cloud: CloudClient,
     private val settings: AppSettings,
+    private val pro: EditorPro,
+    private val briefMaker: MediaBriefMaker,
+    /** Opens the captions sheet in a style (for captions Claude asked for, after applying). */
+    private val openCaptions: (styleId: String) -> Unit,
 ) {
+    /** The media brief, made once per project opened in the sheet. */
+    private var facts: MediaFacts? = null
+    private var factsFor: String? = null
     private val _state = MutableStateFlow<AiEditUi>(AiEditUi.Closed)
     val state: StateFlow<AiEditUi> = _state.asStateFlow()
 
@@ -89,11 +104,18 @@ class EditorAiEdit(
         if (!prompt.consented) settings.update { it.copy(aiEditConsented = true) }
         val current = session ?: EditSession(ready.project, host::newId, cloud::editStep).also { session = it }
         val selected = setOfNotNull(ready.selectedClipId, ready.selectedTextId, ready.selectedAudioId)
-        _state.value = AiEditUi.Working(EditProgress(1, current.changes.size))
+        _state.value = AiEditUi.Working(EditProgress(1, current.changes.size), understanding = 0)
         val keptBefore = (0 until current.changes.size).toSet()
         work = host.scope.launch {
             val end = try {
-                current.ask(request, UUID.randomUUID().toString(), host.positionMs, selected) { progress -> _state.value = AiEditUi.Working(progress) }
+                // What the phone can read from the media, once: loudness, shots and what's in them.
+                if (factsFor != current.original.id) {
+                    facts = briefMaker.facts(current.original) { f ->
+                        _state.update { if (it is AiEditUi.Working) it.copy(understanding = (f * 100).toInt()) else it }
+                    }
+                    factsFor = current.original.id
+                }
+                current.ask(request, UUID.randomUUID().toString(), host.positionMs, selected, facts) { progress -> _state.value = AiEditUi.Working(progress) }
             } catch (e: CancellationException) {
                 // Stop keeps what's made; closing (session gone) keeps nothing.
                 if (session === current) show(current, keptBefore, EditEnd.Stopped(refused = false, message = ""), request, stopped = true)
@@ -122,10 +144,19 @@ class EditorAiEdit(
         // Run on the project as it is now, in case it changed (undo) during the review.
         val replay = replayChanges(project, current.changes, review.kept, current.aliases)
         close()
-        if (replay.edit.actions.isNotEmpty()) {
+        if (replay.edit.actions.any { !(it is EditAction.Batch && it.actions.isEmpty()) }) {
             host.applyEdit(replay.edit)
-            host.send(EditorEvent.AiEditApplied(replay.edit.actions.size))
+            host.send(EditorEvent.AiEditApplied(review.kept.size))
         }
+        // Captions Claude asked for are made now, with the usual consent for the sound.
+        review.kept.mapNotNull { current.changes.getOrNull(it)?.label as? AiChangeLabel.Captions }.firstOrNull()?.let { openCaptions(it.styleId) }
+    }
+
+    /** Apply all: every change, kept or switched off. */
+    fun onApplyAll() {
+        val review = _state.value as? AiEditUi.Review ?: return
+        _state.value = review.copy(kept = review.changes.indices.toSet())
+        onApply()
     }
 
     /** A follow-up request on the kept changes. */
@@ -158,6 +189,8 @@ class EditorAiEdit(
                 return
             }
             val failure = (end as? EditEnd.Failed)?.failure ?: if (end == EditEnd.OutOfSteps) AiFailure.StepsUsed else null
+            // A free user out of AI requests: the paywall, from their own tap on Send.
+            if (failure is AiFailure.EditRunsUsed && pro.access(ProFeature.AI_EDIT) != ProAccess.Unlocked) host.send(EditorEvent.OpenPaywall(ProFeature.AI_EDIT))
             val reply = when (end) {
                 is EditEnd.Done -> end.message
                 is EditEnd.Stopped -> end.message
@@ -180,7 +213,7 @@ class EditorAiEdit(
     }
 
     private fun review(current: EditSession, kept: Set<Int>, message: String, note: ReviewNote?) =
-        AiEditUi.Review(current.changes.map { it.label }, kept, message, note)
+        AiEditUi.Review(current.changes.map { it.label }, current.changes.map { it.step }, kept, message, note)
 
     /** The preview plays the original with the [kept] changes. */
     private fun previewKept(kept: Set<Int>) {

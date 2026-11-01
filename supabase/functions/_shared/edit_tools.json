@@ -6,11 +6,21 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_id": { "type": "string" },
-        "keep_from_seconds": { "type": "number" },
-        "keep_to_seconds": { "type": "number" }
+        "clip_id": {
+          "type": "string"
+        },
+        "keep_from_seconds": {
+          "type": "number"
+        },
+        "keep_to_seconds": {
+          "type": "number"
+        }
       },
-      "required": ["clip_id", "keep_from_seconds", "keep_to_seconds"],
+      "required": [
+        "clip_id",
+        "keep_from_seconds",
+        "keep_to_seconds"
+      ],
       "additionalProperties": false
     }
   },
@@ -21,10 +31,17 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_id": { "type": "string" },
-        "at_seconds": { "type": "number" }
+        "clip_id": {
+          "type": "string"
+        },
+        "at_seconds": {
+          "type": "number"
+        }
       },
-      "required": ["clip_id", "at_seconds"],
+      "required": [
+        "clip_id",
+        "at_seconds"
+      ],
       "additionalProperties": false
     }
   },
@@ -35,9 +52,16 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_ids": { "type": "array", "items": { "type": "string" } }
+        "clip_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       },
-      "required": ["clip_ids"],
+      "required": [
+        "clip_ids"
+      ],
       "additionalProperties": false
     }
   },
@@ -48,10 +72,17 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_id": { "type": "string" },
-        "to_position": { "type": "integer" }
+        "clip_id": {
+          "type": "string"
+        },
+        "to_position": {
+          "type": "integer"
+        }
       },
-      "required": ["clip_id", "to_position"],
+      "required": [
+        "clip_id",
+        "to_position"
+      ],
       "additionalProperties": false
     }
   },
@@ -62,9 +93,13 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_id": { "type": "string" }
+        "clip_id": {
+          "type": "string"
+        }
       },
-      "required": ["clip_id"],
+      "required": [
+        "clip_id"
+      ],
       "additionalProperties": false
     }
   },
@@ -75,10 +110,17 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_id": { "type": "string" },
-        "speed": { "type": "number" }
+        "clip_id": {
+          "type": "string"
+        },
+        "speed": {
+          "type": "number"
+        }
       },
-      "required": ["clip_id", "speed"],
+      "required": [
+        "clip_id",
+        "speed"
+      ],
       "additionalProperties": false
     }
   },
@@ -89,11 +131,33 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_id": { "type": "string" },
-        "volume_percent": { "type": ["number", "null"] },
-        "muted": { "type": ["boolean", "null"] },
-        "fade_in_seconds": { "type": ["number", "null"] },
-        "fade_out_seconds": { "type": ["number", "null"] }
+        "clip_id": {
+          "type": "string"
+        },
+        "volume_percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "muted": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "fade_in_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "fade_out_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
       },
       "required": [
         "clip_id",
@@ -112,15 +176,57 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_id": { "type": "string" },
-        "filter_id": { "type": ["string", "null"] },
-        "filter_strength_percent": { "type": ["number", "null"] },
-        "brightness": { "type": ["number", "null"] },
-        "contrast": { "type": ["number", "null"] },
-        "saturation": { "type": ["number", "null"] },
-        "exposure": { "type": ["number", "null"] },
-        "temperature": { "type": ["number", "null"] },
-        "vignette": { "type": ["number", "null"] }
+        "clip_id": {
+          "type": "string"
+        },
+        "filter_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "filter_strength_percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "brightness": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "contrast": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "saturation": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "exposure": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "temperature": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "vignette": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
       },
       "required": [
         "clip_id",
@@ -143,11 +249,24 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "after_clip_id": { "type": "string" },
-        "transition": { "type": "string" },
-        "duration_seconds": { "type": ["number", "null"] }
+        "after_clip_id": {
+          "type": "string"
+        },
+        "transition": {
+          "type": "string"
+        },
+        "duration_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
       },
-      "required": ["after_clip_id", "transition", "duration_seconds"],
+      "required": [
+        "after_clip_id",
+        "transition",
+        "duration_seconds"
+      ],
       "additionalProperties": false
     }
   },
@@ -158,12 +277,39 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "clip_id": { "type": "string" },
-        "in_animation": { "type": ["string", "null"] },
-        "out_animation": { "type": ["string", "null"] },
-        "combo": { "type": ["string", "null"] },
-        "in_seconds": { "type": ["number", "null"] },
-        "out_seconds": { "type": ["number", "null"] }
+        "clip_id": {
+          "type": "string"
+        },
+        "in_animation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "out_animation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "combo": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "in_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "out_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
       },
       "required": [
         "clip_id",
@@ -183,11 +329,29 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "text": { "type": "string" },
-        "start_seconds": { "type": "number" },
-        "end_seconds": { "type": "number" },
-        "position": { "type": "string", "enum": ["top", "middle", "bottom"] },
-        "template_id": { "type": ["string", "null"] }
+        "text": {
+          "type": "string"
+        },
+        "start_seconds": {
+          "type": "number"
+        },
+        "end_seconds": {
+          "type": "number"
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ]
+        },
+        "template_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
       "required": [
         "text",
@@ -206,12 +370,34 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "text_id": { "type": "string" },
-        "text": { "type": ["string", "null"] },
-        "start_seconds": { "type": ["number", "null"] },
-        "end_seconds": { "type": ["number", "null"] }
+        "text_id": {
+          "type": "string"
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "start_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "end_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
       },
-      "required": ["text_id", "text", "start_seconds", "end_seconds"],
+      "required": [
+        "text_id",
+        "text",
+        "start_seconds",
+        "end_seconds"
+      ],
       "additionalProperties": false
     }
   },
@@ -222,9 +408,16 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "text_ids": { "type": "array", "items": { "type": "string" } }
+        "text_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       },
-      "required": ["text_ids"],
+      "required": [
+        "text_ids"
+      ],
       "additionalProperties": false
     }
   },
@@ -235,10 +428,18 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "effect_id": { "type": "string" },
-        "start_seconds": { "type": "number" },
-        "end_seconds": { "type": "number" },
-        "intensity_percent": { "type": "number" }
+        "effect_id": {
+          "type": "string"
+        },
+        "start_seconds": {
+          "type": "number"
+        },
+        "end_seconds": {
+          "type": "number"
+        },
+        "intensity_percent": {
+          "type": "number"
+        }
       },
       "required": [
         "effect_id",
@@ -273,7 +474,9 @@
           ]
         }
       },
-      "required": ["ratio"],
+      "required": [
+        "ratio"
+      ],
       "additionalProperties": false
     }
   },
@@ -284,11 +487,33 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "audio_id": { "type": "string" },
-        "volume_percent": { "type": ["number", "null"] },
-        "fade_in_seconds": { "type": ["number", "null"] },
-        "fade_out_seconds": { "type": ["number", "null"] },
-        "start_seconds": { "type": ["number", "null"] }
+        "audio_id": {
+          "type": "string"
+        },
+        "volume_percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "fade_in_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "fade_out_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "start_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
       },
       "required": [
         "audio_id",
@@ -307,9 +532,63 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "audio_id": { "type": "string" }
+        "audio_id": {
+          "type": "string"
+        }
       },
-      "required": ["audio_id"],
+      "required": [
+        "audio_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "remove_time_ranges",
+    "description": "Cut stretches out of the whole video (start_seconds to end_seconds of the timeline), closing the gaps: pauses, silences, false starts, dull parts. Clips, captions, texts and voiceovers stay in line; music plays on. Use the brief's media.loudness_per_second, media.lines and media.shots to choose. The result gives the new timeline.",
+    "strict": true,
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "ranges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "start_seconds": {
+                "type": "number"
+              },
+              "end_seconds": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "start_seconds",
+              "end_seconds"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "ranges"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "add_captions",
+    "description": "Ask for automatic captions of what's said, in a style from catalog.caption_styles. They're made after the person applies your changes (the sound is sent for speech-to-text only with their consent), so don't add texts for the words yourself.",
+    "strict": true,
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "style"
+      ],
       "additionalProperties": false
     }
   }

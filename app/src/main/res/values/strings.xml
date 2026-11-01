@@ -1038,7 +1038,7 @@
     <string name="ai_edit_suggestion_transitions">Smooth transitions between clips</string>
     <string name="ai_edit_suggestion_warm">Warm, bright colours</string>
     <string name="ai_edit_suggestion_beats">Cut the clips to the music</string>
-    <string name="ai_edit_disclosure">Your request and a description of this project (clip lengths and order, your texts, music names, settings) go to PreCut\'s server and to Claude, an AI by Anthropic. No video, photo or sound is sent. You review every change before anything is applied.</string>
+    <string name="ai_edit_disclosure">Your request and a description of this project go to PreCut\'s server and to Claude, an AI by Anthropic: clip lengths and order, your texts and captions, music names and settings, and what your phone read from the media (how loud each second is, where the picture changes, and a few words for what\'s in each shot). No video, photo or sound is sent. You review every change before anything is applied.</string>
     <plurals name="ai_edit_runs_left">
         <item quantity="one">%d AI edit request left this month</item>
         <item quantity="other">%d AI edit requests left this month</item>
@@ -1344,4 +1344,26 @@
     </plurals>
     <string name="broll_added">B-roll added at the playhead</string>
     <string name="broll_no_access">B-roll needs access to your gallery.</string>
+
+    <!-- AI Edit (Phase 27) -->
+    <string name="ai_edit_suggestion_tiktok">30 s TikTok, upbeat</string>
+    <string name="ai_edit_suggestion_travel">Calm travel recap</string>
+    <string name="ai_edit_suggestion_pauses">Remove pauses and add captions</string>
+    <string name="ai_edit_suggestion_highlight">Highlight reel</string>
+    <string name="ai_edit_understanding">Understanding your clips… %1$d%%</string>
+    <string name="ai_edit_understanding_body">Your phone is reading the clips: loudness, where the picture changes and what\'s in each shot. Nothing is uploaded.</string>
+    <string name="ai_edit_activity_thinking">Planning your edit…</string>
+    <string name="ai_edit_activity_cutting">Picking the best moments…</string>
+    <string name="ai_edit_activity_pace">Setting the pace…</string>
+    <string name="ai_edit_activity_sound">Mixing the sound…</string>
+    <string name="ai_edit_activity_look">Grading the look…</string>
+    <string name="ai_edit_activity_motion">Adding motion…</string>
+    <string name="ai_edit_activity_text">Writing the text…</string>
+    <string name="ai_edit_activity_shape">Reshaping the frame…</string>
+    <string name="ai_edit_activity_beats">Cutting to the beat…</string>
+    <string name="ai_edit_activity_captions">Adding captions…</string>
+    <string name="ai_edit_apply_all">Apply all</string>
+    <string name="home_ai_edit">AI Edit: pick clips and describe your video</string>
+    <string name="ai_change_remove_time">Cut %1$s of pauses and dull parts</string>
+    <string name="ai_change_captions">Add captions (made after you apply)</string>
 </resources>

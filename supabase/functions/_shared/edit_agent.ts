@@ -51,11 +51,11 @@ export const EDIT_TOOL_NAMES: readonly string[] = EDIT_TOOLS.map((tool) =>
 export const SYSTEM_PROMPT =
   `You edit a video project in PreCut, an Android video editor, for the person using it.
 
-Their first message holds a JSON brief of the project: the main-track clips in timeline order (ids, how long each plays, where it starts, its source length and the part of the source it keeps), overlays, texts, audio clips, the aspect ratio, the playhead and selection, and catalogs of the filters, effects, transitions, animations and text templates this version of the app has. Then comes what they want.
+Their first message holds a JSON brief of the project: the main-track clips in timeline order (ids, how long each plays, where it starts, its source length and the part of the source it keeps), overlays, texts and captions, audio clips with their beats, the aspect ratio, the playhead and selection, catalogs of the filters, effects, transitions, animations, caption styles and text templates this version of the app has, and, when the phone could read the media, a media section: loudness for every second of the timeline (0 to 1), the shots (where the picture changes, with what an image model saw in each), and the spoken lines with their times. Then comes what they want.
 
 Make the changes with the tools. Each tool runs on their phone and its result says whether the change worked, any new ids, and the clips' updated timeline; later tool calls must use those. Use only ids from the brief or from tool results, and catalog ids exactly as listed. Times are in seconds.
 
-Keep each tool call one clear change: the person reviews every change before anything is applied and may keep some and not others. If the request is unclear, or no tool can do it, say so in a sentence instead of guessing. When you are done, end with one or two short sentences saying what you changed, in the language the person wrote in.`;
+Work toward what they asked for as a whole: for a target length, trim and cut until the timeline is close to it; to cut pauses or dull parts, use the loudness and lines; to cut to the music, use cut_to_beats. Keep each tool call one clear change: the person reviews every change before anything is applied and may keep some and not others. If the request is unclear, or no tool can do it, say so in a sentence instead of guessing. When you are done, end with one or two short sentences saying what you changed, in the language the person wrote in.`;
 
 /** US dollars per million tokens: input, output, cache read, cache write (5-minute). */
 const PRICES: Record<string, [number, number, number, number]> = {

@@ -9,8 +9,11 @@ import kotlinx.serialization.json.JsonObject
 /** One step's answer from the server: Claude's reply to append, and what's left. */
 data class EditStepReply(val content: JsonArray, val stopReason: String, val stepsLeft: Int, val editRunsLeft: Int)
 
-/** How far a request has got: the step being asked, and the changes made so far. */
-data class EditProgress(val step: Int, val changes: Int)
+/**
+ * How far a request has got: the step being asked, the changes made so far, and the last tool
+ * Claude used (for "Cutting to the beat…"), or null before any.
+ */
+data class EditProgress(val step: Int, val changes: Int, val lastTool: String? = null)
 
 /** How a request ended. Whatever ended it, the changes made so far stay for review. */
 sealed interface EditEnd {
@@ -41,11 +44,18 @@ class EditSession(
     private val messages = mutableListOf<JsonObject>()
     private val made = mutableListOf<AiChange>()
 
+    /** Steps asked so far, across requests (each change records its own). */
+    private var stepsTaken = 0
+
     /** Every change so far, in order. */
     val changes: List<AiChange> get() = made
 
     /** [original] with every change. */
     var proposal: Project = original
+        private set
+
+    /** Tool calls that couldn't be done (sent back to Claude as reasons), for the evals. */
+    var rejected: Int = 0
         private set
 
     /** Requests left this month, as the server last said; null before the first step. */
@@ -56,15 +66,24 @@ class EditSession(
      * Asks for [request] as a new run [runId] (a fresh UUID). The brief describes [proposal] with
      * the playhead and selection; a follow-up says it's the project "now".
      */
-    suspend fun ask(request: String, runId: String, playheadMs: Long, selectedIds: Set<String>, onProgress: (EditProgress) -> Unit): EditEnd {
-        val brief = proposal.editBrief(aliases, playheadMs, selectedIds)
+    suspend fun ask(
+        request: String,
+        runId: String,
+        playheadMs: Long,
+        selectedIds: Set<String>,
+        media: MediaFacts? = null,
+        onProgress: (EditProgress) -> Unit,
+    ): EditEnd {
+        val brief = proposal.editBrief(aliases, playheadMs, selectedIds, media)
+        var lastTool: String? = null
         val blocks = EditMessages.request(brief, request, followUp = messages.isNotEmpty())
         // After a run that stopped with tool results, the request joins that user message.
         val pending = messages.lastOrNull()?.let(EditMessages::userBlocks)
         val before = messages.toList()
         if (pending != null) messages[messages.lastIndex] = EditMessages.user(pending + blocks) else messages += EditMessages.user(blocks)
         for (stepNumber in 1..maxSteps) {
-            onProgress(EditProgress(stepNumber, made.size))
+            onProgress(EditProgress(stepNumber, made.size, lastTool))
+            stepsTaken++
             val reply = when (val result = step(runId, JsonArray(messages.toList()))) {
                 is AiResult.Ok -> result.value
                 is AiResult.Failed -> {
@@ -83,6 +102,7 @@ class EditSession(
                 return endOf(reply.stopReason, text)
             }
             messages += EditMessages.user(calls.map(::run))
+            lastTool = calls.lastOrNull()?.name
             if (reply.stepsLeft <= 0) return EditEnd.OutOfSteps
         }
         return EditEnd.OutOfSteps
@@ -101,10 +121,13 @@ class EditSession(
     private fun run(call: EditToolCall): JsonObject = when (val outcome = EditTools.run(proposal, call, aliases, newId)) {
         is ToolOutcome.Applied -> {
             proposal = outcome.project
-            made += AiChange(call, outcome.newIds, outcome.label)
+            made += AiChange(call, outcome.newIds, outcome.label, stepsTaken)
             EditMessages.toolResult(call.id, outcome.result, isError = false)
         }
-        is ToolOutcome.Rejected -> EditMessages.toolResult(call.id, outcome.reason, isError = true)
+        is ToolOutcome.Rejected -> {
+            rejected++
+            EditMessages.toolResult(call.id, outcome.reason, isError = true)
+        }
     }
 
     private fun endOf(stopReason: String, text: String): EditEnd = when (stopReason) {

@@ -16,7 +16,7 @@ class RoutesTest {
     @Test
     fun projectIdArg_matchesRoutePropertyNames() {
         // requireProjectId() reads the argument by name, so the route properties must keep this name.
-        assertEquals(listOf(PROJECT_ID_ARG), EditorRoute.serializer().descriptor.elementNames.toList())
+        assertEquals(listOf(PROJECT_ID_ARG, AI_EDIT_ARG), EditorRoute.serializer().descriptor.elementNames.toList())
         assertEquals(listOf(PROJECT_ID_ARG, EXPORT_SETTINGS_ARG, EXPORT_KIND_ARG), ExportRoute.serializer().descriptor.elementNames.toList())
     }
 }

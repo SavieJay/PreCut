@@ -301,6 +301,20 @@ On a free account each Pro tool shows PRO; use it until its free uses run out, t
 | Search "dog", "beach", "food" | Matching photos and videos from the gallery; tap one: it covers the frame at the playhead | |
 | Deny access | "B-roll needs access to your gallery." | |
 
+## 4r. AI Edit (Phase 27)
+Needs the Anthropic key on the server (as 4l). Use four or five clips with someone talking, music with beats marked, and captions on one project.
+
+| Check | Expected | Result |
+|---|---|---|
+| Home → AI Edit (top bar) → pick clips | A new project opens with the AI edit sheet; the four idea chips first | |
+| "30 s TikTok, upbeat" → Send | "Understanding your clips… n%", then lines like "Picking the best moments…", "Cutting to the beat…", the step and changes so far | |
+| The review | Changes grouped under Step 1, Step 2…; the preview plays the result; Apply all | |
+| Switch two off | Apply 5 (or so); applying keeps the rest; one Undo removes them | |
+| "Remove pauses and add captions" | Cuts of the pauses; "Add captions (made after you apply)"; after Apply the captions sheet opens with the style | |
+| Refine → "make it shorter" | More changes under the next step | |
+| A free account after its free requests | The paywall opens from Send | |
+| Airplane mode, then Send | Offline message; nothing changed | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

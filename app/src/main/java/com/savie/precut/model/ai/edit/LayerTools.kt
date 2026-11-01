@@ -1,6 +1,8 @@
 package com.savie.precut.model.ai.edit
 
 import com.savie.precut.model.AudioClip
+import com.savie.precut.model.AudioKind
+import com.savie.precut.model.ClipType
 import com.savie.precut.model.MAX_VOLUME
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.edit.EditAction
@@ -8,6 +10,9 @@ import com.savie.precut.model.edit.MIN_CLIP_DURATION_MS
 import com.savie.precut.model.edit.beatCutPlan
 import com.savie.precut.model.effect.EffectLayer
 import com.savie.precut.model.effect.EffectSettings
+import com.savie.precut.model.edit.TimeRange
+import com.savie.precut.model.edit.normalizedRanges
+import com.savie.precut.model.text.CaptionStyle
 import com.savie.precut.model.text.TextTemplates
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.model.totalDurationMs
@@ -94,6 +99,27 @@ internal fun ToolContext.cutToBeats(): Made {
     val plan = project.beatCutPlan(audio.id)
     if (plan.cut == 0) fail("No clip could be made to end on a beat (none starts before the music's last beat, or the clips are too short)")
     return Made(plan.edit, AiChangeLabel.CutToBeats(plan.cut), timelineChanged = true)
+}
+
+internal fun ToolContext.removeTimeRanges(): Made {
+    val total = project.totalDurationMs()
+    val ranges = input.ranges().map { (start, end) ->
+        if (start < 0 || end <= start) fail("Each range needs end_seconds after start_seconds, both 0 or more")
+        TimeRange(start, end)
+    }
+    val cuts = normalizedRanges(ranges, total).ifEmpty { fail("Nothing to cut: the ranges are outside the video or too short") }
+    val removed = cuts.sumOf { it.lengthMs }
+    if (total - removed < MIN_CLIP_DURATION_MS) fail("That would cut the whole video")
+    return Made(EditAction.RemoveTimeRanges(cuts), AiChangeLabel.RemoveTime(removed), timelineChanged = true)
+}
+
+internal fun ToolContext.addCaptions(): Made {
+    val style = input.string("style")
+    if (CaptionStyle.entries.none { it.id == style }) fail("There's no caption style $style; use one from catalog.caption_styles")
+    if (project.audioClips.none { it.kind != AudioKind.MUSIC } && project.clips.none { it.type == ClipType.VIDEO }) {
+        fail("There's no speech to caption: no video or voiceover")
+    }
+    return Made(EditAction.Batch(emptyList()), AiChangeLabel.Captions(style))
 }
 
 private fun ToolContext.text(alias: String): TextOverlay {

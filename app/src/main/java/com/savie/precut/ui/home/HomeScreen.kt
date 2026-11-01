@@ -31,6 +31,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     onOpenEditor: (projectId: String) -> Unit,
+    /** Opens a new project's editor with the AI edit sheet (Phase 27). */
+    onOpenAiEdit: (projectId: String) -> Unit = onOpenEditor,
     onOpenSettings: () -> Unit = {},
     onOpenTemplate: (templateId: String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
@@ -63,10 +65,13 @@ fun HomeScreen(
     }
 
     val camera = rememberCameraLaunchers(viewModel::onCaptureResult)
+    val aiEditPicker = rememberLauncherForActivityResult(PickMultipleVisualMedia()) { uris ->
+        if (uris.isNotEmpty()) viewModel.onAiEditMediaPicked(uris.map(Uri::toString))
+    }
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
-            is HomeEvent.OpenEditor -> onOpenEditor(event.projectId)
+            is HomeEvent.OpenEditor -> if (event.aiEdit) onOpenAiEdit(event.projectId) else onOpenEditor(event.projectId)
             is HomeEvent.LaunchCamera -> camera.launch(event.cameraUri, event.video)
             // A toast survives the navigation to the editor that follows this event.
             is HomeEvent.SomeFilesSkipped -> Toast.makeText(
@@ -93,6 +98,7 @@ fun HomeScreen(
         },
         onCamera = viewModel::onCameraRequested,
         onAutoCut = { autoCutDialog = true },
+        onAiEdit = { aiEditPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
         tab = tab,
         onTab = { tab = it },
         templates = { modifier -> TemplatesTab(onOpen = onOpenTemplate, modifier = modifier) },

@@ -38,7 +38,8 @@ data class HomeUiState(
 )
 
 sealed interface HomeEvent {
-    data class OpenEditor(val projectId: String) : HomeEvent
+    /** [aiEdit]: Home's AI Edit, the editor opens its AI edit sheet. */
+    data class OpenEditor(val projectId: String, val aiEdit: Boolean = false) : HomeEvent
     /** The screen should launch the camera app writing to [cameraUri]. */
     data class LaunchCamera(val cameraUri: String, val video: Boolean) : HomeEvent
     data class SomeFilesSkipped(val count: Int) : HomeEvent
@@ -148,7 +149,10 @@ class HomeViewModel @Inject constructor(
     /** Shared Uris only have temporary grants, so they're copied into app storage first. */
     private fun onShared(uris: List<String>) = createProject(uris, copyFirst = true)
 
-    private fun createProject(uris: List<String>, copyFirst: Boolean = false) {
+    /** AI Edit on Home (Phase 27): a new project of the picked media, opened with the AI edit sheet. */
+    fun onAiEditMediaPicked(uris: List<String>) = createProject(uris, aiEdit = true)
+
+    private fun createProject(uris: List<String>, copyFirst: Boolean = false, aiEdit: Boolean = false) {
         if (uris.isEmpty() || _uiState.value.isImporting) return
         _uiState.update { it.copy(isImporting = true) }
         viewModelScope.launch {
@@ -163,7 +167,7 @@ class HomeViewModel @Inject constructor(
                 val project = newProject(result.imported)
                 repository.save(project)
                 if (result.failedCount > 0) _events.send(HomeEvent.SomeFilesSkipped(result.failedCount))
-                _events.send(HomeEvent.OpenEditor(project.id))
+                _events.send(HomeEvent.OpenEditor(project.id, aiEdit))
             } finally {
                 _uiState.update { it.copy(isImporting = false) }
             }

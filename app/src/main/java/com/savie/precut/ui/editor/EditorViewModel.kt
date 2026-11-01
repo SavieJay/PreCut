@@ -15,6 +15,8 @@ import com.savie.precut.data.ProTastes
 import com.savie.precut.export.ExportController
 import com.savie.precut.media.shorts.MomentAnalyzer
 import com.savie.precut.media.broll.GalleryIndexer
+import com.savie.precut.media.ai.MediaBriefMaker
+import com.savie.precut.model.text.CaptionStyle
 import com.savie.precut.model.pro.ProFeature
 import com.savie.precut.pro.EntitlementRepository
 import com.savie.precut.data.SubtitleFiles
@@ -75,6 +77,7 @@ import com.savie.precut.model.template.TemplateCategory
 import com.savie.precut.model.text.captionCount
 import com.savie.precut.model.totalDurationMs
 import com.savie.precut.model.withMediaSubstitutes
+import com.savie.precut.ui.navigation.AI_EDIT_ARG
 import com.savie.precut.ui.navigation.requireProjectId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -260,7 +263,7 @@ sealed interface EditorEvent {
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class EditorViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     private val repository: ProjectRepository,
     private val previewController: PreviewController,
     private val importer: MediaImporter,
@@ -297,6 +300,7 @@ class EditorViewModel @Inject constructor(
     exportController: ExportController,
     momentAnalyzer: MomentAnalyzer,
     galleryIndexer: GalleryIndexer,
+    mediaBriefMaker: MediaBriefMaker,
     exportCapabilities: ExportCapabilitiesProbe,
     frameGrabber: FrameGrabber,
     mediaSaver: MediaSaver,
@@ -459,7 +463,10 @@ class EditorViewModel @Inject constructor(
     val formats = EditorFormats(host, pro, previewController, subjectTracker, frameGrabber, exportController) { export.settings.value }
 
     /** Prompt-to-edit: the request, Claude's steps and the review. */
-    val aiEdit = EditorAiEdit(host, cloudClient, appSettings)
+    val aiEdit = EditorAiEdit(host, cloudClient, appSettings, pro, mediaBriefMaker) { styleId ->
+        captions.onOpen()
+        CaptionStyle.byId(styleId)?.let(captions::onStyle)
+    }
 
     /** The Captions panel: editing lines, a style for all, the SRT file. */
     val captionEdits = EditorCaptionEdits(host, subtitleFiles, appSettings)
@@ -511,6 +518,11 @@ class EditorViewModel @Inject constructor(
             _uiState.value = EditorUiState.Ready(project, missingIds = missing)
             requestProxies(project)
             brand.onOpened(project)
+            // Home's AI Edit: the sheet opens on the new project, once.
+            if (savedStateHandle.get<Boolean>(AI_EDIT_ARG) == true) {
+                savedStateHandle[AI_EDIT_ARG] = false
+                aiEdit.onOpen()
+            }
         }
         viewModelScope.launch {
             // A newly finished proxy swaps in once the preview is idle, so it never interrupts

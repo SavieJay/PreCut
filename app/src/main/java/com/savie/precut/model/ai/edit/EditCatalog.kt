@@ -6,6 +6,7 @@ import com.savie.precut.model.look.FilterCatalog
 import com.savie.precut.model.motion.AnimationType
 import com.savie.precut.model.motion.ComboType
 import com.savie.precut.model.motion.TransitionType
+import com.savie.precut.model.text.CaptionStyle
 import com.savie.precut.model.text.TextTemplates
 
 /**
@@ -22,6 +23,7 @@ object EditCatalog {
     val animations: List<String> = AnimationType.entries.map { it.catalogId }
     val combos: List<String> = ComboType.entries.map { it.catalogId }
     val textTemplates: List<String> get() = TextTemplates.all.map { it.id }
+    val captionStyles: List<String> = CaptionStyle.entries.map { it.id }
 
     fun effect(id: String): EffectType? = EffectType.entries.firstOrNull { it.catalogId == id }
     fun transition(id: String): TransitionType? = TransitionType.entries.firstOrNull { it.catalogId == id }

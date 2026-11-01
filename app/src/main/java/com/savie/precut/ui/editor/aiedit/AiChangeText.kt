@@ -29,4 +29,6 @@ fun aiChangeText(label: AiChangeLabel): String = when (label) {
     is AiChangeLabel.Ratio -> stringResource(R.string.ai_change_ratio, label.ratio)
     is AiChangeLabel.Music -> if (label.name.isBlank()) stringResource(R.string.ai_change_music_unnamed) else stringResource(R.string.ai_change_music, label.name)
     is AiChangeLabel.CutToBeats -> pluralStringResource(R.plurals.ai_change_cut_to_beats, label.clips, label.clips)
+    is AiChangeLabel.RemoveTime -> stringResource(R.string.ai_change_remove_time, formatSeconds(label.removedMs))
+    is AiChangeLabel.Captions -> stringResource(R.string.ai_change_captions)
 }

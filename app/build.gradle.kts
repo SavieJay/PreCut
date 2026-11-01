@@ -146,6 +146,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     testImplementation(libs.kotlinx.coroutines.test)
+    // AI Edit evals (docs/AGENT_EVALS.md): Claude through Anthropic's SDK, only when asked for.
+    testImplementation(libs.anthropic.java)
     testImplementation(libs.turbine)
     testImplementation(libs.okhttp.mockwebserver)
 }
