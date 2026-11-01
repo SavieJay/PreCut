@@ -24,6 +24,7 @@ import com.savie.precut.model.frame.ReframeSpeed
 import com.savie.precut.model.frame.SubjectSample
 import com.savie.precut.model.keyframe.Easing
 import com.savie.precut.model.keyframe.EasingCurve
+import com.savie.precut.model.keyframe.TextKeyframe
 import com.savie.precut.model.look.ClipLook
 import com.savie.precut.model.look.LookLayer
 import com.savie.precut.model.effect.EffectLayer
@@ -128,6 +129,8 @@ sealed interface EditAction {
 
     /** A text change on a text with keyframes: place, size, turn and opacity land in the keyframe at [timelineMs]. */
     data class EditKeyframedText(val timelineMs: Long, val overlay: TextOverlay) : KeyframeEdit
+    /** Replaces a text's keyframes (Follow person, Phase 26A); times are into the text. */
+    data class SetTextKeyframes(val textId: String, val keyframes: List<TextKeyframe>) : KeyframeEdit
 
     /** Frame edits (crop, mirror, rotate, transform, opacity, canvas), applied by `applyFrameEdit`. */
     sealed interface FrameEdit : EditAction

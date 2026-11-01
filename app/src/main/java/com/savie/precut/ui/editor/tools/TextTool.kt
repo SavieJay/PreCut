@@ -42,6 +42,8 @@ interface TextToolActions {
     fun onStyle()
     fun onRich()
     fun onTts()
+    /** Follow person (Phase 26A). */
+    fun onFollow()
 }
 
 /**
@@ -66,6 +68,7 @@ fun TextTool(
         onDone,
         modifier,
         actions = {
+            HeaderIcon(R.drawable.ic_frame_person, stringResource(R.string.tool_follow), true, actions::onFollow)
             HeaderIcon(R.drawable.ic_split, stringResource(R.string.tool_split), canSplit, actions::onSplit)
             HeaderIcon(R.drawable.ic_duplicate, stringResource(R.string.tool_duplicate), true, actions::onDuplicate)
             HeaderIcon(R.drawable.ic_delete, stringResource(R.string.text_delete), true, actions::onDelete)

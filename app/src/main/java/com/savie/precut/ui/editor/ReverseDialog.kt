@@ -62,8 +62,10 @@ fun CutoutDialog(progress: ReverseProgress, onCancel: () -> Unit) = WorkProgress
 @Composable
 fun ReframeDialog(progress: ReframeProgress, onCancel: () -> Unit) = WorkProgressDialog(
     R.drawable.ic_reframe,
-    stringResource(R.string.reframe_progress, progress.percent),
-    if (progress.clips == 1) {
+    stringResource(if (progress.following) R.string.follow_progress else R.string.reframe_progress, progress.percent),
+    if (progress.following) {
+        stringResource(R.string.follow_body)
+    } else if (progress.clips == 1) {
         stringResource(R.string.reframe_body, formatSeconds(progress.clipLengthMs))
     } else {
         LocalResources.current.getQuantityString(R.plurals.reframe_body_all, progress.clips, progress.clips)

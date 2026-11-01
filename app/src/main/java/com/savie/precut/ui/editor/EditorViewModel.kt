@@ -210,6 +210,9 @@ sealed interface EditorEvent {
     data object ReframeNoneFound : EditorEvent
     data object ReframeNothingToMove : EditorEvent
     data object ReframeFailed : EditorEvent
+    /** Shown with Undo: a text or sticker now follows the person (Phase 26A). */
+    data object FollowDone : EditorEvent
+    data object FollowNoPerson : EditorEvent
     data object NoiseNoSound : EditorEvent
     data object NoiseFailed : EditorEvent
     /** The music's sound couldn't be read for beat detection. */

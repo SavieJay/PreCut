@@ -30,6 +30,16 @@ internal fun Project.applyKeyframeEdit(action: EditAction.KeyframeEdit): Project
         text.keyframeAt(offset)?.let { text.withKeyframe(it.copy(easing = action.easing, curve = action.curve)) } ?: text
     }
     is EditAction.EditKeyframedText -> editKeyframedText(action)
+    is EditAction.SetTextKeyframes -> {
+        val index = textOverlays.indexOfFirst { it.id == action.textId }
+        if (index < 0) {
+            this
+        } else {
+            val length = textOverlays[index].let { it.endMs - it.startMs }
+            val frames = action.keyframes.filter { it.atMs in 0..length }.sortedBy { it.atMs }.distinctBy { it.atMs }
+            copy(textOverlays = textOverlays.toMutableList().also { it[index] = it[index].copy(keyframes = frames) })
+        }
+    }
 }
 
 /** The clip's keyframes with [ClipKeyframe.atMs] turned from source time into time into the clip (timeline ms). */

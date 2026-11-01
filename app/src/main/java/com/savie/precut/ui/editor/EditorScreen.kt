@@ -180,8 +180,10 @@ fun EditorScreen(
                 }
                 return@ObserveAsEvents
             }
-            EditorEvent.FrozeFrame, EditorEvent.ClipReversed, EditorEvent.ClipUnreversed, EditorEvent.CutoutDone -> {
+            EditorEvent.FollowNoPerson -> resources.getString(R.string.follow_no_person)
+            EditorEvent.FrozeFrame, EditorEvent.ClipReversed, EditorEvent.ClipUnreversed, EditorEvent.CutoutDone, EditorEvent.FollowDone -> {
                 val text = when (event) {
+                    EditorEvent.FollowDone -> R.string.follow_done
                     EditorEvent.FrozeFrame -> R.string.freeze_added
                     EditorEvent.ClipReversed -> R.string.reverse_done
                     EditorEvent.CutoutDone -> R.string.cutout_done

@@ -271,6 +271,15 @@ Needs the Play Console setup and server steps in `docs/BILLING.md`, a build inst
 | Onboarding's last page (Settings → Replay intro) | "Try PreCut Pro free for 7 days", Continue free, Skip; Start free trial opens the paywall over Projects | |
 | A phone without the Play Store | The paywall says Pro can't be bought right now | |
 
+## 4p. Follow person (Phase 26A)
+| Check | Expected | Result |
+|---|---|---|
+| A text over a clip of someone walking across → Text panel → Follow | "Following the person…", then "Now follows the person" with Undo | |
+| Play | The text moves with the person, keeping its distance; no shaking | |
+| A sticker → Follow | The same for the sticker | |
+| Follow over a clip with nobody in it | "No person found in the clip under it" | |
+| Undo | The text stays still again | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

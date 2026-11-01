@@ -11,6 +11,8 @@ interface StickerToolbarActions {
     fun onAnimation()
     fun onOpacity()
     fun onKeyframe()
+    /** Follow person (Phase 26A). */
+    fun onFollow()
     fun onSplit()
     fun onDuplicate()
     fun onDelete()
@@ -23,6 +25,7 @@ fun StickerToolbar(canSplit: Boolean, actions: StickerToolbarActions, modifier: 
         ToolButton(R.drawable.ic_animation, R.string.tool_animation, onClick = actions::onAnimation)
         ToolButton(R.drawable.ic_opacity, R.string.tool_opacity, onClick = actions::onOpacity)
         ToolButton(R.drawable.ic_diamond, R.string.tool_keyframe, onClick = actions::onKeyframe)
+        ToolButton(R.drawable.ic_frame_person, R.string.tool_follow, onClick = actions::onFollow)
         ToolButton(R.drawable.ic_split, R.string.tool_split, canSplit, actions::onSplit)
         ToolButton(R.drawable.ic_duplicate, R.string.tool_duplicate, onClick = actions::onDuplicate)
         ToolButton(R.drawable.ic_delete, R.string.tool_delete, onClick = actions::onDelete)

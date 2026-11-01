@@ -78,6 +78,7 @@ fun SelectedStickerPanels(state: EditorUiState.Ready, sticker: TextOverlay, posi
                     override fun onAnimation() = viewModel.onToolSelected(EditorTool.STICKER_ANIMATION)
                     override fun onOpacity() = viewModel.onToolSelected(EditorTool.STICKER_OPACITY)
                     override fun onKeyframe() = viewModel.keyframes.onToggle()
+                    override fun onFollow() = viewModel.reframe.onFollow()
                     override fun onSplit() {
                         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                         viewModel.text.onSplit()

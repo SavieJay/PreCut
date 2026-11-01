@@ -18,6 +18,7 @@ fun rememberTextToolActions(viewModel: EditorViewModel): TextToolActions = remem
         override fun onStyle() = viewModel.onToolSelected(EditorTool.TEXT_STYLE)
         override fun onRich() = viewModel.onToolSelected(EditorTool.TEXT_RICH)
         override fun onTts() = viewModel.onToolSelected(EditorTool.TEXT_TTS)
+        override fun onFollow() = viewModel.reframe.onFollow()
     }
 }
 

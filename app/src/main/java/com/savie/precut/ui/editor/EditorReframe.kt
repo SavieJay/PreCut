@@ -7,6 +7,9 @@ import com.savie.precut.media.cutout.TrackResult
 import com.savie.precut.model.Clip
 import com.savie.precut.model.clipTimelineRange
 import com.savie.precut.model.edit.EditAction
+import com.savie.precut.model.edit.followingPerson
+import com.savie.precut.model.clipAt
+import com.savie.precut.model.clipStartTimesMs
 import com.savie.precut.model.edit.canReframe
 import com.savie.precut.model.edit.frameAspect
 import com.savie.precut.model.frame.ReframeSpeed
@@ -16,7 +19,14 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** Auto reframe in progress over [clips] clips ([clipLengthMs] long when it's one); [secondsLeft] is null until there's enough to estimate. */
-data class ReframeProgress(val clips: Int, val clipLengthMs: Long, val percent: Int, val secondsLeft: Int?)
+data class ReframeProgress(
+    val clips: Int,
+    val clipLengthMs: Long,
+    val percent: Int,
+    val secondsLeft: Int?,
+    /** Follow person for a text or sticker (Phase 26A) rather than reframing. */
+    val following: Boolean = false,
+)
 
 /**
  * Auto reframe (Phase 22B) on the selected main-track clip, or every one with Apply to all: finds
@@ -73,6 +83,41 @@ class EditorReframe(
 
     fun onCancel() {
         job?.cancel()
+    }
+
+    /**
+     * Follow person (Phase 26A): the selected text or sticker keeps its place next to the person
+     * in the main clip under its start, as position keyframes; one undo step.
+     */
+    fun onFollow() {
+        if (job?.isActive == true) return
+        val ready = host.ready ?: return
+        val text = ready.project.textOverlays.firstOrNull { it.id == ready.selectedTextId } ?: return
+        val position = ready.project.clipAt(text.startMs) ?: return
+        val clip = ready.project.clips[position.index]
+        val clipStart = ready.project.clipStartTimesMs()[position.index]
+        preview.pause()
+        host.update { it.copy(reframing = ReframeProgress(1, clip.timelineDurationMs(), 0, null, following = true)) }
+        val started = SystemClock.elapsedRealtime()
+        job = host.scope.launch {
+            try {
+                when (val result = tracker.track(clip) { fraction -> progress(fraction, started) }) {
+                    is TrackResult.Done -> {
+                        val followed = text.followingPerson(clip, clipStart, result.samples, ready.project.frameAspect())
+                        if (followed == null) {
+                            host.send(EditorEvent.FollowNoPerson)
+                        } else {
+                            host.applyEdit(EditAction.SetTextKeyframes(text.id, followed.keyframes))
+                            host.send(EditorEvent.FollowDone)
+                        }
+                    }
+                    TrackResult.NoPerson -> host.send(EditorEvent.FollowNoPerson)
+                    is TrackResult.Failed -> host.send(EditorEvent.ReframeFailed)
+                }
+            } finally {
+                host.update { it.copy(reframing = null) }
+            }
+        }
     }
 
     private fun run(clips: List<Clip>, speed: ReframeSpeed) {

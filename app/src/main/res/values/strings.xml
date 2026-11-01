@@ -1212,4 +1212,11 @@
     <string name="onboarding_pro_title">Try PreCut Pro free for 7 days</string>
     <string name="onboarding_pro_start">Start free trial</string>
     <string name="onboarding_pro_continue_free">Continue free</string>
+
+    <!-- Follow person (Phase 26A) -->
+    <string name="tool_follow">Follow</string>
+    <string name="follow_progress">Following the person… %1$d%%</string>
+    <string name="follow_body">Finding the person in the clip under this text, on your phone.</string>
+    <string name="follow_done">Now follows the person</string>
+    <string name="follow_no_person">No person found in the clip under it</string>
 </resources>
