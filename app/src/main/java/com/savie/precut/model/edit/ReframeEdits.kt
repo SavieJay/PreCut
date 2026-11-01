@@ -1,5 +1,6 @@
 package com.savie.precut.model.edit
 
+import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.Clip
 import com.savie.precut.model.ClipType
 import com.savie.precut.model.Project
@@ -65,4 +66,21 @@ fun Clip.reframed(samples: List<SubjectSample>, speed: ReframeSpeed, frameAspect
     val added = path.filter { point -> keptMoments.none { abs(it - point.timeMs) <= SAME_MOMENT_MS } }
         .map { point -> snapshotAt(point.timeMs).let { it.copy(transform = placed(it.transform, point)) } }
     return copy(fit = FrameFit.FILL, transform = start, keyframes = (kept + added).sortedBy { it.atMs })
+}
+
+/** Multi-format export's shapes (Phase 26B): upright, square and wide. */
+val EXPORT_FORMATS = listOf(AspectRatio.RATIO_9_16, AspectRatio.RATIO_1_1, AspectRatio.RATIO_16_9)
+
+/**
+ * This edit in another shape (Phase 26B): the frame set to [ratio] and every clip with room to move
+ * reframed on its person ([samples] by clip id, from the tracker); clips without samples, or that
+ * already fit, stay as they are.
+ */
+fun Project.formatVariant(ratio: AspectRatio, samples: Map<String, List<SubjectSample>>, speed: ReframeSpeed = ReframeSpeed.NORMAL): Project {
+    val shaped = copy(aspectRatio = ratio)
+    val aspect = shaped.frameAspect()
+    val edits = clips.mapNotNull { clip ->
+        samples[clip.id]?.takeIf { clip.canReframe(aspect) }?.let { EditAction.AutoReframe(clip.id, it, speed) }
+    }
+    return if (edits.isEmpty()) shaped else EditReducer.reduce(shaped, EditAction.Batch(edits))
 }

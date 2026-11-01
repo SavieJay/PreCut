@@ -7,6 +7,7 @@ import com.savie.precut.media.ExportState
 import com.savie.precut.media.MediaSaver
 import com.savie.precut.media.SavedMedia
 import com.savie.precut.media.VideoExporter
+import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.Project
 import com.savie.precut.model.export.ExportBitrate
 import com.savie.precut.model.export.ExportSettings
@@ -41,6 +42,10 @@ data class ExportJob(
     val settings: ExportSettings,
     /** For the untitled-project fallback name. */
     val createdAt: Long = 0L,
+    /** Multi-format export (Phase 26B): this video's place in the set, and its shape. */
+    val part: Int = 0,
+    val parts: Int = 1,
+    val format: AspectRatio? = null,
 )
 
 /** The app's one export, shared by the export screen and the export notification. */
@@ -97,39 +102,63 @@ class ExportController @Inject constructor(
                 _state.value = ExportJobState.Failed(null, ExportFailure.PROJECT_NOT_FOUND)
                 return@launch
             }
-            val durationMs = project.totalDurationMs()
-            val job = ExportJob(projectId, project.name, durationMs, kind, settings, project.createdAt)
-            // The file is written to the cache, then copied to the gallery.
-            val needed = neededBytes(project, settings, kind, durationMs) + STORAGE_MARGIN_BYTES
-            val free = storage.freeBytes()
-            if (free < needed) {
-                _state.value = ExportJobState.Failed(job, ExportFailure.LOW_STORAGE, neededBytes = needed, freeBytes = free)
-                return@launch
-            }
-            _state.value = ExportJobState.Running(job, percent = null)
-            serviceStarter.start()
-            val export = if (kind == ExportKind.GIF) exporter.exportGif(project, settings.gif) else exporter.export(project, settings, audioOnly = kind == ExportKind.AUDIO)
-            export.collect { exportState ->
-                when (exportState) {
-                    is ExportState.Running -> _state.value = ExportJobState.Running(job, exportState.percent)
-                    is ExportState.Failed -> _state.value = ExportJobState.Failed(
-                        job,
-                        if (exportState.encoder) ExportFailure.ENCODER else ExportFailure.EXPORT_FAILED,
-                        exportState.cause.message,
-                    )
-                    is ExportState.Success -> {
-                        _state.value = ExportJobState.Saving(job)
-                        val size = exportState.file.length()
-                        val media = kind.media
-                        _state.value = saver.save(exportState.file, displayName(media), media).fold(
-                            onSuccess = { ExportJobState.Done(job, it, size) },
-                            onFailure = { ExportJobState.Failed(job, ExportFailure.SAVE_FAILED, it.message) },
-                        )
-                    }
-                }
+            exportOne(project, ExportJob(projectId, project.name, project.totalDurationMs(), kind, settings, project.createdAt))
+        }
+        return true
+    }
+
+    /**
+     * Multi-format export (Phase 26B): [variants] of project [projectId] (the same edit in other
+     * shapes, already reframed), one after another, each saved to the gallery; stops at a failure.
+     */
+    fun startVariants(projectId: String, variants: List<Project>, settings: ExportSettings): Boolean {
+        if (isBusy || variants.isEmpty()) return false
+        running = scope.launch {
+            variants.forEachIndexed { index, variant ->
+                val job = ExportJob(
+                    projectId, variant.name, variant.totalDurationMs(), ExportKind.VIDEO, settings, variant.createdAt,
+                    part = index, parts = variants.size, format = variant.aspectRatio,
+                )
+                if (!exportOne(variant, job)) return@launch
             }
         }
         return true
+    }
+
+    /** Exports [project] as [job] and saves it; false when it failed. */
+    private suspend fun exportOne(project: Project, job: ExportJob): Boolean {
+        val settings = job.settings
+        val kind = job.kind
+        // The file is written to the cache, then copied to the gallery.
+        val needed = neededBytes(project, settings, kind, job.durationMs) + STORAGE_MARGIN_BYTES
+        val free = storage.freeBytes()
+        if (free < needed) {
+            _state.value = ExportJobState.Failed(job, ExportFailure.LOW_STORAGE, neededBytes = needed, freeBytes = free)
+            return false
+        }
+        _state.value = ExportJobState.Running(job, percent = null)
+        serviceStarter.start()
+        val export = if (kind == ExportKind.GIF) exporter.exportGif(project, settings.gif) else exporter.export(project, settings, audioOnly = kind == ExportKind.AUDIO)
+        export.collect { exportState ->
+            when (exportState) {
+                is ExportState.Running -> _state.value = ExportJobState.Running(job, exportState.percent)
+                is ExportState.Failed -> _state.value = ExportJobState.Failed(
+                    job,
+                    if (exportState.encoder) ExportFailure.ENCODER else ExportFailure.EXPORT_FAILED,
+                    exportState.cause.message,
+                )
+                is ExportState.Success -> {
+                    _state.value = ExportJobState.Saving(job)
+                    val size = exportState.file.length()
+                    val media = kind.media
+                    _state.value = saver.save(exportState.file, displayName(media), media).fold(
+                        onSuccess = { ExportJobState.Done(job, it, size) },
+                        onFailure = { ExportJobState.Failed(job, ExportFailure.SAVE_FAILED, it.message) },
+                    )
+                }
+            }
+        }
+        return _state.value is ExportJobState.Done
     }
 
     /** Android 8–9 without storage permission: nothing can be saved. */

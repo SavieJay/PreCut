@@ -12,6 +12,7 @@ import com.savie.precut.ai.cloud.CloudClient
 import com.savie.precut.data.AppSettings
 import com.savie.precut.data.OpenProjects
 import com.savie.precut.data.ProTastes
+import com.savie.precut.export.ExportController
 import com.savie.precut.model.pro.ProFeature
 import com.savie.precut.pro.EntitlementRepository
 import com.savie.precut.data.SubtitleFiles
@@ -280,6 +281,7 @@ class EditorViewModel @Inject constructor(
     private val openProjects: OpenProjects,
     entitlements: EntitlementRepository,
     proTastes: ProTastes,
+    exportController: ExportController,
     exportCapabilities: ExportCapabilitiesProbe,
     frameGrabber: FrameGrabber,
     mediaSaver: MediaSaver,
@@ -426,6 +428,9 @@ class EditorViewModel @Inject constructor(
 
     /** Brand kit (Pro). */
     val brand = EditorBrand(host, pro, appSettings)
+
+    /** One-tap multi-format export (Pro). */
+    val formats = EditorFormats(host, pro, previewController, subjectTracker, frameGrabber, exportController) { export.settings.value }
 
     /** Prompt-to-edit: the request, Claude's steps and the review. */
     val aiEdit = EditorAiEdit(host, cloudClient, appSettings)

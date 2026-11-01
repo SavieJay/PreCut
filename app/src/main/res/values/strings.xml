@@ -1280,4 +1280,14 @@
     <string name="brand_pick_failed">That file couldn\'t be opened.</string>
     <string name="brand_applied">Brand kit applied</string>
     <string name="brand_empty">Set up your brand kit first: Settings → Brand kit.</string>
+
+    <!-- Multi-format export (Phase 26B) -->
+    <string name="tool_formats">Formats</string>
+    <string name="formats_title">Export in every shape</string>
+    <string name="formats_tracking">Reframing for each shape… %1$d%%</string>
+    <string name="formats_body">Each shape is reframed to keep the person in view, then exported one after another with your export settings.</string>
+    <plurals name="formats_export">
+        <item quantity="one">Export %d video</item>
+        <item quantity="other">Export %d videos</item>
+    </plurals>
 </resources>
