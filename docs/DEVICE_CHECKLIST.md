@@ -280,6 +280,27 @@ Needs the Play Console setup and server steps in `docs/BILLING.md`, a build inst
 | Follow over a clip with nobody in it | "No person found in the clip under it" | |
 | Undo | The text stays still again | |
 
+## 4q. Pro features (Phase 26B)
+On a free account each Pro tool shows PRO; use it until its free uses run out, then it opens the paywall. A license-tester Pro account removes the limits.
+
+| Check | Expected | Result |
+|---|---|---|
+| A talking clip with captions → Transcript | The words; fillers tinted; Remove filler words (n), Remove silences (n) | |
+| Strike two words, Preview, then Apply cuts | The preview skips them; Apply: "… cut from the video" with Undo; captions stay in time with the voice | |
+| Transcript on a project without captions | "Make captions first" with Make captions | |
+| Hook on a project with a slow, untitled start | 2–4 tips; each Apply changes the video (title, trim, zoom, quiet start, beats) | |
+| Settings → Brand kit: logo, two colours, fonts, intro, outro; then Brand in a project | Intro first, outro last, logo top right, texts in the colour and font; Undo removes it all | |
+| Apply to new projects on, then a new project (Pro) | Opens already branded | |
+| Formats on a landscape interview | Three frames (9:16, 1:1, 16:9), each keeping the person in view; Export 3 videos saves three files | |
+| Captions → Translate → French → Translate | Every line in French, in time; one Undo restores | |
+| Translate with Dub on, with a French voice installed | Each line spoken over the video; clip sound muted | |
+| Dub in a language with no phone voice | "…no voice for that language…"; the translation is kept | |
+| Shorts on a 5-minute talk with captions | Up to five shorts in Projects, upright, captioned, reframed; Open and Export work | |
+| Shorts on a 30-second clip | "Shorts need a video of at least a minute." | |
+| B-roll the first time | The explanation and Allow access; Android 14: "Select photos" works too | |
+| Search "dog", "beach", "food" | Matching photos and videos from the gallery; tap one: it covers the frame at the playhead | |
+| Deny access | "B-roll needs access to your gallery." | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:
