@@ -1240,4 +1240,22 @@
         <item quantity="other">Apply %d cuts</item>
     </plurals>
     <string name="transcript_cut_done">%1$s cut from the video</string>
+
+    <!-- Hook coach (Phase 26B) -->
+    <string name="tool_hook">Hook</string>
+    <string name="hook_title">Hook coach</string>
+    <string name="hook_all_good">Your first seconds look strong: something on screen straight away, quick cuts and movement.</string>
+    <string name="hook_apply">Apply</string>
+    <string name="hook_applied">Applied</string>
+    <string name="hook_default_title">Watch this</string>
+    <string name="hook_tip_title">Add a title in the first 2 seconds</string>
+    <string name="hook_why_title">Words on screen tell viewers what\'s coming before they scroll on.</string>
+    <string name="hook_tip_quiet">Cut the quiet start</string>
+    <string name="hook_why_quiet">The talking starts late; starting on the first word grabs attention.</string>
+    <string name="hook_tip_trim">Get to the second shot sooner</string>
+    <string name="hook_why_trim">Trims the first clip to 3 seconds, so the video changes early.</string>
+    <string name="hook_tip_zoom">Add movement to the opening</string>
+    <string name="hook_why_zoom">A slow zoom-in on the first clip gives the first second energy.</string>
+    <string name="hook_tip_beats">Cut to the beat</string>
+    <string name="hook_why_beats">Your clips are long for a short video; cutting on the music\'s beats quickens the pace.</string>
 </resources>

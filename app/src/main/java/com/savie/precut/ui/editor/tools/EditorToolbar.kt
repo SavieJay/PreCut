@@ -39,6 +39,8 @@ interface ToolbarActions {
     fun onAiEdit()
     /** Edit by transcript (Phase 26B, Pro). */
     fun onTranscript()
+    /** Hook coach (Phase 26B, Pro). */
+    fun onHookCoach()
     fun onStickers()
     fun onDraw()
     fun onEffects()
@@ -108,6 +110,7 @@ private fun RowScope.AllTools(canSplit: Boolean, hasClips: Boolean, actions: Too
         ToolButton(R.drawable.ic_text, R.string.tool_text, hasClips, actions::onText)
         ToolButton(R.drawable.ic_closed_caption, R.string.tool_captions, hasClips, actions::onCaptions)
         ProToolButton(R.drawable.ic_text_fields, R.string.tool_transcript, pro = free, enabled = hasClips, onClick = actions::onTranscript)
+        ProToolButton(R.drawable.ic_lightbulb, R.string.tool_hook, pro = free, enabled = hasClips, onClick = actions::onHookCoach)
         ToolButton(R.drawable.ic_add_reaction, R.string.tool_stickers, hasClips, actions::onStickers)
         ToolButton(R.drawable.ic_draw, R.string.tool_draw, hasClips, actions::onDraw)
         ToolButton(R.drawable.ic_overlay, R.string.tool_overlay, hasClips, actions::onOverlay)

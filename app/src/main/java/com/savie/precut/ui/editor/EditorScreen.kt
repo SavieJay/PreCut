@@ -53,6 +53,7 @@ import kotlinx.coroutines.launch
 import com.savie.precut.ui.editor.captions.CaptionsHost
 import com.savie.precut.ui.editor.aiedit.AiEditHost
 import com.savie.precut.ui.editor.coach.CoachMarksOverlay
+import com.savie.precut.ui.editor.coach.HookCoachSheet
 import com.savie.precut.ui.editor.coach.CoachTargets
 import com.savie.precut.ui.editor.coach.LocalCoachTargets
 import com.savie.precut.ui.editor.export.EditorExportHost
@@ -360,6 +361,8 @@ fun EditorScreen(
                         EditorExportHost(state, viewModel, exportNavigator, viewModel.appSettingsForUi)
                         CaptionsHost(viewModel.captions)
                         AiEditHost(viewModel.aiEdit)
+                        val hook by viewModel.hookCoach.state.collectAsStateWithLifecycle()
+                        hook?.let { HookCoachSheet(it, viewModel.hookCoach::onApply, viewModel.hookCoach::onDismiss) }
                     }
                 }
             }

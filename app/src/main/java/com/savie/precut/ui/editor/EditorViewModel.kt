@@ -418,6 +418,9 @@ class EditorViewModel @Inject constructor(
     /** Edit by transcript (Pro). */
     val transcript = EditorTranscript(host, pro)
 
+    /** Hook coach (Pro). */
+    val hookCoach = EditorHookCoach(host, pro)
+
     /** Prompt-to-edit: the request, Claude's steps and the review. */
     val aiEdit = EditorAiEdit(host, cloudClient, appSettings)
 
