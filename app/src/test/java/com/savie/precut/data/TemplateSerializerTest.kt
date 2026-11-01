@@ -5,6 +5,7 @@ import com.savie.precut.model.template.TemplateCategory
 import com.savie.precut.model.template.toTemplate
 import com.savie.precut.model.videoClip
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -29,5 +30,15 @@ class TemplateSerializerTest {
         val json = """{"id":"t","title":"Old","slots":[{"clipId":"a"}],"project":{"id":"t","name":"Old","createdAt":1,"updatedAt":1,""" +
             """"clips":[{"id":"a","uri":"template://slot/0","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000,"filter":"WARM"}]}}"""
         assertEquals("basic.warm", TemplateSerializer.decode(json)?.project?.clips?.single()?.look?.filterId)
+    }
+
+    @Test
+    fun `a saved template's project carries the draft schema version`() {
+        val json = """{"id":"t","title":"New","slots":[{"clipId":"a"}],"project":{"id":"t","name":"New","createdAt":1,"updatedAt":1,""" +
+            """"clips":[{"id":"a","uri":"template://slot/0","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000}]}}"""
+        val template = requireNotNull(TemplateSerializer.decode(json))
+        val saved = TemplateSerializer.encode(template)
+        assertTrue(saved.contains("\"project\":{\"schemaVersion\":${ProjectSerializer.SCHEMA_VERSION},"))
+        assertEquals(template, TemplateSerializer.decode(saved))
     }
 }

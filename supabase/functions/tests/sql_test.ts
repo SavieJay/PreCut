@@ -393,3 +393,45 @@ sqlTest(
     }
   },
 );
+
+sqlTest(
+  "app config: zeros until set, then the row; readable by anyone, writable by no app",
+  async (db) => {
+    const config = (platform: string) =>
+      call(db, "public.cloud_app_config($1)", [platform]);
+    assertEquals((await config("android")).minSupportedVersionCode, 0);
+    assertEquals((await config("android")).whatsNew, []);
+    await db.exec(`update public.app_config
+      set min_supported_version_code = 40, latest_version_code = 42,
+          whats_new = '["AI edit", "Forced updates"]' where platform = 'android'`);
+    const set = await config("android");
+    assertEquals(set.minSupportedVersionCode, 40);
+    assertEquals(set.latestVersionCode, 42);
+    assertEquals(set.whatsNew, ["AI edit", "Forced updates"]);
+    assert(set.updatedAt);
+    // An unknown platform never blocks.
+    assertEquals((await config("ios")).minSupportedVersionCode, 0);
+    await assertRejects(
+      () =>
+        db.exec(
+          "update public.app_config set whats_new = '\"text\"' where platform = 'android'",
+        ),
+      Error,
+      "check",
+    );
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`reset role; set role ${role};`);
+      const rows = await db.query("select * from public.app_config");
+      assertEquals(rows.rows.length, 1);
+      await assertRejects(
+        () =>
+          db.exec(
+            "update public.app_config set min_supported_version_code = 0",
+          ),
+        Error,
+        "permission denied",
+      );
+      await assertRejects(() => config("android"), Error, "permission denied");
+    }
+  },
+);

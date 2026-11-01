@@ -66,6 +66,8 @@ fun HomeContent(
     tab: HomeTab = HomeTab.DRAFTS,
     onTab: (HomeTab) -> Unit = {},
     templates: @Composable (Modifier) -> Unit = {},
+    /** Above the tabs: the update banner when a newer version is out. */
+    banner: @Composable () -> Unit = {},
 ) {
     var renaming by remember { mutableStateOf<ProjectSummary?>(null) }
     var deleting by remember { mutableStateOf<ProjectSummary?>(null) }
@@ -91,6 +93,7 @@ fun HomeContent(
         },
     ) { innerPadding ->
         Column(Modifier.fillMaxSize().padding(innerPadding)) {
+            banner()
             HomeTabs(tab, onTab)
             val modifier = Modifier.weight(1f).fillMaxWidth()
             if (tab == HomeTab.TEMPLATES) {

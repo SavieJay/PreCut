@@ -1,6 +1,13 @@
 package com.savie.precut
 
 import android.content.Intent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.CompositionLocalProvider
+import com.savie.precut.ui.update.LocalUpdates
+import com.savie.precut.ui.update.UpdateHost
+import com.savie.precut.ui.update.Updates
+import com.savie.precut.update.PlayUpdates
+import com.savie.precut.update.UpdateChecker
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -21,6 +28,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var shareInbox: ShareInbox
 
+    @Inject
+    lateinit var updateChecker: UpdateChecker
+
+    @Inject
+    lateinit var playUpdates: PlayUpdates
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app is dark-only, so always use light system bar icons.
         enableEdgeToEdge(
@@ -32,9 +45,21 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) receiveShare(intent)
         setContent {
             PreCutTheme {
-                AppNavHost(shareInbox)
+                CompositionLocalProvider(LocalUpdates provides Updates(updateChecker, playUpdates)) {
+                    Box {
+                        AppNavHost(shareInbox)
+                        // Drawn last, over everything: the forced-update screen and What's new.
+                        UpdateHost(updateChecker, playUpdates)
+                    }
+                }
             }
         }
+    }
+
+    /** A cold start or a return to the app: check for updates (throttled). */
+    override fun onStart() {
+        super.onStart()
+        updateChecker.onForeground()
     }
 
     override fun onNewIntent(intent: Intent) {

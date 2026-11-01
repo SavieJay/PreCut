@@ -116,6 +116,10 @@ export function createHandler(
 }
 
 function route(request: Request, deps: Deps): Promise<Response> {
+  // Update rules answer every app version, however old: they're how an old one learns to update.
+  if (`${request.method} ${routePath(request)}` === "GET /config") {
+    return appConfig(request, deps);
+  }
   const api = Number(request.headers.get("x-precut-api") ?? "0");
   if (!(api >= deps.minApiVersion)) {
     return Promise.resolve(errorResponse("upgrade_required"));
@@ -134,6 +138,20 @@ function route(request: Request, deps: Deps): Promise<Response> {
     default:
       return Promise.resolve(errorResponse("not_found"));
   }
+}
+
+/**
+ * Forced updates (Phase 23): public, with no token or Play Integrity check, so first launches and
+ * copies not installed from Play get it too. Caches may keep it for 5 minutes.
+ */
+async function appConfig(request: Request, deps: Deps): Promise<Response> {
+  const platform = new URL(request.url).searchParams.get("platform") ??
+    "android";
+  if (platform !== "android") return errorResponse("bad_request");
+  const config = await deps.quota.appConfig(platform);
+  const response = json(200, config);
+  response.headers.set("cache-control", "public, max-age=300");
+  return response;
 }
 
 /** The path after the function's name: "/functions/v1/cloud/status" (local) and "/cloud/status" (deployed) are "/status". */

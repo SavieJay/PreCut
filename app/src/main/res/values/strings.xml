@@ -1098,4 +1098,15 @@
     <string name="ai_failure_edit_runs_used">You\'ve used this month\'s AI edit requests. They come back on %1$s.</string>
     <string name="ai_failure_edit_runs_used_soon">You\'ve used this month\'s AI edit requests.</string>
     <string name="ai_failure_steps_used">Claude ran out of steps before making a change. Try a simpler request.</string>
+
+    <!-- Forced updates (Phase 23) -->
+    <string name="update_required_title">Update PreCut</string>
+    <string name="update_required_body">This version of PreCut can no longer be used. Update to keep editing; your projects are saved and will be there after the update.</string>
+    <string name="update_now">Update now</string>
+    <string name="update_available">A new version of PreCut is ready.</string>
+    <string name="update_downloaded">The update is downloaded.</string>
+    <string name="update_action">Update</string>
+    <string name="update_restart">Restart</string>
+    <string name="whats_new_title">What\'s new</string>
+    <string name="whats_new_done">Got it</string>
 </resources>

@@ -10,6 +10,7 @@ import androidx.media3.common.Player
 import com.savie.precut.ai.CaptionJob
 import com.savie.precut.ai.cloud.CloudClient
 import com.savie.precut.data.AppSettings
+import com.savie.precut.data.OpenProjects
 import com.savie.precut.data.SubtitleFiles
 import com.savie.precut.data.EffectFavourites
 import com.savie.precut.data.ProjectRepository
@@ -263,6 +264,7 @@ class EditorViewModel @Inject constructor(
     stickerLibrary: StickerLibrary,
     effectFavourites: EffectFavourites,
     private val appSettings: AppSettings,
+    private val openProjects: OpenProjects,
     exportCapabilities: ExportCapabilitiesProbe,
     frameGrabber: FrameGrabber,
     mediaSaver: MediaSaver,
@@ -418,6 +420,9 @@ class EditorViewModel @Inject constructor(
     /** Edits, undo history and auto-save; set once the project has loaded. */
     private var session: ProjectSession? = null
 
+    /** This project's place in [OpenProjects], removed when the editor closes. */
+    private var openRegistration: AutoCloseable? = null
+
     /** An AI edit's proposal under review, played instead of the project; null plays the project. */
     private var previewInstead: Project? = null
 
@@ -438,6 +443,8 @@ class EditorViewModel @Inject constructor(
                 return@launch
             }
             session = ProjectSession(project, repository, clock, appScope, viewModelScope)
+            // The forced-update screen saves open projects first (Phase 23).
+            openRegistration = openProjects.register { session?.flush() }
             val missing = findMissing(project)
             showInPreview(playable(project, missing), 0L)
             _uiState.value = EditorUiState.Ready(project, missingIds = missing)
@@ -891,6 +898,7 @@ class EditorViewModel @Inject constructor(
 
     override fun onCleared() {
         session?.flush()
+        openRegistration?.close()
         audio.release()
         captions.onCleared()
         aiEdit.onCleared()

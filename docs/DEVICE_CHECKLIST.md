@@ -221,6 +221,23 @@ Needs the Anthropic key on the server (`ANTHROPIC_API_KEY` in `supabase/.env.sec
 | Back during the review | The review closes; nothing was applied | |
 | Settings → Cloud AI off, then AI edit → Send | "Cloud AI is off in Settings." | |
 
+## 4m. Forced updates (Phase 23)
+Needs the `app_config` migration on the server (`npx supabase db push --linked`) and the function deployed. The installed version code is the number in brackets in Settings → About (Version 1.0.0 (N)). Change the row in Supabase → Table Editor → `app_config`.
+
+| Check | Expected | Result |
+|---|---|---|
+| `latest_version_code` above the installed one; leave the app and come back after 15 minutes (or force-stop and reopen) | Home shows "A new version of PreCut is ready." with Update | |
+| Update on the banner (debug build, not from Play) | The Play listing opens | |
+| `min_supported_version_code` above the installed one; reopen the app | "Update PreCut" covers everything; Back and taps do nothing | |
+| With a project open in the editor when it appears | Reopening after lowering the minimum shows the last edits saved | |
+| Start an export, then raise the minimum and come back to the app | The export finishes; the update screen appears after it | |
+| Airplane mode, force-stop, reopen (after the minimum was raised once) | Still blocked (the last answer is kept) | |
+| Clear the app's data, airplane mode, open | Opens normally (nothing kept, never blocks) | |
+| Lower the minimum again, come back after 15 minutes | The app is usable again | |
+| From Play internal app sharing (docs/RELEASING.md): install the lower build, raise the minimum, Update now | Play's full-screen update runs and the app restarts on the new version | |
+| After that update, with `whats_new` set | "What's new" with the bullets, once | |
+| Open a draft saved by an older PreCut build | It opens as before | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

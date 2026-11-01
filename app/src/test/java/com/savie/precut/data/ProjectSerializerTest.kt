@@ -24,6 +24,7 @@ import com.savie.precut.model.project
 import com.savie.precut.model.videoClip
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProjectSerializerTest {
@@ -126,5 +127,22 @@ class ProjectSerializerTest {
         val cut = videoClip("a").let { it.copy(cutout = Cutout("file:///m/a.matte", it.uri, 0L, 10_000L, softness = 0.6f, edge = -0.2f)) }
         val original = project(cut).copy(overlays = listOf(OverlayClip(cut.copy(id = "o"), 500L)))
         assertEquals(original, ProjectSerializer.decode(ProjectSerializer.encode(original)))
+    }
+
+    @Test
+    fun `drafts are saved with the schema version, and one saved without it is migrated as version 1`() {
+        val saved = ProjectSerializer.encode(project(videoClip("a")))
+        assertTrue(saved.startsWith("{\"schemaVersion\":${ProjectSerializer.SCHEMA_VERSION},"))
+        val old = """{"id":"p","name":"","createdAt":1,"updatedAt":2,"clips":[{"id":"a","uri":"content://a","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000,"filter":"GRAYSCALE"}]}"""
+        assertEquals("basic.mono", ProjectSerializer.decode(old)?.clips?.get(0)?.look?.filterId)
+    }
+
+    @Test
+    fun `a version 2 draft skips the version 1 step, and a newer app's draft still opens`() {
+        // A version 2 draft is never re-migrated: a "filter" key there means nothing and is dropped.
+        val current = """{"schemaVersion":2,"id":"p","name":"","createdAt":1,"updatedAt":2,"clips":[{"id":"a","uri":"content://a","type":"VIDEO","sourceDurationMs":5000,"trimEndMs":5000,"filter":"GRAYSCALE"}]}"""
+        assertNull(ProjectSerializer.decode(current)?.clips?.get(0)?.look?.filterId)
+        val newer = """{"schemaVersion":99,"id":"p","name":"Later","createdAt":1,"updatedAt":2,"aFutureField":true}"""
+        assertEquals("Later", ProjectSerializer.decode(newer)?.name)
     }
 }

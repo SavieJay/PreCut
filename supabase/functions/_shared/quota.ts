@@ -66,6 +66,16 @@ export interface EditUsageRecord {
   costMicrousd: number;
 }
 
+/** Forced updates (Phase 23): the oldest app version allowed, the newest released, and what's new. */
+export interface AppConfig {
+  minSupportedVersionCode: number;
+  latestVersionCode: number;
+  forceMessage: string | null;
+  whatsNew: string[];
+  downloadUrl: string | null;
+  updatedAt: string | null;
+}
+
 export interface QuotaStore {
   /** Adds the install (or touches it again). */
   register(installId: string): Promise<CloudStatus>;
@@ -88,6 +98,8 @@ export interface QuotaStore {
   settleEdit(runId: string, usage: EditUsageRecord): Promise<void>;
   /** Gives back a step that failed at the provider (and the run, when it was the first step). */
   releaseEdit(runId: string): Promise<void>;
+  /** The update rules for [platform] (zeros when there are none). */
+  appConfig(platform: string): Promise<AppConfig>;
 }
 
 /** The database functions through PostgREST, with the project's secret key (they're granted to service_role only). */
@@ -147,6 +159,9 @@ export class PostgresQuotaStore implements QuotaStore {
 
   async releaseEdit(runId: string): Promise<void> {
     await this.call("cloud_edit_release", { p_run: runId });
+  }
+  async appConfig(platform: string): Promise<AppConfig> {
+    return await this.call("cloud_app_config", { p_platform: platform });
   }
 
   private async call<T>(

@@ -10,6 +10,7 @@ import type {
   IntegrityVerifier,
 } from "../_shared/integrity.ts";
 import type {
+  AppConfig,
   CloudStatus,
   EditGrant,
   EditUsageRecord,
@@ -144,6 +145,21 @@ export class MemoryQuota implements QuotaStore {
     const run = this.runs.get(runId);
     if (run && --run.steps === 0) this.runs.delete(runId);
     return Promise.resolve();
+  }
+
+  /** The update rules [appConfig] answers with. */
+  config: AppConfig = {
+    minSupportedVersionCode: 0,
+    latestVersionCode: 0,
+    forceMessage: null,
+    whatsNew: [],
+    downloadUrl: null,
+    updatedAt: null,
+  };
+
+  appConfig(_platform: string): Promise<AppConfig> {
+    this.check();
+    return Promise.resolve(this.config);
   }
 
   private runsOf(installId: string): number {

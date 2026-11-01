@@ -2,25 +2,22 @@ package com.savie.precut.ai.cloud
 
 import android.content.Context
 import android.util.Log
-import com.google.android.gms.tasks.Task
 import com.google.android.play.core.integrity.IntegrityManagerFactory
 import com.google.android.play.core.integrity.StandardIntegrityException
 import com.google.android.play.core.integrity.StandardIntegrityManager.PrepareIntegrityTokenRequest
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenProvider
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenRequest
 import com.google.android.play.core.integrity.model.StandardIntegrityErrorCode
+import com.savie.precut.data.await
 import com.savie.precut.model.ai.AiFailure
 import com.savie.precut.model.ai.AiResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /** A Play Integrity token bound to [requestHash] (docs/CLOUD_API.md), or why there isn't one. */
 fun interface IntegrityTokens {
@@ -94,11 +91,4 @@ class PlayIntegrityTokens @Inject constructor(
             StandardIntegrityErrorCode.INTERNAL_ERROR,
         )
     }
-}
-
-/** A Play services [Task]'s result, without kotlinx-coroutines-play-services for one call site. */
-private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
-    addOnSuccessListener { continuation.resume(it) }
-    addOnFailureListener { continuation.resumeWithException(it) }
-    addOnCanceledListener { continuation.cancel() }
 }

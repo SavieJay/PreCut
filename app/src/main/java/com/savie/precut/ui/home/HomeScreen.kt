@@ -9,6 +9,8 @@ import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVis
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import com.savie.precut.ui.update.HomeUpdateBanner
+import com.savie.precut.ui.update.LocalUpdates
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -95,6 +97,7 @@ fun HomeScreen(
         onTab = { tab = it },
         templates = { modifier -> TemplatesTab(onOpen = onOpenTemplate, modifier = modifier) },
         onSettings = onOpenSettings,
+        banner = { LocalUpdates.current?.let { HomeUpdateBanner(it.checker, it.play) } },
         actions = object : ProjectActions {
             override fun onOpen(projectId: String) = onOpenEditor(projectId)
             override fun onRename(projectId: String, name: String) = viewModel.onRename(projectId, name)
