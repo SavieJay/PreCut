@@ -242,6 +242,8 @@ sealed interface EditorEvent {
     /** Shown with Undo. */
     data object BrandApplied : EditorEvent
     data object BrandKitEmpty : EditorEvent
+    /** Shown with Undo: captions translated, [dubbed] lines spoken; [noVoice] when the phone has no voice for the language. */
+    data class Translated(val dubbed: Int, val noVoice: Boolean) : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -428,6 +430,9 @@ class EditorViewModel @Inject constructor(
 
     /** Brand kit (Pro). */
     val brand = EditorBrand(host, pro, appSettings)
+
+    /** Translate and dub captions (Pro). */
+    val translate = EditorTranslate(host, pro, cloudClient, tts, importer)
 
     /** One-tap multi-format export (Pro). */
     val formats = EditorFormats(host, pro, previewController, subjectTracker, frameGrabber, exportController) { export.settings.value }

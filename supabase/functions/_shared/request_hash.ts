@@ -41,3 +41,13 @@ export async function purchaseHash(
     ),
   );
 }
+
+/** A caption translation: the install and the exact request body. */
+export async function translateHash(
+  installId: string,
+  body: Bytes,
+): Promise<string> {
+  return base64Url(
+    await sha256(`precut-translate:${installId}:${hex(await sha256(body))}`),
+  );
+}

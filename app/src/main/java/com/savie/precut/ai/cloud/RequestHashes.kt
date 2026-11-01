@@ -23,6 +23,10 @@ internal object RequestHashes {
     fun purchase(installId: String, purchaseToken: String): String =
         base64Url(sha256("precut-purchase:$installId:${hex(sha256(purchaseToken.toByteArray()))}".toByteArray()))
 
+    /** A caption translation (Phase 26B): the install and the exact request body. */
+    fun translate(installId: String, body: ByteArray): String =
+        base64Url(sha256("precut-translate:$installId:${hex(sha256(body))}".toByteArray()))
+
     private fun sha256(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
 
     private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it.toInt() and 0xFF) }

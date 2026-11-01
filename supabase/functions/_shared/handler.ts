@@ -13,7 +13,13 @@ import {
   purchaseHash,
   registerHash,
   transcribeHash,
+  translateHash,
 } from "./request_hash.ts";
+import {
+  type CaptionLine,
+  TranslateError,
+  type Translator,
+} from "./translator.ts";
 import {
   TranscribeError,
   type Transcriber,
@@ -34,6 +40,8 @@ export interface Deps {
   transcriber: Transcriber;
   /** Claude for AI edits; null when no Anthropic key is set (the other routes still work). */
   editAgent: EditAgent | null;
+  /** Caption translation (Phase 26B); null without an Anthropic key. */
+  translator: Translator | null;
   /** Google Play's subscription records (Phase 25); null when not configured. */
   billing: PlayBilling | null;
   /** The subscription product ids that make an install Pro. */
@@ -163,9 +171,89 @@ function route(request: Request, deps: Deps): Promise<Response> {
       return edit(request, deps);
     case "POST /purchase":
       return purchase(request, deps);
+    case "POST /translate":
+      return translate(request, deps);
     default:
       return Promise.resolve(errorResponse("not_found"));
   }
+}
+
+const MAX_TRANSLATE_BYTES = 64 * 1024;
+const MAX_TRANSLATE_LINES = 400;
+
+/**
+ * Caption translation (Phase 26B, Pro with a free taste): the caption lines and a language code;
+ * counted as one AI request against the plan's monthly AI edit requests and the AI budget. The
+ * verdict is bound to the exact body; the lines are never stored or logged.
+ */
+async function translate(request: Request, deps: Deps): Promise<Response> {
+  const install = await authenticate(request, deps);
+  if (install instanceof Response) return install;
+  if (!deps.translator) return errorResponse("not_configured");
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.length > MAX_TRANSLATE_BYTES) {
+    return errorResponse("too_large", { maxUploadBytes: MAX_TRANSLATE_BYTES });
+  }
+  let body: { lines?: unknown; target?: unknown };
+  try {
+    body = JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return errorResponse("bad_request");
+  }
+  const lines = body?.lines;
+  const target = body?.target;
+  const valid = Array.isArray(lines) && lines.length > 0 &&
+    lines.length <= MAX_TRANSLATE_LINES &&
+    lines.every((l) =>
+      typeof l?.id === "string" && typeof l?.text === "string"
+    ) &&
+    typeof target === "string" &&
+    /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(target);
+  if (!valid) return errorResponse("bad_request");
+  const refused = await checkIntegrity(
+    request,
+    await translateHash(install.installId, bytes),
+    deps,
+  );
+  if (refused) return refused;
+  const runId = crypto.randomUUID();
+  const grant = await deps.quota.beginEdit(install.installId, runId);
+  if (!grant.ok) {
+    const { ok: _refused, code, ...extra } = grant;
+    return errorResponse(code, extra);
+  }
+  const who = { install: await shortHash(install.installId) };
+  let translation;
+  try {
+    translation = await deps.translator.translate(
+      (lines as CaptionLine[]).map((l) => ({ id: l.id, text: l.text })),
+      target as string,
+    );
+  } catch (e) {
+    if (!(e instanceof TranslateError)) throw e;
+    await deps.quota.releaseEdit(runId);
+    deps.log({
+      event: "translate",
+      ...who,
+      outcome: e.code,
+      reason: e.message,
+    });
+    return errorResponse(e.code);
+  }
+  await deps.quota.settleEdit(runId, translation.usage);
+  deps.log({
+    event: "translate",
+    ...who,
+    lines: (lines as unknown[]).length,
+    target,
+    costMicrousd: translation.usage.costMicrousd,
+    outcome: "ok",
+  });
+  return json(200, {
+    lines: translation.lines,
+    editRunsLeft: grant.editRunsLeft,
+    ...install.renewal,
+  });
 }
 
 /**

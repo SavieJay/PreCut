@@ -60,6 +60,16 @@ internal data class PlanDto(
 @Serializable
 internal data class PurchaseRequest(val purchaseToken: String)
 
+/** A caption line to translate, or translated (Phase 26B). */
+@Serializable
+data class CaptionLineDto(val id: String, val text: String)
+
+@Serializable
+internal data class TranslateRequest(val lines: List<CaptionLineDto>, val target: String)
+
+@Serializable
+internal data class TranslateResponse(val lines: List<CaptionLineDto>, val editRunsLeft: Int = 0, val installToken: String? = null)
+
 @Serializable
 internal data class RegisterRequest(val installId: String)
 

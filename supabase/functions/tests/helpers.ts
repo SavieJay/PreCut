@@ -20,6 +20,7 @@ import type {
 } from "../_shared/quota.ts";
 import { FakeTranscriber, type Transcript } from "../_shared/transcriber.ts";
 import { FakePlayBilling, type Subscription } from "../_shared/play_billing.ts";
+import { FakeTranslator } from "../_shared/translator.ts";
 
 /** Fakes for handler tests. The real quota rules are the SQL's, tested in sql_test.ts. */
 
@@ -331,6 +332,7 @@ export interface TestDeps extends Deps {
   transcriber: RecordingTranscriber;
   editAgent: FailingEditAgent;
   billing: FakePlayBilling;
+  translator: FakeTranslator;
   logs: Record<string, unknown>[];
   now: { value: Date };
 }
@@ -344,6 +346,7 @@ export function testDeps(): TestDeps {
     transcriber: new RecordingTranscriber(),
     editAgent: new FailingEditAgent([stepReply("Trimmed the first clip.")]),
     billing: new FakePlayBilling(),
+    translator: new FakeTranslator(),
     proProducts: ["precut_pro"],
     rtdnSecret: RTDN_SECRET,
     installTokenSecret: SECRET,

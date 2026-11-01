@@ -19,6 +19,7 @@ Each verdict is bound to one request: the server recomputes the hash and refuses
 - Register: `sha256("precut-register:" + installId)`
 - Transcribe: `sha256("precut-transcribe:" + installId + ":" + hex(sha256(audio bytes)))`
 - Edit: `sha256("precut-edit:" + installId + ":" + hex(sha256(request body bytes)))`
+- Translate: `sha256("precut-translate:" + installId + ":" + hex(sha256(request body bytes)))`
 - Purchase: `sha256("precut-purchase:" + installId + ":" + hex(sha256(purchase token)))`
 
 `installId` is a random UUID the app makes once and keeps (lower case). Verdicts must be under 5 minutes old, for `com.savie.precut`, signed with one of the certificates in `PLAY_CERT_SHA256`, on a device meeting `MEETS_DEVICE_INTEGRITY`.
@@ -34,6 +35,8 @@ Returns `{"status": Status}` and maybe `installToken`.
 Returns `{"transcript": {"language": "en", "durationMs": 2400, "words": [{"text": "Hello", "startMs": 100, "endMs": 600}]}, "secondsLeft": 1797}` and maybe `installToken`. Charged: the longer of the stated and the transcribed length, in whole seconds; nothing when it fails.
 
 **`POST /edit`** (Phase 22C) — body `{"runId": "<uuid>", "messages": [...]}` (at most 512 KB, 200 messages), with `X-Install-Token` and `X-Integrity-Token`. One step of prompt-to-edit: the app keeps the conversation with Claude and runs every tool itself, on a copy of the project through its own `EditReducer` (so Claude's changes follow exactly the editor's rules); the server adds the system prompt and the tools (`supabase/functions/_shared/edit_tools.json`), asks Claude, and returns `{"content": [...], "stopReason": "tool_use|end_turn|max_tokens|refusal", "stepsLeft": int, "editRunsLeft": int}` and maybe `installToken`. `messages` alternate user and assistant, starting with the user; user messages hold only `text` and `tool_result` blocks. `content` is Claude's reply to append as it is (thinking blocks included; after a server-side fallback to another model, only what may be sent back). A run is one request: its first step uses one of the month's runs, its later steps use the run's steps (`max_edit_steps`). Nothing of the conversation is stored or logged, only token counts and cost per run (`cloud_edit_runs`). Model: `ANTHROPIC_MODEL` (default `claude-opus-5-5`), effort `ANTHROPIC_EFFORT` (default `medium`); without `ANTHROPIC_API_KEY` the route answers `not_configured`.
+
+**`POST /translate`** (Phase 26B) — body `{"lines": [{"id", "text"}], "target": "fr"}` (at most 400 lines, 64 KB), with `X-Install-Token` and `X-Integrity-Token` (hash `precut-translate:` + install + body hash, as for edit). Claude translates each line (JSON-schema output, same model and effort as AI edit); returns `{"lines": [{"id", "text"}], "editRunsLeft"}`. Counts as one AI edit request (`runs_used`, `budget_reached` apply); nothing stored but the token counts.
 
 **`POST /purchase`** (Phase 25) — body `{"purchaseToken": "..."}`, with `X-Install-Token` and `X-Integrity-Token`. The server looks the token up with the Google Play Developer API (`purchases.subscriptionsv2.get`), refuses one Google doesn't know or for another product (`bad_purchase`), saves its state and end date, links it to this install, acknowledges it, and returns `{"status": Status}`. Works with cloud AI switched off. See `docs/BILLING.md`.
 

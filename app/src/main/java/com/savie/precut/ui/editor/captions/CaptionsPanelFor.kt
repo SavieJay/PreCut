@@ -32,6 +32,7 @@ fun CaptionsPanelFor(state: EditorUiState.Ready, positionMs: () -> Long, viewMod
             override fun onGenerateAgain() = viewModel.captions.onOpen()
             override fun onSaveSrt() = edits.onSaveSrt()
             override fun onShareSrt() = edits.onShareSrt()
+            override fun onTranslate() = viewModel.translate.open()
             override fun onDone() = viewModel.onToolClosed()
         }
     }

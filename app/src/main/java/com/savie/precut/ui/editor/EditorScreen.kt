@@ -51,6 +51,7 @@ import com.savie.precut.ui.editor.template.SaveTemplateSheet
 import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
 import com.savie.precut.ui.editor.captions.CaptionsHost
+import com.savie.precut.ui.editor.captions.TranslateSheet
 import com.savie.precut.ui.editor.aiedit.AiEditHost
 import com.savie.precut.ui.editor.coach.CoachMarksOverlay
 import com.savie.precut.ui.editor.coach.HookCoachSheet
@@ -204,6 +205,18 @@ fun EditorScreen(
             }
             is EditorEvent.OpenPaywall -> {
                 onOpenPaywall(event.feature.name)
+                return@ObserveAsEvents
+            }
+            is EditorEvent.Translated -> {
+                scope.launch {
+                    val text = when {
+                        event.noVoice -> resources.getString(R.string.translate_done_no_voice)
+                        event.dubbed > 0 -> resources.getQuantityString(R.plurals.translate_done_dubbed, event.dubbed, event.dubbed)
+                        else -> resources.getString(R.string.translate_done)
+                    }
+                    val result = snackbarHostState.showSnackbar(text, actionLabel = resources.getString(R.string.action_undo))
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
+                }
                 return@ObserveAsEvents
             }
             is EditorEvent.TranscriptCut -> {
@@ -366,6 +379,10 @@ fun EditorScreen(
                         AiEditHost(viewModel.aiEdit)
                         val hook by viewModel.hookCoach.state.collectAsStateWithLifecycle()
                         hook?.let { HookCoachSheet(it, viewModel.hookCoach::onApply, viewModel.hookCoach::onDismiss) }
+                        val translating by viewModel.translate.state.collectAsStateWithLifecycle()
+                        translating?.let {
+                            TranslateSheet(it, viewModel.translate::onLanguage, viewModel.translate::onDub, viewModel.translate::onTranslate, viewModel.translate::onDismiss)
+                        }
                         val formats by viewModel.formats.state.collectAsStateWithLifecycle()
                         formats?.let { FormatsSheet(it, viewModel.formats::onToggle, viewModel.formats::onExport, viewModel.formats::onDismiss) }
                     }

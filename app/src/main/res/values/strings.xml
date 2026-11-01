@@ -1290,4 +1290,23 @@
         <item quantity="one">Export %d video</item>
         <item quantity="other">Export %d videos</item>
     </plurals>
+
+    <!-- Translate and dub captions (Phase 26B) -->
+    <string name="translate_title">Translate captions</string>
+    <string name="translate_dub">Dub with a phone voice</string>
+    <string name="translate_dub_note">Speaks the translation with your phone\'s own text-to-speech voice and mutes the clips\' sound. Nobody\'s voice is copied.</string>
+    <string name="translate_disclosure">The captions\' words go to PreCut\'s server and to Claude, an AI by Anthropic, to be translated. No video or sound is sent. Uses one AI request.</string>
+    <string name="translate_go">Translate</string>
+    <string name="translate_working">Translating…</string>
+    <string name="translate_working_dub">Translating and speaking each line…</string>
+    <string name="translate_done">Captions translated</string>
+    <string name="translate_done_no_voice">Captions translated. Your phone has no voice for that language to dub with; add one in Android\'s text-to-speech settings.</string>
+    <plurals name="translate_done_dubbed">
+        <item quantity="one">Captions translated and %d line dubbed</item>
+        <item quantity="other">Captions translated and %d lines dubbed</item>
+    </plurals>
+    <string name="language_de">German</string>
+    <string name="language_sw">Swahili</string>
+    <string name="language_hi">Hindi</string>
+    <string name="language_zh">Chinese</string>
 </resources>

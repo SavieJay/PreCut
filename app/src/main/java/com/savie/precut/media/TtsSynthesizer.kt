@@ -26,6 +26,8 @@ data class TtsVoice(
     /** Usable offline, or still to be downloaded in Android's settings. */
     val installed: Boolean,
     val needsNetwork: Boolean,
+    /** The voice's language code ("fr", "yo"), for dubbing in a language. */
+    val language: String = "",
 )
 
 /** Turns text into a voiceover file with the device's own (offline) text-to-speech engine. */
@@ -81,6 +83,7 @@ class TtsSynthesizer @Inject constructor(
                 label = "$language · $number",
                 installed = TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED !in voice.features,
                 needsNetwork = voice.isNetworkConnectionRequired,
+                language = voice.locale.language,
             )
         }
     }

@@ -21,6 +21,11 @@ import {
   type PlayBilling,
 } from "./play_billing.ts";
 import { PostgresQuotaStore } from "./quota.ts";
+import {
+  AnthropicTranslator,
+  FakeTranslator,
+  type Translator,
+} from "./translator.ts";
 import { FakeTranscriber, type Transcriber } from "./transcriber.ts";
 
 /**
@@ -59,6 +64,7 @@ export function depsFromEnv(
     integrity: integrityFrom(env, local, fetchFn),
     transcriber: transcriberFrom(env, local, fetchFn),
     editAgent: editAgentFrom(env, local, fetchFn),
+    translator: translatorFrom(env, local, fetchFn),
     billing: billingFrom(env, local, fetchFn),
     proProducts: (env.PRO_PRODUCT_IDS ?? "precut_pro").split(",").map((id) =>
       id.trim()
@@ -166,6 +172,28 @@ function rtdnSecretFrom(
   return secret;
 }
 
+/** Caption translation with the AI edit's key, model and effort; null without a key. */
+function translatorFrom(
+  env: Record<string, string | undefined>,
+  local: boolean,
+  fetchFn: typeof fetch,
+): Translator | null {
+  if (env.EDIT_AGENT === "fake") {
+    if (!local) {
+      throw new ConfigError("EDIT_AGENT=fake is only allowed on a local stack");
+    }
+    return new FakeTranslator();
+  }
+  const key = env.ANTHROPIC_API_KEY?.trim();
+  if (!key) return null;
+  return new AnthropicTranslator(
+    key,
+    env.ANTHROPIC_MODEL?.trim() || DEFAULT_EDIT_MODEL,
+    effortFrom(env),
+    fetchFn,
+  );
+}
+
 /** Claude's default for AI edits; ANTHROPIC_MODEL picks another (e.g. a cheaper one). */
 export const DEFAULT_EDIT_MODEL = "claude-opus-5-5";
 const EFFORTS: readonly Effort[] = ["low", "medium", "high", "xhigh", "max"];
@@ -202,18 +230,23 @@ function editAgentFrom(
   }
   const key = env.ANTHROPIC_API_KEY?.trim();
   if (!key) return null;
+  return new AnthropicEditAgent(
+    key,
+    env.ANTHROPIC_MODEL?.trim() || DEFAULT_EDIT_MODEL,
+    effortFrom(env),
+    fetchFn,
+  );
+}
+
+/** ANTHROPIC_EFFORT, checked; medium by default. */
+function effortFrom(env: Record<string, string | undefined>): Effort {
   const effort = (env.ANTHROPIC_EFFORT ?? "medium") as Effort;
   if (!EFFORTS.includes(effort)) {
     throw new ConfigError(
       `ANTHROPIC_EFFORT must be one of ${EFFORTS.join(", ")}`,
     );
   }
-  return new AnthropicEditAgent(
-    key,
-    env.ANTHROPIC_MODEL?.trim() || DEFAULT_EDIT_MODEL,
-    effort,
-    fetchFn,
-  );
+  return effort;
 }
 
 /** The project's secret key: the new `sb_secret_` key when Supabase provides one, else the legacy service_role key. */

@@ -21,9 +21,10 @@ class RequestHashesTest {
     }
 
     @Test
-    fun `the AI edit and purchase hashes match the server's`() {
+    fun `the AI edit, purchase and translation hashes match the server's`() {
         assertEquals("NnxvaK91A1V6yd59eOkrNQZs_QvJlQrg9-TIB7xrkZo", RequestHashes.edit(INSTALL, """{"runId":"r","messages":[]}""".toByteArray()))
         assertEquals("RgzR5WuTU94TxfJjfvU48HQ6bZ-6qHakMSgqbpGPaZo", RequestHashes.purchase(INSTALL, "purchase-token-123"))
+        assertEquals("6JzPQOdYxb0fvDbNB5Y7LYQX9VIr6wREj726KXfC1Ws", RequestHashes.translate(INSTALL, """{"lines":[],"target":"fr"}""".toByteArray()))
     }
 
     private companion object {

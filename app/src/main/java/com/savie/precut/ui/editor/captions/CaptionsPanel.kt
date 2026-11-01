@@ -39,6 +39,8 @@ interface CaptionsPanelActions {
     fun onGenerateAgain()
     fun onSaveSrt()
     fun onShareSrt()
+    /** Translate (and dub) every caption (Phase 26B, Pro). */
+    fun onTranslate()
     fun onDone()
 }
 
@@ -67,6 +69,9 @@ fun CaptionsPanel(
         stringResource(R.string.tool_captions),
         actions::onDone,
         actions = {
+            IconButton(onClick = actions::onTranslate) {
+                Icon(painterResource(R.drawable.ic_record_voice_over), contentDescription = stringResource(R.string.translate_title), modifier = Modifier.size(20.dp))
+            }
             IconButton(onClick = actions::onSaveSrt) {
                 Icon(painterResource(R.drawable.ic_download), contentDescription = stringResource(R.string.captions_save_srt), modifier = Modifier.size(20.dp))
             }

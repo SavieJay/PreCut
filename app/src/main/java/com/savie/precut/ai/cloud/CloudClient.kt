@@ -135,6 +135,36 @@ class CloudClient @Inject constructor(
     }
 
     /**
+     * Caption translation (Phase 26B): the captions' words, as text, into language [target] (a 2-
+     * or 3-letter code); the lines come back by id. Counts as one AI edit request.
+     */
+    suspend fun translate(lines: List<CaptionLineDto>, target: String): AiResult<List<CaptionLineDto>> {
+        blocked(needsSwitch = true)?.let { return AiResult.Failed(it) }
+        val bytes = cloudJson.encodeToString(TranslateRequest.serializer(), TranslateRequest(lines, target)).toByteArray()
+        repeat(2) { attempt ->
+            val token = installs.token ?: when (val registered = register()) {
+                is AiResult.Ok -> registered.value
+                is AiResult.Failed -> return registered
+            }
+            val proof = when (val result = integrity.token(RequestHashes.translate(installs.installId(), bytes))) {
+                is AiResult.Ok -> result.value
+                is AiResult.Failed -> return result
+            }
+            val call = request("translate").header(HEADER_TOKEN, token).header(HEADER_INTEGRITY, proof).post(bytes.toRequestBody(JSON)).build()
+            when (val reply = send(call)) {
+                is Reply.Ok -> return decode<TranslateResponse>(reply.body)?.let { keep(it.installToken); AiResult.Ok(it.lines) } ?: busy()
+                is Reply.Refused -> when {
+                    reply.error.code == NOT_REGISTERED && attempt == 0 -> installs.token = null
+                    reply.error.code == NOT_CONFIGURED -> return AiResult.Failed(AiFailure.EditNotReady)
+                    else -> return AiResult.Failed(failureFor(reply.error))
+                }
+                is Reply.Failed -> return AiResult.Failed(reply.failure)
+            }
+        }
+        return busy()
+    }
+
+    /**
      * PreCut Pro (Phase 25): sends a subscription's [purchaseToken] (after buying, or to restore)
      * for the server to check with Google Play and link to this install; returns the install's
      * status with its plan. Works with cloud AI switched off: no media or text is sent.
