@@ -1309,4 +1309,18 @@
     <string name="language_sw">Swahili</string>
     <string name="language_hi">Hindi</string>
     <string name="language_zh">Chinese</string>
+
+    <!-- Long video to shorts (Phase 26B) -->
+    <string name="tool_shorts">Shorts</string>
+    <string name="shorts_title">Long video to shorts</string>
+    <string name="shorts_finding">Finding the best moments… %1$d%%</string>
+    <string name="shorts_making">Making upright shorts… %1$d%%</string>
+    <string name="shorts_saved">Each short is saved as its own draft in Projects, upright and reframed, with your captions.</string>
+    <string name="shorts_untitled">A strong moment</string>
+    <string name="shorts_hook_score">Hook %1$d</string>
+    <string name="shorts_open">Open</string>
+    <string name="shorts_export">Export</string>
+    <string name="shorts_export_all">Export all</string>
+    <string name="shorts_too_short">Shorts need a video of at least a minute.</string>
+    <string name="shorts_none">No moment long enough was found.</string>
 </resources>

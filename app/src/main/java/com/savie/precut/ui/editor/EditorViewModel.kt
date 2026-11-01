@@ -13,6 +13,7 @@ import com.savie.precut.data.AppSettings
 import com.savie.precut.data.OpenProjects
 import com.savie.precut.data.ProTastes
 import com.savie.precut.export.ExportController
+import com.savie.precut.media.shorts.MomentAnalyzer
 import com.savie.precut.model.pro.ProFeature
 import com.savie.precut.pro.EntitlementRepository
 import com.savie.precut.data.SubtitleFiles
@@ -244,6 +245,12 @@ sealed interface EditorEvent {
     data object BrandKitEmpty : EditorEvent
     /** Shown with Undo: captions translated, [dubbed] lines spoken; [noVoice] when the phone has no voice for the language. */
     data class Translated(val dubbed: Int, val noVoice: Boolean) : EditorEvent
+    data object ShortsTooShort : EditorEvent
+    data object ShortsNoneFound : EditorEvent
+    /** The screen should open another project's editor (a short just made). */
+    data class OpenProject(val projectId: String) : EditorEvent
+    /** The screen should open the export screen for another project (a short), with [settings] (JSON). */
+    data class ExportProject(val projectId: String, val settings: String) : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -284,6 +291,7 @@ class EditorViewModel @Inject constructor(
     entitlements: EntitlementRepository,
     proTastes: ProTastes,
     exportController: ExportController,
+    momentAnalyzer: MomentAnalyzer,
     exportCapabilities: ExportCapabilitiesProbe,
     frameGrabber: FrameGrabber,
     mediaSaver: MediaSaver,
@@ -433,6 +441,11 @@ class EditorViewModel @Inject constructor(
 
     /** Translate and dub captions (Pro). */
     val translate = EditorTranslate(host, pro, cloudClient, tts, importer)
+
+    /** Long video to shorts (Pro). */
+    val shorts = EditorShorts(
+        host, pro, previewController, momentAnalyzer, subjectTracker, frameGrabber, repository, exportController, clock,
+    ) { export.settings.value }
 
     /** One-tap multi-format export (Pro). */
     val formats = EditorFormats(host, pro, previewController, subjectTracker, frameGrabber, exportController) { export.settings.value }

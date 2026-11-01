@@ -45,6 +45,8 @@ interface ToolbarActions {
     fun onBrand()
     /** One-tap multi-format export (Phase 26B, Pro). */
     fun onFormats()
+    /** Long video to shorts (Phase 26B, Pro). */
+    fun onShorts()
     fun onStickers()
     fun onDraw()
     fun onEffects()
@@ -117,6 +119,7 @@ private fun RowScope.AllTools(canSplit: Boolean, hasClips: Boolean, actions: Too
         ProToolButton(R.drawable.ic_lightbulb, R.string.tool_hook, pro = free, enabled = hasClips, onClick = actions::onHookCoach)
         ProToolButton(R.drawable.ic_palette, R.string.tool_brand, pro = free, enabled = hasClips, onClick = actions::onBrand)
         ProToolButton(R.drawable.ic_aspect_ratio, R.string.tool_formats, pro = free, enabled = hasClips, onClick = actions::onFormats)
+        ProToolButton(R.drawable.ic_splitscreen, R.string.tool_shorts, pro = free, enabled = hasClips, onClick = actions::onShorts)
         ToolButton(R.drawable.ic_add_reaction, R.string.tool_stickers, hasClips, actions::onStickers)
         ToolButton(R.drawable.ic_draw, R.string.tool_draw, hasClips, actions::onDraw)
         ToolButton(R.drawable.ic_overlay, R.string.tool_overlay, hasClips, actions::onOverlay)

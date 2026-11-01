@@ -50,6 +50,8 @@ fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
                 onBack = { navController.popBackStack() },
                 onExport = { projectId, settings, kind -> navController.navigate(ExportRoute(projectId, settings, kind)) },
                 onOpenPaywall = { feature -> navController.navigate(PaywallRoute(feature)) },
+                // A short replaces the editor it came from: Back goes to Projects.
+                onOpenProject = { projectId -> navController.navigate(EditorRoute(projectId)) { popUpTo<HomeRoute>() } },
             )
         }
         composable<SettingsRoute> {

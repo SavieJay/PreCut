@@ -56,6 +56,8 @@ import com.savie.precut.ui.editor.aiedit.AiEditHost
 import com.savie.precut.ui.editor.coach.CoachMarksOverlay
 import com.savie.precut.ui.editor.coach.HookCoachSheet
 import com.savie.precut.ui.editor.export.FormatsSheet
+import com.savie.precut.ui.editor.export.ShortsActions
+import com.savie.precut.ui.editor.export.ShortsSheet
 import com.savie.precut.ui.editor.coach.CoachTargets
 import com.savie.precut.ui.editor.coach.LocalCoachTargets
 import com.savie.precut.ui.editor.export.EditorExportHost
@@ -67,6 +69,8 @@ fun EditorScreen(
     onExport: (projectId: String, settings: String, kind: String) -> Unit,
     /** Opens the paywall for a Pro feature (its `ProFeature` name). */
     onOpenPaywall: (feature: String) -> Unit = {},
+    /** Opens another project (a short made from this one). */
+    onOpenProject: (projectId: String) -> Unit = {},
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -201,6 +205,16 @@ fun EditorScreen(
                     val result = snackbarHostState.showSnackbar(resources.getString(text), actionLabel = resources.getString(R.string.action_undo))
                     if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
                 }
+                return@ObserveAsEvents
+            }
+            EditorEvent.ShortsTooShort -> resources.getString(R.string.shorts_too_short)
+            EditorEvent.ShortsNoneFound -> resources.getString(R.string.shorts_none)
+            is EditorEvent.OpenProject -> {
+                onOpenProject(event.projectId)
+                return@ObserveAsEvents
+            }
+            is EditorEvent.ExportProject -> {
+                onExport(event.projectId, event.settings, "VIDEO")
                 return@ObserveAsEvents
             }
             is EditorEvent.OpenPaywall -> {
@@ -383,6 +397,16 @@ fun EditorScreen(
                         translating?.let {
                             TranslateSheet(it, viewModel.translate::onLanguage, viewModel.translate::onDub, viewModel.translate::onTranslate, viewModel.translate::onDismiss)
                         }
+                        val shorts by viewModel.shorts.state.collectAsStateWithLifecycle()
+                        val shortsActions = remember(viewModel) {
+                            object : ShortsActions {
+                                override fun onOpen(projectId: String) = viewModel.shorts.onOpen(projectId)
+                                override fun onExport(projectId: String) = viewModel.shorts.onExport(projectId)
+                                override fun onExportAll() = viewModel.shorts.onExportAll()
+                                override fun onDismiss() = viewModel.shorts.onDismiss()
+                            }
+                        }
+                        shorts?.let { ShortsSheet(it, shortsActions) }
                         val formats by viewModel.formats.state.collectAsStateWithLifecycle()
                         formats?.let { FormatsSheet(it, viewModel.formats::onToggle, viewModel.formats::onExport, viewModel.formats::onDismiss) }
                     }
