@@ -27,6 +27,7 @@ import com.savie.precut.model.frameRatio
 import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.ui.editor.captions.CaptionsPanelFor
+import com.savie.precut.ui.editor.transcript.TranscriptPanelFor
 import com.savie.precut.ui.editor.tools.AudioMenuBar
 import com.savie.precut.ui.editor.tools.ChromaTool
 import com.savie.precut.ui.editor.tools.CutoutTool
@@ -68,6 +69,10 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
     }
     if (state.activeTool == EditorTool.CAPTIONS) {
         CaptionsPanelFor(state, positionMs, viewModel)
+        return
+    }
+    if (state.activeTool == EditorTool.TRANSCRIPT) {
+        TranscriptPanelFor(viewModel)
         return
     }
     if (audio != null) {

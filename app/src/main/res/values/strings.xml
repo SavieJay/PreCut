@@ -1219,4 +1219,25 @@
     <string name="follow_body">Finding the person in the clip under this text, on your phone.</string>
     <string name="follow_done">Now follows the person</string>
     <string name="follow_no_person">No person found in the clip under it</string>
+
+    <!-- Edit by transcript (Phase 26B) -->
+    <string name="tool_transcript">Transcript</string>
+    <string name="transcript_title">Edit by transcript</string>
+    <string name="transcript_needs_captions">Edit the video by editing its words. It works from the captions\' words, so make captions first.</string>
+    <string name="transcript_make_captions">Make captions</string>
+    <plurals name="transcript_fillers">
+        <item quantity="one">Remove filler words (%d)</item>
+        <item quantity="other">Remove filler words (%d)</item>
+    </plurals>
+    <plurals name="transcript_silences">
+        <item quantity="one">Remove silences (%d)</item>
+        <item quantity="other">Remove silences (%d)</item>
+    </plurals>
+    <string name="transcript_preview">Preview</string>
+    <string name="transcript_show_original">Show original</string>
+    <plurals name="transcript_apply">
+        <item quantity="one">Apply %d cut</item>
+        <item quantity="other">Apply %d cuts</item>
+    </plurals>
+    <string name="transcript_cut_done">%1$s cut from the video</string>
 </resources>

@@ -48,6 +48,7 @@ fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean) {
             EditorScreen(
                 onBack = { navController.popBackStack() },
                 onExport = { projectId, settings, kind -> navController.navigate(ExportRoute(projectId, settings, kind)) },
+                onOpenPaywall = { feature -> navController.navigate(PaywallRoute(feature)) },
             )
         }
         composable<SettingsRoute> {

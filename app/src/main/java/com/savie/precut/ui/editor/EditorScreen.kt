@@ -43,6 +43,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
+import com.savie.precut.ui.components.formatSeconds
 import com.savie.precut.ui.components.ObserveAsEvents
 import com.savie.precut.ui.editor.crop.CropTopBar
 import com.savie.precut.ui.editor.preview.FullScreenPreview
@@ -61,6 +62,8 @@ import com.savie.precut.ui.editor.export.rememberExportNavigator
 fun EditorScreen(
     onBack: () -> Unit,
     onExport: (projectId: String, settings: String, kind: String) -> Unit,
+    /** Opens the paywall for a Pro feature (its `ProFeature` name). */
+    onOpenPaywall: (feature: String) -> Unit = {},
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -191,6 +194,18 @@ fun EditorScreen(
                 }
                 scope.launch {
                     val result = snackbarHostState.showSnackbar(resources.getString(text), actionLabel = resources.getString(R.string.action_undo))
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
+                }
+                return@ObserveAsEvents
+            }
+            is EditorEvent.OpenPaywall -> {
+                onOpenPaywall(event.feature.name)
+                return@ObserveAsEvents
+            }
+            is EditorEvent.TranscriptCut -> {
+                scope.launch {
+                    val text = resources.getString(R.string.transcript_cut_done, formatSeconds(event.removedMs))
+                    val result = snackbarHostState.showSnackbar(text, actionLabel = resources.getString(R.string.action_undo))
                     if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
                 }
                 return@ObserveAsEvents

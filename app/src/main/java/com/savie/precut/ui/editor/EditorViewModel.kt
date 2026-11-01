@@ -11,6 +11,9 @@ import com.savie.precut.ai.CaptionJob
 import com.savie.precut.ai.cloud.CloudClient
 import com.savie.precut.data.AppSettings
 import com.savie.precut.data.OpenProjects
+import com.savie.precut.data.ProTastes
+import com.savie.precut.model.pro.ProFeature
+import com.savie.precut.pro.EntitlementRepository
 import com.savie.precut.data.SubtitleFiles
 import com.savie.precut.data.EffectFavourites
 import com.savie.precut.data.ProjectRepository
@@ -101,7 +104,7 @@ import javax.inject.Inject
  * Panels that replace the toolbar while open. VOLUME, FADE and SPEED act on the selected audio
  * clip when there is one, otherwise on a video clip.
  */
-enum class EditorTool { TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, CUTOUT, REFRAME, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET, MOTION_BLUR, BLEND, CAPTIONS }
+enum class EditorTool { TRANSCRIPT, TRIM, SPEED, FILTER, ADJUST, HSL, CURVES, VOLUME, FADE, TEXT, RATIO, VOICE, BEATS, VOICEOVER, COVER, EDIT, TRANSFORM, OPACITY, CANVAS, TRANSITION, ANIMATION, MASK, CHROMA, CUTOUT, REFRAME, KEYFRAME_EASING, TEXT_STYLE, TEXT_RICH, TEXT_TTS, STICKERS, DRAW, STICKER_ANIMATION, STICKER_OPACITY, EFFECTS, EFFECT_TARGET, MOTION_BLUR, BLEND, CAPTIONS }
 
 sealed interface EditorUiState {
     data object Loading : EditorUiState
@@ -231,6 +234,10 @@ sealed interface EditorEvent {
     data object KeepOneMainClip : EditorEvent
     /** Shown with Undo: an AI edit's [count] kept changes were applied as one step. */
     data class AiEditApplied(val count: Int) : EditorEvent
+    /** The screen should open the paywall for [feature] (a tap on a Pro tool with no free uses left). */
+    data class OpenPaywall(val feature: ProFeature) : EditorEvent
+    /** Shown with Undo: Edit by transcript took [removedMs] out. */
+    data class TranscriptCut(val removedMs: Long) : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -268,6 +275,8 @@ class EditorViewModel @Inject constructor(
     effectFavourites: EffectFavourites,
     private val appSettings: AppSettings,
     private val openProjects: OpenProjects,
+    entitlements: EntitlementRepository,
+    proTastes: ProTastes,
     exportCapabilities: ExportCapabilitiesProbe,
     frameGrabber: FrameGrabber,
     mediaSaver: MediaSaver,
@@ -399,6 +408,15 @@ class EditorViewModel @Inject constructor(
 
     /** Automatic captions: generating them, and regenerating one line. */
     val captions = EditorCaptions(host, previewController, captionJob, cloudClient, appSettings)
+
+    /** Pro gating: free tastes, then the paywall. */
+    val pro = EditorPro(host, entitlements, proTastes)
+
+    /** For the PRO badges on Pro tools. */
+    val isPro: StateFlow<Boolean> = entitlements.isPro
+
+    /** Edit by transcript (Pro). */
+    val transcript = EditorTranscript(host, pro)
 
     /** Prompt-to-edit: the request, Claude's steps and the review. */
     val aiEdit = EditorAiEdit(host, cloudClient, appSettings)
@@ -735,6 +753,7 @@ class EditorViewModel @Inject constructor(
             EditorTool.EFFECTS -> effects.open()
             EditorTool.EFFECT_TARGET -> Unit // opened by picking an effect
             EditorTool.CAPTIONS -> captionEdits.open()
+            EditorTool.TRANSCRIPT -> transcript.open()
             EditorTool.STICKER_ANIMATION, EditorTool.STICKER_OPACITY -> updateReady { it.copy(activeTool = tool) }
             EditorTool.TRIM, EditorTool.SPEED, EditorTool.VOLUME, EditorTool.FADE -> {
                 val clipId = targetClipId() ?: return
@@ -749,6 +768,7 @@ class EditorViewModel @Inject constructor(
     }
 
     fun onToolClosed() {
+        if ((_uiState.value as? EditorUiState.Ready)?.activeTool == EditorTool.TRANSCRIPT) return transcript.close()
         text.dropBlankSelected()
         // Audio and layer selections stay so their toolbars come back, like CapCut. HSL and
         // Curves are opened from Adjust, so closing them returns there.

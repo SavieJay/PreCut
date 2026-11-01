@@ -258,6 +258,8 @@ sealed interface EditAction {
     /** Sets (or with null clears) the project cover, and whether it's the export's first frame. */
     data class SetCover(val cover: ProjectCover?, val inExport: Boolean) : EditAction
 
+    /** Edit by transcript (Phase 26B): takes these stretches of the timeline out, closing the gaps. */
+    data class RemoveTimeRanges(val ranges: List<TimeRange>) : EditAction
     /** Several edits applied in order as one undo step (multi-select, "Apply to all"). */
     data class Batch(val actions: List<EditAction>) : EditAction
 

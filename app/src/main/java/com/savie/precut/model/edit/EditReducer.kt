@@ -68,6 +68,7 @@ object EditReducer {
                     project.copy(cover = action.cover, coverInExport = action.inExport && action.cover != null)
                 }
             is EditAction.Batch -> action.actions.fold(project, ::reduce)
+            is EditAction.RemoveTimeRanges -> project.withoutTimeRanges(action.ranges)
             is EditAction.SetClipVolume -> project.updateClip(action.clipId) { it.copy(volume = action.volume.coerceIn(0f, MAX_VOLUME)) }
             is EditAction.SetClipMuted -> project.updateClip(action.clipId) { it.copy(muted = action.muted) }
             is EditAction.SetClipNoiseReduction -> project.updateClip(action.clipId) { it.copy(noiseReduction = action.reduction?.clamped()) }

@@ -48,10 +48,12 @@ fun OverlayToolbarFor(viewModel: EditorViewModel) {
 fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: EditorViewModel) {
     val haptics = LocalHapticFeedback.current
     val settings by viewModel.appSettingsForUi.values.collectAsStateWithLifecycle()
+    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     EditorToolbar(
         canSplit = canSplit,
         hasClips = state.project.clips.isNotEmpty(),
         simple = settings.simpleMode,
+        free = !isPro,
         actions = object : ToolbarActions {
             override fun onSplit() {
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
@@ -82,6 +84,7 @@ fun MainToolbar(state: EditorUiState.Ready, canSplit: Boolean, viewModel: Editor
             override fun onText() = viewModel.onToolSelected(EditorTool.TEXT)
             override fun onCaptions() = viewModel.onCaptions()
             override fun onAiEdit() = viewModel.aiEdit.onOpen()
+            override fun onTranscript() = viewModel.onToolSelected(EditorTool.TRANSCRIPT)
             override fun onStickers() = viewModel.onToolSelected(EditorTool.STICKERS)
             override fun onDraw() = viewModel.onToolSelected(EditorTool.DRAW)
             override fun onEffects() = viewModel.onToolSelected(EditorTool.EFFECTS)
