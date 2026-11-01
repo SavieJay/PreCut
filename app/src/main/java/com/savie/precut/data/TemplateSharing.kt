@@ -5,8 +5,12 @@ import com.savie.precut.model.ai.AiFailure
 import com.savie.precut.model.ai.AiResult
 import com.savie.precut.model.template.ProjectTemplate
 import com.savie.precut.model.template.TemplateLinks
+import com.savie.precut.model.template.TemplateSummary
 import com.savie.precut.model.template.forSharing
+import com.savie.precut.model.template.summary
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,7 +38,9 @@ class CloudTemplateSharing @Inject constructor(
 ) : TemplateSharing {
     override suspend fun share(template: ProjectTemplate): ShareResult {
         val shared = template.forSharing() ?: return ShareResult.HasOwnMedia
-        val json = Json.parseToJsonElement(TemplateSerializer.encode(shared))
+        // The website's page draws the template from its summary.
+        val encoded = Json.parseToJsonElement(TemplateSerializer.encode(shared)).jsonObject
+        val json = JsonObject(encoded + ("summary" to Json.encodeToJsonElement(TemplateSummary.serializer(), shared.summary())))
         return when (val result = cloud.shareTemplate(json)) {
             is AiResult.Ok -> ShareResult.Shared(TemplateLinks.link(web.host, result.value))
             is AiResult.Failed -> ShareResult.Failed(result.failure)

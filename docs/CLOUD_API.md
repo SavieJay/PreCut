@@ -39,7 +39,7 @@ Returns `{"transcript": {"language": "en", "durationMs": 2400, "words": [{"text"
 
 **`POST /translate`** (Phase 26B) — body `{"lines": [{"id", "text"}], "target": "fr"}` (at most 400 lines, 64 KB), with `X-Install-Token` and `X-Integrity-Token` (hash `precut-translate:` + install + body hash, as for edit). Claude translates each line (JSON-schema output, same model and effort as AI edit); returns `{"lines": [{"id", "text"}], "editRunsLeft"}`. Counts as one AI edit request (`runs_used`, `budget_reached` apply); nothing stored but the token counts.
 
-**`POST /templates`** (Phase 28) — body `{"template": {...}}` (a template's JSON with no media of the maker's own; at most 256 KB), with `X-Install-Token` and `X-Integrity-Token` (hash `precut-template:` + install + body hash). Stores it under a new 8-character id and returns `{"id"}`; at most `templates_per_day` (20) per install a day (`templates_used`). Deleted with the install's cloud data.
+**`POST /templates`** (Phase 28) — body `{"template": {...}}` (a template's JSON with no media of the maker's own, plus a `summary` the website's page draws: `{"lengthMs", "parts": [{"ms", "slot"}], "slots", "texts"}`; at most 256 KB), with `X-Install-Token` and `X-Integrity-Token` (hash `precut-template:` + install + body hash). Stores it under a new 8-character id and returns `{"id"}`; at most `templates_per_day` (20) per install a day (`templates_used`). Deleted with the install's cloud data.
 
 **`GET /templates/<id>`** (Phase 28) — public, no API version (the website's `/t/<id>` page uses it too), CORS open, cacheable a minute: `{"template": {...}}` or `not_found`.
 

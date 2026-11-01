@@ -3,6 +3,7 @@ package com.savie.precut.model.template
 import com.savie.precut.model.AudioClip
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.project
+import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.model.sticker.Sticker
 import com.savie.precut.model.sticker.StickerKind
 import com.savie.precut.model.videoClip
@@ -38,5 +39,16 @@ class TemplateLinksTest {
         assertNull(TemplateLinks.idOf("https://precut.app/t/short", "precut.app"))
         assertNull(TemplateLinks.idOf("https://precut.app.evil.example/t/Abcdefgh", "precut.app"))
         assertEquals("shared-Abcdefgh", TemplateLinks.localId("Abcdefgh"))
+    }
+
+    @Test
+    fun `the summary gives the website the length and which stretches take your clips`() {
+        val fixed = videoClip("b", sourceDurationMs = 2_000L)
+        val withFixed = template.copy(project = template.project.copy(clips = listOf(slot, fixed)), texts = listOf(TemplateText("x")))
+        val summary = withFixed.summary()
+        assertEquals(slot.timelineDurationMs() + 2_000L, summary.lengthMs)
+        assertEquals(listOf(SummaryPart(slot.timelineDurationMs(), true), SummaryPart(2_000L, false)), summary.parts)
+        assertEquals(1, summary.slots)
+        assertEquals(1, summary.texts)
     }
 }
