@@ -25,13 +25,18 @@ PreCut Pro is sold through Google Play, which handles the payment under Google's
 ## Template links (optional)
 When you share a template as a link, PreCut's server keeps the template (its layout, texts, effects and timing; never your photos, videos or music) under a short code, so anyone with the link can open it in PreCut or on PreCut's website. It's kept until you tap Settings → Cloud AI → Delete my cloud data.
 
+## Updates and ratings
+- Now and then PreCut asks its server whether a newer version is out, so it can tell you. The request carries nothing about you; the server sees it like any web request.
+- After a few good exports, PreCut may let Google Play show its rating card. What you write there goes to Google Play under Google's terms. PreCut only remembers, on your phone, when it last let the card show.
+
 ## What stays on your phone
 To edit, PreCut works with files on your device:
 
 - **Photos and videos you pick.** You choose them with Android's picker, and PreCut can read only those. If the picker can't keep access to a file, PreCut saves a copy in its own storage so your project still works later.
 - **Your gallery, for B-roll (optional).** If you open B-roll, PreCut asks to read your photos and videos (on Android 14 and newer you can allow only some). It looks at the newest few hundred on your phone with an on-device image model to find them by what's in them, and keeps that list of labels in its own storage. Nothing from your gallery is uploaded. You can take the access back in Android's settings at any time.
+- **AI on your phone.** Background removal, auto reframe, noise reduction, follow person, finding moments for shorts and B-roll labels run on your phone with models built into the app. Nothing is sent for them.
 - **Microphone.** PreCut asks for the microphone only when you record a voiceover. The recording is saved in the app's storage as part of your project.
-- **Your projects.** PreCut saves drafts, covers, preview copies and other working files in its own storage on your phone.
+- **Your projects.** PreCut saves drafts, covers, preview copies and other working files in its own storage on your phone. So do your brand kit (a logo or fonts you add are copied in) and your answers to the welcome questions, which only change what it suggests first.
 - **Exports.** Videos, GIFs, audio and photos you export are saved to your phone's gallery or music folders, where other apps can see them like any other media.
 - **Notifications.** PreCut shows a notification while an export runs, so you can follow or cancel it.
 - **Crash reports.** If PreCut closes unexpectedly, it saves a short report (the error, your phone model, Android and app versions, and PreCut's own recent log lines) in its own storage. It stays there unless you share it yourself from Settings → Crash reports.
@@ -43,7 +48,7 @@ If you use text to speech, PreCut passes your text to the text-to-speech engine 
 
 ## Deleting your data
 - Deleting a project removes its files from the app. Settings → Clear preview cache frees working copies.
-- **Settings → Cloud AI → Delete my cloud data** deletes the random ID and minutes PreCut's server keeps for this phone.
+- **Settings → Cloud AI → Delete my cloud data** deletes the random ID and usage PreCut's server keeps for this phone, its Pro purchase records (unless another phone of yours uses them) and the templates you shared as links.
 - Uninstalling PreCut removes everything it stored on your phone, except media you exported to your gallery. What PreCut's server keeps is then deleted after 13 months without use.
 
 ## Children
@@ -53,4 +58,4 @@ PreCut isn't directed at children. Cloud AI sends only what the person using the
 If this policy changes, the new version will be posted at this address with a new effective date.
 
 ## Contact
-Questions about this policy: **[your contact email]**
+Questions about this policy: savyj03@gmail.com. The published copy is on PreCut's website at `/privacy` (Settings → About → Privacy policy), which shows the policy for the version on the download page.
