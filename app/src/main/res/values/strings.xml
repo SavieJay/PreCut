@@ -1025,4 +1025,77 @@
     <string name="captions_scope_label">Apply to</string>
     <string name="captions_scope_all">All captions</string>
     <string name="captions_scope_this">This caption</string>
+
+    <!-- Prompt-to-edit (Phase 22C) -->
+    <string name="tool_ai_edit">AI edit</string>
+    <string name="ai_edit_title">What should change?</string>
+    <string name="ai_edit_refine_title">What else should change?</string>
+    <string name="ai_edit_hint">For example: make it 15 seconds, add a title, warmer colours</string>
+    <string name="ai_edit_refine_hint">For example: keep the first clip longer</string>
+    <string name="ai_edit_suggestion_shorter">Make it about 15 seconds</string>
+    <string name="ai_edit_suggestion_title">Add a title at the start</string>
+    <string name="ai_edit_suggestion_transitions">Smooth transitions between clips</string>
+    <string name="ai_edit_suggestion_warm">Warm, bright colours</string>
+    <string name="ai_edit_suggestion_beats">Cut the clips to the music</string>
+    <string name="ai_edit_disclosure">Your request and a description of this project (clip lengths and order, your texts, music names, settings) go to PreCut\'s server and to Claude, an AI by Anthropic. No video, photo or sound is sent. You review every change before anything is applied.</string>
+    <plurals name="ai_edit_runs_left">
+        <item quantity="one">%d AI edit request left this month</item>
+        <item quantity="other">%d AI edit requests left this month</item>
+    </plurals>
+    <string name="ai_edit_send">Send</string>
+    <string name="ai_edit_agree_send">Agree and send</string>
+    <string name="ai_edit_working">Claude is editing…</string>
+    <string name="ai_edit_step">Step %1$d</string>
+    <plurals name="ai_edit_changes_so_far">
+        <item quantity="one">%d change so far</item>
+        <item quantity="other">%d changes so far</item>
+    </plurals>
+    <string name="ai_edit_stop">Stop</string>
+    <string name="ai_edit_review_title">Review the changes</string>
+    <string name="ai_edit_discard">Discard</string>
+    <string name="ai_edit_refine">Refine</string>
+    <plurals name="ai_edit_apply">
+        <item quantity="one">Apply %d</item>
+        <item quantity="other">Apply %d</item>
+    </plurals>
+    <plurals name="ai_edit_applied">
+        <item quantity="one">%d AI change applied</item>
+        <item quantity="other">%d AI changes applied</item>
+    </plurals>
+    <string name="ai_edit_note_out_of_steps">Claude ran out of steps for this request. Keep what\'s here, or Refine to go on.</string>
+    <string name="ai_edit_note_cut_short">Claude stopped early. Keep what\'s here, or Refine to go on.</string>
+    <string name="ai_edit_note_stopped">Stopped. Keep what\'s here, or Refine to go on.</string>
+    <string name="ai_edit_note_failed">Claude couldn\'t finish: %1$s</string>
+    <string name="ai_change_trim">Trimmed clip %1$d (%2$s)</string>
+    <string name="ai_change_split">Split clip %1$d at %2$s</string>
+    <plurals name="ai_change_delete_clips">
+        <item quantity="one">Removed %d clip</item>
+        <item quantity="other">Removed %d clips</item>
+    </plurals>
+    <string name="ai_change_move">Moved clip %1$d to place %2$d</string>
+    <string name="ai_change_duplicate">Copied clip %1$d</string>
+    <string name="ai_change_speed">Clip %1$d at %2$s× speed</string>
+    <string name="ai_change_sound">Changed clip %1$d\'s sound</string>
+    <string name="ai_change_look">Changed clip %1$d\'s colour</string>
+    <string name="ai_change_transition">Transition after clip %1$d</string>
+    <string name="ai_change_transition_removed">Removed the transition after clip %1$d</string>
+    <string name="ai_change_animation">Animated clip %1$d</string>
+    <string name="ai_change_add_text">Added text “%1$s”</string>
+    <string name="ai_change_edit_text">Changed text “%1$s”</string>
+    <plurals name="ai_change_delete_texts">
+        <item quantity="one">Removed %d text</item>
+        <item quantity="other">Removed %d texts</item>
+    </plurals>
+    <string name="ai_change_add_effect">Added an effect from %1$s to %2$s</string>
+    <string name="ai_change_ratio">Changed the shape to %1$s</string>
+    <string name="ai_change_music">Changed the audio “%1$s”</string>
+    <string name="ai_change_music_unnamed">Changed an audio clip</string>
+    <plurals name="ai_change_cut_to_beats">
+        <item quantity="one">Cut %d clip to the beat</item>
+        <item quantity="other">Cut %d clips to the beat</item>
+    </plurals>
+    <string name="ai_failure_edit_not_ready">AI edits aren\'t switched on yet. Try again after an update.</string>
+    <string name="ai_failure_edit_runs_used">You\'ve used this month\'s AI edit requests. They come back on %1$s.</string>
+    <string name="ai_failure_edit_runs_used_soon">You\'ve used this month\'s AI edit requests.</string>
+    <string name="ai_failure_steps_used">Claude ran out of steps before making a change. Try a simpler request.</string>
 </resources>

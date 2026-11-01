@@ -31,6 +31,7 @@ interface ToolbarActions {
     fun onReplace()
     fun onText()
     fun onCaptions()
+    fun onAiEdit()
     fun onStickers()
     fun onDraw()
     fun onEffects()
@@ -45,6 +46,7 @@ interface ToolbarActions {
 @Composable
 fun EditorToolbar(canSplit: Boolean, hasClips: Boolean, actions: ToolbarActions, modifier: Modifier = Modifier) {
     ToolRow(modifier) {
+        ToolButton(R.drawable.ic_auto_awesome, R.string.tool_ai_edit, hasClips, actions::onAiEdit)
         ToolButton(R.drawable.ic_split, R.string.tool_split, canSplit, actions::onSplit)
         ToolButton(R.drawable.ic_crop, R.string.tool_edit, hasClips, actions::onEdit)
         ToolButton(R.drawable.ic_trim, R.string.tool_trim, hasClips, actions::onTrim)

@@ -1,6 +1,6 @@
 # PreCut cloud API (Phase 20)
 
-The `cloud` Supabase Edge Function (`supabase/functions/cloud/`) is the only server PreCut talks to. It holds the ElevenLabs key, checks with Google Play Integrity that each caller is the genuine app on a genuine phone, and keeps each install's free minutes and everyone's monthly budget in Postgres (`supabase/migrations/*_cloud.sql`). There are no user accounts: an install registers once and gets the backend's own install token.
+The `cloud` Supabase Edge Function (`supabase/functions/cloud/`) is the only server PreCut talks to. It holds the ElevenLabs and Anthropic keys, checks with Google Play Integrity that each caller is the genuine app on a genuine phone, and keeps each install's free minutes and everyone's monthly budget in Postgres (`supabase/migrations/*_cloud.sql`). There are no user accounts: an install registers once and gets the backend's own install token.
 
 Base URL: `https://auekkmbwfpqofjqugjsr.supabase.co/functions/v1/cloud`
 
@@ -9,8 +9,8 @@ Base URL: `https://auekkmbwfpqofjqugjsr.supabase.co/functions/v1/cloud`
 |---|---|---|
 | `X-PreCut-Api: 1` | every request | API version; older clients get `upgrade_required` |
 | `x-region: eu-west-1` | every request | runs the function next to the database (Ireland, the project's region) |
-| `X-Install-Token` | status, transcribe, me | the token from `register` |
-| `X-Integrity-Token` | register, transcribe | a Play Integrity standard token whose request hash is below |
+| `X-Install-Token` | status, transcribe, edit, me | the token from `register` |
+| `X-Integrity-Token` | register, transcribe, edit | a Play Integrity standard token whose request hash is below |
 | `X-Audio-Duration-Ms` | transcribe | the audio's length as the app measured it |
 | `Content-Type` | transcribe | `audio/mp4` (m4a), `audio/wav`, `audio/mpeg`, `audio/ogg`, `audio/webm` |
 
@@ -18,6 +18,7 @@ Base URL: `https://auekkmbwfpqofjqugjsr.supabase.co/functions/v1/cloud`
 Each verdict is bound to one request: the server recomputes the hash and refuses a verdict made for anything else. Hashes are SHA-256, URL-safe base64 without padding (43 characters).
 - Register: `sha256("precut-register:" + installId)`
 - Transcribe: `sha256("precut-transcribe:" + installId + ":" + hex(sha256(audio bytes)))`
+- Edit: `sha256("precut-edit:" + installId + ":" + hex(sha256(request body bytes)))`
 
 `installId` is a random UUID the app makes once and keeps (lower case). Verdicts must be under 5 minutes old, for `com.savie.precut`, signed with one of the certificates in `PLAY_CERT_SHA256`, on a device meeting `MEETS_DEVICE_INTEGRITY`.
 
@@ -31,9 +32,11 @@ Returns `{"status": Status}` and maybe `installToken`.
 **`POST /transcribe?lang=auto|<2-3 letter code>`** — the audio as the body (at most 10 MB and the config's `max_seconds_per_upload`, 10 minutes by default), with `X-Install-Token`, `X-Integrity-Token`, `X-Audio-Duration-Ms`, `Content-Type`.
 Returns `{"transcript": {"language": "en", "durationMs": 2400, "words": [{"text": "Hello", "startMs": 100, "endMs": 600}]}, "secondsLeft": 1797}` and maybe `installToken`. Charged: the longer of the stated and the transcribed length, in whole seconds; nothing when it fails.
 
+**`POST /edit`** (Phase 22C) — body `{"runId": "<uuid>", "messages": [...]}` (at most 512 KB, 200 messages), with `X-Install-Token` and `X-Integrity-Token`. One step of prompt-to-edit: the app keeps the conversation with Claude and runs every tool itself, on a copy of the project through its own `EditReducer` (so Claude's changes follow exactly the editor's rules); the server adds the system prompt and the tools (`supabase/functions/_shared/edit_tools.json`), asks Claude, and returns `{"content": [...], "stopReason": "tool_use|end_turn|max_tokens|refusal", "stepsLeft": int, "editRunsLeft": int}` and maybe `installToken`. `messages` alternate user and assistant, starting with the user; user messages hold only `text` and `tool_result` blocks. `content` is Claude's reply to append as it is (thinking blocks included; after a server-side fallback to another model, only what may be sent back). A run is one request: its first step uses one of the month's runs, its later steps use the run's steps (`max_edit_steps`). Nothing of the conversation is stored or logged, only token counts and cost per run (`cloud_edit_runs`). Model: `ANTHROPIC_MODEL` (default `claude-opus-5-5`), effort `ANTHROPIC_EFFORT` (default `medium`); without `ANTHROPIC_API_KEY` the route answers `not_configured`.
+
 **`DELETE /me`** — `X-Install-Token`. Deletes everything kept about the install. Returns `{"deleted": true|false}`.
 
-`Status` is `{"cloudEnabled": bool, "secondsLeft": int, "secondsPerMonth": int, "resetsAt": "<ISO 8601>", "maxUploadSeconds": int}`. `cloudEnabled` is false while cloud AI is paused or the month's budget is used up.
+`Status` is `{"cloudEnabled": bool, "secondsLeft": int, "secondsPerMonth": int, "resetsAt": "<ISO 8601>", "maxUploadSeconds": int, "editEnabled": bool, "editRunsLeft": int, "editRunsPerMonth": int, "maxEditSteps": int}`. `cloudEnabled` is false while cloud AI is paused or the month's budget is used up; `editEnabled` likewise for AI edits (`edit_paused`, the edit budget).
 
 ## Errors
 Every refusal is `{"error": {"code": "<code>", ...details}}`:
@@ -52,10 +55,12 @@ Every refusal is `{"error": {"code": "<code>", ...details}}`:
 | `too_long` | 413 | `maxUploadSeconds` | (the app splits audio first) |
 | `quota_used` | 429 | `secondsLeft`, `resetsAt` | free minutes used; when they come back |
 | `budget_reached` | 503 | `resetsAt` | cloud AI is busy this month |
+| `runs_used` | 429 | `editRunsLeft`, `resetsAt` | AI edit requests used; when they come back |
+| `steps_used` | 429 | `maxEditSteps` | (the run ends; its changes stay for review) |
 | `paused` | 503 | | cloud AI is paused |
 | `provider_failed` | 502 | | try again |
 | `not_found` | 404 | | (a bug) |
-| `not_configured`, `server_error` | 500 | | try again later |
+| `not_configured`, `server_error` | 500 | | try again later (on `/edit`: AI edits aren't switched on yet) |
 
 ## Limits and settings
 Edit the single row of `public.cloud_config` in the Supabase dashboard (Table Editor); it applies at once, with no redeploy and no app update:
@@ -63,9 +68,13 @@ Edit the single row of `public.cloud_config` in the Supabase dashboard (Table Ed
 - `budget_seconds_per_month`: 324000 (5,400 minutes, about $20 at $0.0037/min)
 - `max_seconds_per_upload`: 600
 - `paused`: false
+- `free_edit_runs_per_month`: 10 (AI edit requests per install)
+- `max_edit_steps`: 8 (Claude steps in one request)
+- `edit_budget_microusd_per_month`: 20000000 ($20 of Claude for everyone)
+- `edit_paused`: false
 
 ## Secrets (`supabase/.env.secrets`, from `.env.secrets.example`)
-`ELEVENLABS_API_KEY`, `ELEVENLABS_ZERO_RETENTION`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `INSTALL_TOKEN_SECRET`, `PLAY_CERT_SHA256`. Supabase provides `SUPABASE_URL` and the project's secret key itself. `REQUIRE_INTEGRITY=false` and `TRANSCRIBER=fake` exist for a local stack only; a deployed function refuses to start with them.
+`ELEVENLABS_API_KEY`, `ELEVENLABS_ZERO_RETENTION`, `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT`), `GOOGLE_SERVICE_ACCOUNT_JSON`, `INSTALL_TOKEN_SECRET`, `PLAY_CERT_SHA256`. Supabase provides `SUPABASE_URL` and the project's secret key itself. `REQUIRE_INTEGRITY=false`, `TRANSCRIBER=fake` and `EDIT_AGENT=fake` exist for a local stack only; a deployed function refuses to start with them.
 
 ## Setup (on your own accounts)
 1. **Supabase:** PreCut's project is `auekkmbwfpqofjqugjsr`, in `eu-west-1` (Ireland); a region can't be changed after creation. Free while developing, Pro before launch (Free pauses a project after a week with no database activity). On this machine, once: `npx supabase login` (opens your browser; the CLI keeps the token, so it never appears in a command).
@@ -88,7 +97,7 @@ Edit the single row of `public.cloud_config` in the Supabase dashboard (Table Ed
 **Hosted Supabase waits for the whole upload.** It doesn't pass the function's reply back while the request body is still arriving, so a reply sent before an upload was read hangs the caller (a deployed project answered 1 KB but never 100 KB). The function therefore reads any upload to the end (up to 10 MB) before every reply, refusals included. With that, 100 KB to 10 MB all reach the function (10 MB took 21 s to upload from Lagos at about 0.5 MB/s).
 
 ## Logs
-The function logs one JSON line per request (method, path, status, time) and per event (register, transcribe, forget, integrity refusals) with a 10-character hash of the install ID, lengths and outcomes. Never audio, words, tokens or install IDs.
+The function logs one JSON line per request (method, path, status, time) and per event (register, transcribe, edit, forget, integrity refusals) with a 10-character hash of the install ID (and of an edit's run ID), lengths, token counts, cost and outcomes. Never audio, words, prompts, Claude's replies, tokens or install IDs.
 
 ## App side (Phase 20B)
 - **Config:** the gitignored `cloud.properties` (`cloudUrl`, `cloudRegion`, `playCloudProjectNumber`) becomes `BuildConfig` fields; without it the app builds and says cloud AI isn't set up.
@@ -99,6 +108,7 @@ The function logs one JSON line per request (method, path, status, time) and per
 - **`ai/cloud/RequestHashes`:** the request hashes above; its unit test uses values produced by the server's own code.
 - **Settings → Cloud AI** (`ui/settings/CloudAiSection`): the switch, free minutes, Check cloud AI, Delete my cloud data, What is sent.
 - The install ID and token live in the private `cloud` preferences, which the backup rules leave out.
+- **AI edit (Phase 22C, `model/ai/edit`, `ui/editor/EditorAiEdit`):** the editor's AI edit button opens the request sheet, which says what is sent (the project's description and the request; never media) and agrees to it on the first Send. `EditSession` sends the project brief (`editBrief`: items under short aliases like `c1`, times in seconds, catalogs of this app's filters, effects, transitions, animations and text templates) and the request, then loops: each `tool_use` is run by `EditTools` on the working copy through `EditReducer`, and every result (new ids, the updated clip timeline, or a reason with `is_error`) goes back in one user message. The review panel replaces the timeline while the preview plays the proposal; each change has a switch, and Apply re-runs the kept ones (with the ids they made) as one `Batch`, one undo step. A follow-up (Refine) keeps only the switched-on changes and tells Claude the project as it now is.
 
 ## Tests
-`cd supabase/functions/cloud && deno task test` (handler, Play Integrity rules, install tokens, ElevenLabs mapping, config, and the SQL under PGlite), and `deno task check` (types, lint, formatting). App: `./gradlew testDebugUnitTest --tests '*CloudClientTest' --tests '*RequestHashesTest'`. Live: `python3 -I tools/cloud_smoke.py https://auekkmbwfpqofjqugjsr.supabase.co/functions/v1/cloud`.
+`cd supabase/functions/cloud && deno task test` (handler, Play Integrity rules, install tokens, ElevenLabs mapping, config, and the SQL under PGlite), and `deno task check` (types, lint, formatting). App: `./gradlew testDebugUnitTest --tests '*CloudClientTest' --tests '*RequestHashesTest' --tests 'com.savie.precut.model.ai.edit.*'` (the tool test reads `edit_tools.json`, so a tool added on the server without a phone side fails it). Live: `python3 -I tools/cloud_smoke.py https://auekkmbwfpqofjqugjsr.supabase.co/functions/v1/cloud`.

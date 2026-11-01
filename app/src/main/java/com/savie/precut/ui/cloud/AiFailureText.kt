@@ -28,6 +28,10 @@ fun aiFailureMessage(failure: AiFailure): String {
         is AiFailure.TooLong -> (failure.maxSeconds / 60).let { pluralStringResource(R.plurals.ai_failure_too_long, it, it) }
         AiFailure.TooLarge -> stringResource(R.string.ai_failure_too_large)
         AiFailure.BadAudio -> stringResource(R.string.ai_failure_bad_audio)
+        AiFailure.EditNotReady -> stringResource(R.string.ai_failure_edit_not_ready)
+        is AiFailure.EditRunsUsed -> day(failure.resetsAtMs)?.let { stringResource(R.string.ai_failure_edit_runs_used, it) }
+            ?: stringResource(R.string.ai_failure_edit_runs_used_soon)
+        AiFailure.StepsUsed -> stringResource(R.string.ai_failure_steps_used)
         AiFailure.UpdateApp -> stringResource(R.string.ai_failure_update_app)
         AiFailure.Busy -> stringResource(R.string.ai_failure_busy)
     }

@@ -49,6 +49,7 @@ import com.savie.precut.ui.editor.template.SaveTemplateSheet
 import com.savie.precut.ui.components.rememberCameraLaunchers
 import kotlinx.coroutines.launch
 import com.savie.precut.ui.editor.captions.CaptionsHost
+import com.savie.precut.ui.editor.aiedit.AiEditHost
 import com.savie.precut.ui.editor.export.EditorExportHost
 import com.savie.precut.ui.editor.export.rememberExportNavigator
 
@@ -184,6 +185,14 @@ fun EditorScreen(
                 }
                 scope.launch {
                     val result = snackbarHostState.showSnackbar(resources.getString(text), actionLabel = resources.getString(R.string.action_undo))
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
+                }
+                return@ObserveAsEvents
+            }
+            is EditorEvent.AiEditApplied -> {
+                scope.launch {
+                    val text = resources.getQuantityString(R.plurals.ai_edit_applied, event.count, event.count)
+                    val result = snackbarHostState.showSnackbar(text, actionLabel = resources.getString(R.string.action_undo))
                     if (result == SnackbarResult.ActionPerformed) viewModel.onUndo()
                 }
                 return@ObserveAsEvents
@@ -326,6 +335,7 @@ fun EditorScreen(
                     )
                     EditorExportHost(state, viewModel, exportNavigator, viewModel.appSettingsForUi)
                     CaptionsHost(viewModel.captions)
+                    AiEditHost(viewModel.aiEdit)
                 }
             }
         }

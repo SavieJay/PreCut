@@ -225,6 +225,8 @@ sealed interface EditorEvent {
     /** The screen should open the photo picker for an overlay. */
     data object PickOverlay : EditorEvent
     data object KeepOneMainClip : EditorEvent
+    /** Shown with Undo: an AI edit's [count] kept changes were applied as one step. */
+    data class AiEditApplied(val count: Int) : EditorEvent
 }
 
 @OptIn(FlowPreview::class)
@@ -326,6 +328,11 @@ class EditorViewModel @Inject constructor(
             val ready = _uiState.value as? EditorUiState.Ready ?: return
             showInPreview(playable(ready.project, ready.missingIds), previewState.value.positionMs)
         }
+        override fun showInstead(project: Project?) {
+            previewInstead = project
+            previewController.pause()
+            refreshPreview()
+        }
     }
 
     /** Audio lanes, extract, voiceover and audio-clip tools. */
@@ -388,6 +395,9 @@ class EditorViewModel @Inject constructor(
     /** Automatic captions: generating them, and regenerating one line. */
     val captions = EditorCaptions(host, previewController, captionJob, cloudClient, appSettings)
 
+    /** Prompt-to-edit: the request, Claude's steps and the review. */
+    val aiEdit = EditorAiEdit(host, cloudClient, appSettings)
+
     /** The Captions panel: editing lines, a style for all, the SRT file. */
     val captionEdits = EditorCaptionEdits(host, subtitleFiles, appSettings)
 
@@ -407,6 +417,9 @@ class EditorViewModel @Inject constructor(
 
     /** Edits, undo history and auto-save; set once the project has loaded. */
     private var session: ProjectSession? = null
+
+    /** An AI edit's proposal under review, played instead of the project; null plays the project. */
+    private var previewInstead: Project? = null
 
     /** What the preview currently plays, to skip rebuilds that wouldn't change anything. */
     private var previewed: Project? = null
@@ -564,7 +577,8 @@ class EditorViewModel @Inject constructor(
             .toSet()
 
     /** What the preview plays: without media that can't be opened, and with ready proxies. */
-    private fun playable(project: Project, missing: Set<String>): Project {
+    private fun playable(edited: Project, missing: Set<String>): Project {
+        val project = previewInstead ?: edited
         val present = if (missing.isEmpty()) {
             project
         } else {
@@ -879,6 +893,7 @@ class EditorViewModel @Inject constructor(
         session?.flush()
         audio.release()
         captions.onCleared()
+        aiEdit.onCleared()
         previewController.release()
     }
 

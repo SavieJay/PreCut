@@ -29,6 +29,8 @@ data class SettingsValues(
     val captionLanguage: String? = null,
     /** Captions' last style, a `CaptionStyle` id. */
     val captionStyleId: String = CaptionStyle.DEFAULT.id,
+    /** The AI edit sheet's note on what's sent was agreed to (Phase 22C); it stays shown, smaller. */
+    val aiEditConsented: Boolean = false,
 )
 
 interface AppSettings {

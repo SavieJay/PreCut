@@ -15,6 +15,10 @@ internal object RequestHashes {
     fun transcribe(installId: String, audio: ByteArray): String =
         base64Url(sha256("precut-transcribe:$installId:${hex(sha256(audio))}".toByteArray()))
 
+    /** An AI edit step: the install and the exact request body (the conversation so far). */
+    fun edit(installId: String, body: ByteArray): String =
+        base64Url(sha256("precut-edit:$installId:${hex(sha256(body))}".toByteArray()))
+
     private fun sha256(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
 
     private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it.toInt() and 0xFF) }

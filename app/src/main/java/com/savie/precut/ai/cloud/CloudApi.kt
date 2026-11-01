@@ -4,8 +4,10 @@ import com.savie.precut.model.ai.AiFailure
 import com.savie.precut.model.ai.CloudStatus
 import com.savie.precut.model.ai.Transcript
 import com.savie.precut.model.ai.TranscriptWord
+import com.savie.precut.model.ai.edit.EditStepReply
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 
@@ -22,8 +24,11 @@ internal data class StatusDto(
     val secondsPerMonth: Int,
     val resetsAt: String,
     val maxUploadSeconds: Int,
+    val editEnabled: Boolean = false,
+    val editRunsLeft: Int = 0,
+    val editRunsPerMonth: Int = 0,
 ) {
-    fun toModel() = CloudStatus(cloudEnabled, secondsLeft, secondsPerMonth, epochMs(resetsAt), maxUploadSeconds)
+    fun toModel() = CloudStatus(cloudEnabled, secondsLeft, secondsPerMonth, epochMs(resetsAt), maxUploadSeconds, editEnabled, editRunsLeft, editRunsPerMonth)
 }
 
 @Serializable
@@ -45,6 +50,21 @@ internal data class TranscriptDto(val language: String? = null, val durationMs: 
 
 @Serializable
 internal data class TranscribeResponse(val transcript: TranscriptDto, val secondsLeft: Int, val installToken: String? = null)
+
+/** One step of an AI edit: the run it belongs to and the whole conversation so far. */
+@Serializable
+internal data class EditRequest(val runId: String, val messages: JsonArray)
+
+@Serializable
+internal data class EditResponse(
+    val content: JsonArray,
+    val stopReason: String,
+    val stepsLeft: Int,
+    val editRunsLeft: Int,
+    val installToken: String? = null,
+) {
+    fun toModel() = EditStepReply(content, stopReason, stepsLeft, editRunsLeft)
+}
 
 @Serializable
 internal data class ErrorDto(
@@ -70,6 +90,8 @@ internal fun failureFor(error: ErrorDto): AiFailure = when (error.code) {
     "paused" -> AiFailure.Paused
     "too_long" -> AiFailure.TooLong(error.maxUploadSeconds ?: 0)
     "too_large" -> AiFailure.TooLarge
+    "runs_used" -> AiFailure.EditRunsUsed(error.resetsAt?.let(::epochMs))
+    "steps_used" -> AiFailure.StepsUsed
     "bad_audio", "unsupported_audio" -> AiFailure.BadAudio
     else -> AiFailure.Busy
 }

@@ -138,7 +138,7 @@
   },
   {
     "name": "set_transition",
-    "description": "The transition from a main-track clip into the next one: a type from catalog.transitions (\"none\" removes it) lasting duration_seconds (0.1 to 5; null keeps the default). Overlapping types make the video shorter by their length.",
+    "description": "The transition from a main-track clip into the next one: a type from catalog.transitions (\"none\" removes it) lasting duration_seconds (0.1 to 2; null keeps its current length, or 0.5). Overlapping types make the video shorter by their length.",
     "strict": true,
     "input_schema": {
       "type": "object",

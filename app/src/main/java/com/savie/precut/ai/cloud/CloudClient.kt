@@ -7,10 +7,12 @@ import com.savie.precut.model.ai.AiFailure
 import com.savie.precut.model.ai.AiResult
 import com.savie.precut.model.ai.CloudStatus
 import com.savie.precut.model.ai.Transcript
+import com.savie.precut.model.ai.edit.EditStepReply
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonArray
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -89,6 +91,39 @@ class CloudClient @Inject constructor(
                     installs.token = null
                 } else {
                     return AiResult.Failed(failureFor(reply.error))
+                }
+                is Reply.Failed -> return AiResult.Failed(reply.failure)
+            }
+        }
+        return busy()
+    }
+
+    /**
+     * One step of an AI edit (Phase 22C): the whole conversation so far ([messages]) for run
+     * [runId], and Claude's reply. Only the project's description and the request are sent, never
+     * media; the prompt sheet says so before the first request.
+     */
+    suspend fun editStep(runId: String, messages: JsonArray): AiResult<EditStepReply> {
+        blocked(needsSwitch = true)?.let { return AiResult.Failed(it) }
+        val bytes = cloudJson.encodeToString(EditRequest.serializer(), EditRequest(runId, messages)).toByteArray()
+        if (bytes.size > MAX_EDIT_BYTES) return AiResult.Failed(AiFailure.TooLarge)
+        repeat(2) { attempt ->
+            val token = installs.token ?: when (val registered = register()) {
+                is AiResult.Ok -> registered.value
+                is AiResult.Failed -> return registered
+            }
+            val proof = when (val result = integrity.token(RequestHashes.edit(installs.installId(), bytes))) {
+                is AiResult.Ok -> result.value
+                is AiResult.Failed -> return result
+            }
+            val call = request("edit").header(HEADER_TOKEN, token).header(HEADER_INTEGRITY, proof).post(bytes.toRequestBody(JSON)).build()
+            when (val reply = send(call)) {
+                is Reply.Ok -> return decode<EditResponse>(reply.body)?.let { keep(it.installToken); AiResult.Ok(it.toModel()) } ?: busy()
+                is Reply.Refused -> when {
+                    reply.error.code == NOT_REGISTERED && attempt == 0 -> installs.token = null
+                    // Without a Claude key on the server, AI edits simply aren't on yet.
+                    reply.error.code == NOT_CONFIGURED -> return AiResult.Failed(AiFailure.EditNotReady)
+                    else -> return AiResult.Failed(failureFor(reply.error))
                 }
                 is Reply.Failed -> return AiResult.Failed(reply.failure)
             }
@@ -187,7 +222,10 @@ class CloudClient @Inject constructor(
         const val HEADER_INTEGRITY = "X-Integrity-Token"
         const val HEADER_DURATION = "X-Audio-Duration-Ms"
         const val NOT_REGISTERED = "not_registered"
+        const val NOT_CONFIGURED = "not_configured"
         const val MAX_UPLOAD_BYTES = 10L * 1024 * 1024
+        /** The server's limit for one step's conversation. */
+        const val MAX_EDIT_BYTES = 512 * 1024
         val JSON = "application/json".toMediaType()
     }
 }

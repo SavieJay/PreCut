@@ -1,18 +1,19 @@
 # PreCut privacy policy
 
-**Effective:** 22 October 2026
+**Effective:** 1 November 2026
 
-PreCut is a video editor for Android. This policy explains what the app does with your information. In short: PreCut edits on your phone, and nothing leaves it unless you use a cloud AI feature and agree, that time, to send the sound. Then only the sound is sent, to turn speech into words.
+PreCut is a video editor for Android. This policy explains what the app does with your information. In short: PreCut edits on your phone, and nothing leaves it unless you use a cloud AI feature and agree to send what it needs: the sound, to turn speech into words, or a written description of your project and your request, for AI edit. Video and photos never leave your phone.
 
 ## Cloud AI (optional, and asked every time)
-Some features can use cloud AI: today Settings → Cloud AI → Check cloud AI, and automatic captions when they arrive. Before anything is sent, PreCut shows what it is about to send and asks you. If you say no, nothing is sent. You can switch cloud AI off in Settings → Cloud AI.
+Some features can use cloud AI: Settings → Cloud AI → Check cloud AI, automatic captions, and AI edit. Before anything is sent, PreCut shows what it is about to send and asks you. If you say no, nothing is sent. You can switch cloud AI off in Settings → Cloud AI.
 
 When you agree:
 
-- **What is sent:** only the sound you're making captions for (for Check cloud AI, a test phrase your phone speaks). Never the video, photos or project.
+- **What is sent for captions:** only the sound you're making captions for (for Check cloud AI, a test phrase your phone speaks). Never the video or photos.
 - **Where it goes:** PreCut's server, which runs on Supabase in Ireland (EU). It passes the sound to ElevenLabs, a speech-to-text service, and sends the words and their timings back to your phone.
-- **What PreCut's server keeps:** no audio and no words. It keeps a random ID that the app made for this installation (not linked to your name, email or phone number) and how many minutes it used this month, so each phone gets its free minutes. Both are deleted after 13 months without use, or when you tap **Settings → Cloud AI → Delete my cloud data**. The server's logs record each request's time, type, size and outcome with a shortened form of that ID, never the sound or the words; like any web service, the hosting provider's logs also record your IP address. Logs are kept briefly to run and protect the service.
+- **What PreCut's server keeps:** no audio and no words. It keeps a random ID that the app made for this installation (not linked to your name, email or phone number) and how many minutes and AI edit requests it used this month, so each phone gets its free share. Both are deleted after 13 months without use, or when you tap **Settings → Cloud AI → Delete my cloud data**. The server's logs record each request's time, type, size and outcome with a shortened form of that ID, never the sound, the words, your requests or Claude's answers; like any web service, the hosting provider's logs also record your IP address. Logs are kept briefly to run and protect the service.
 - **ElevenLabs** turns the sound into words for PreCut, under its own privacy policy and data terms (https://elevenlabs.io/privacy-policy).
+- **AI edit:** what you ask for, and a written description of the project you're editing: how many clips there are, their lengths, order and settings (filters, speed, transitions), the words of your texts and captions, and the names of your music and sound files. Never the video, photos or sound. PreCut's server passes them to **Claude**, an AI by **Anthropic**, which answers with changes for your phone to make; you review every change before it's applied. PreCut's server doesn't store the description, your request or Claude's answers; it keeps only how many AI edit requests this phone used this month and their size and cost, with the random ID below. Anthropic processes them for PreCut under its commercial terms and privacy policy (https://www.anthropic.com/legal/privacy), which don't allow it to train its models on them.
 - **Google Play Integrity:** before sending, PreCut asks Google Play to confirm that it's the genuine PreCut on a genuine Android phone, so no one else can use PreCut's minutes. Google Play makes that check under Google's terms, with information about the app and the device; PreCut receives only the result.
 
 Cloud AI needs the internet. Without a connection, PreCut tells you and sends nothing.
@@ -38,7 +39,7 @@ If you use text to speech, PreCut passes your text to the text-to-speech engine 
 - Uninstalling PreCut removes everything it stored on your phone, except media you exported to your gallery. What PreCut's server keeps is then deleted after 13 months without use.
 
 ## Children
-PreCut isn't directed at children. Cloud AI sends only sound that the person using the app chooses to send.
+PreCut isn't directed at children. Cloud AI sends only what the person using the app chooses to send.
 
 ## Changes
 If this policy changes, the new version will be posted at this address with a new effective date.

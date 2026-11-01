@@ -20,6 +20,11 @@ data class CloudStatus(
     /** When the free minutes start again; null if the server's date couldn't be read. */
     val resetsAtMs: Long?,
     val maxUploadSeconds: Int,
+    /** False while AI edits are switched off on the server (Phase 22C). */
+    val editEnabled: Boolean = false,
+    /** AI edit requests left this month, and how many a month brings. */
+    val editRunsLeft: Int = 0,
+    val editRunsPerMonth: Int = 0,
 )
 
 /**
@@ -69,6 +74,15 @@ sealed interface AiFailure {
     data object TooLarge : AiFailure
 
     data object BadAudio : AiFailure
+
+    /** AI edits aren't switched on on the server yet (no Claude key there). */
+    data object EditNotReady : AiFailure
+
+    /** This month's AI edit requests are used up. */
+    data class EditRunsUsed(val resetsAtMs: Long?) : AiFailure
+
+    /** One request used all the steps it may take. */
+    data object StepsUsed : AiFailure
 
     /** The server speaks a newer version of the API than this app. */
     data object UpdateApp : AiFailure

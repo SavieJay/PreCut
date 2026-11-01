@@ -201,6 +201,26 @@ Both work on the phone, offline. For Reframe use a landscape video of a person w
 | Reduce noise on a clip with no sound (a screen recording without audio) | "Not enough sound in this clip to measure its noise"; the switch stays off | |
 | Undo, Redo; close and reopen the project | Each comes back as it was | |
 
+## 4l. AI edit (Phase 22C)
+Needs the Anthropic key on the server (`ANTHROPIC_API_KEY` in `supabase/.env.secrets`, pushed, and the `edit` migration applied) and cloud AI on. Use a project with three or four clips, a text and music with beats marked (Beats → Auto).
+
+| Check | Expected | Result |
+|---|---|---|
+| Before the key is on the server: AI edit → type a request → Agree and send | "AI edits aren't switched on yet…"; nothing changes | |
+| AI edit (first button on the toolbar) | The sheet: request box, idea chips, the note on what's sent, "N AI edit requests left this month", Agree and send | |
+| Tap an idea chip, then Agree and send | "Claude is editing… Step 1 · 0 changes so far", then the review in place of the timeline, with Claude's sentence and a list of changes | |
+| Play the preview during the review | It plays the changes; the real project is untouched (Discard shows it as it was) | |
+| Switch one change off | The preview drops it at once; Apply's count goes down | |
+| Apply | "N AI changes applied" with Undo; the timeline shows them; one Undo removes them all | |
+| "Make it about 15 seconds" on a 40 s project | Clips trimmed or removed so the total is near 15 s | |
+| "Cut the clips to the music" | Clips end on beats | |
+| Refine → "keep the first clip longer" | Claude changes it; the list grows; earlier switched-off changes are gone | |
+| Stop while it works | The review shows the changes made so far, with "Stopped." | |
+| A request it can't do ("add a dog") | The sheet stays open with Claude saying it can't | |
+| Airplane mode, then Send | "You're offline…"; the sheet keeps the request | |
+| Back during the review | The review closes; nothing was applied | |
+| Settings → Cloud AI off, then AI edit → Send | "Cloud AI is off in Settings." | |
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

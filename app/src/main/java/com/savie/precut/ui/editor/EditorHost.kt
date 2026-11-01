@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor
 
+import com.savie.precut.model.Project
 import com.savie.precut.model.edit.EditAction
 import kotlinx.coroutines.CoroutineScope
 
@@ -17,4 +18,7 @@ interface EditorHost {
 
     /** Rebuilds the preview from the current state now (e.g. a before/after peek). */
     fun refreshPreview()
+
+    /** The preview plays [project] instead of the real one (an AI edit's proposal), or the real one again with null. */
+    fun showInstead(project: Project?)
 }

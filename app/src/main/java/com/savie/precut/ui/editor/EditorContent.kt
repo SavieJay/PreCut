@@ -1,5 +1,7 @@
 package com.savie.precut.ui.editor
 
+import com.savie.precut.ui.editor.aiedit.AiEditReviewPanel
+import com.savie.precut.ui.editor.aiedit.rememberReviewActions
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -49,6 +51,10 @@ fun EditorContent(
     modifier: Modifier = Modifier,
 ) {
     val player by viewModel.player.collectAsStateWithLifecycle()
+    val aiEdit by viewModel.aiEdit.state.collectAsStateWithLifecycle()
+    val review = aiEdit as? AiEditUi.Review
+    // Back from an AI edit's review discards the changes; nothing was applied.
+    BackHandler(enabled = review != null) { viewModel.aiEdit.onDiscard() }
     // System Back acts as Done: it closes an open panel, multi-select or the Audio menu first.
     BackHandler(enabled = state.cropDraft != null || state.activeTool != null || state.multiSelect != null || state.audioMenuOpen) {
         when {
@@ -98,6 +104,11 @@ fun EditorContent(
             }
         }
         LivePlaybackControls(state, previewState, viewModel)
+        if (review != null) {
+            // The preview plays the proposal; the real timeline waits under the review.
+            AiEditReviewPanel(review, rememberReviewActions(viewModel.aiEdit), Modifier.navigationBarsPadding())
+            return@Column
+        }
         TimelineSection(
             state = state,
             positionMs = { previewState.value.positionMs },
