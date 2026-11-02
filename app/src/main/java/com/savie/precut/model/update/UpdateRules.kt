@@ -12,6 +12,8 @@ data class AppConfig(
     val minSupportedVersionCode: Int = 0,
     /** The newest version released; older ones are offered it. */
     val latestVersionCode: Int = 0,
+    /** The newest version's name ("1.2.0"), shown beside this one's; null when not set. */
+    val latestVersionName: String? = null,
     /** Shown on the blocking screen instead of the app's own words. */
     val forceMessage: String? = null,
     /** "What's new" after updating to [latestVersionCode]. */
@@ -27,8 +29,8 @@ sealed interface UpdatePrompt {
     /** A newer version is out: a banner on Home offers it. */
     data object Available : UpdatePrompt
 
-    /** This version may no longer be used: the blocking screen. */
-    data class Required(val message: String?, val downloadUrl: String?) : UpdatePrompt
+    /** This version may no longer be used: the blocking screen ([latestVersionName] when known). */
+    data class Required(val message: String?, val downloadUrl: String?, val latestVersionName: String? = null) : UpdatePrompt
 }
 
 /**
@@ -39,7 +41,15 @@ sealed interface UpdatePrompt {
 fun updatePrompt(versionCode: Int, config: AppConfig?, exporting: Boolean): UpdatePrompt = when {
     config == null -> UpdatePrompt.None
     versionCode < config.minSupportedVersionCode ->
-        if (exporting) UpdatePrompt.None else UpdatePrompt.Required(config.forceMessage?.takeIf { it.isNotBlank() }, config.downloadUrl?.takeIf { it.isNotBlank() })
+        if (exporting) {
+            UpdatePrompt.None
+        } else {
+            UpdatePrompt.Required(
+                config.forceMessage?.takeIf { it.isNotBlank() },
+                config.downloadUrl?.takeIf { it.isNotBlank() },
+                config.latestVersionName?.takeIf { it.isNotBlank() },
+            )
+        }
     versionCode < config.latestVersionCode -> UpdatePrompt.Available
     else -> UpdatePrompt.None
 }
@@ -54,6 +64,14 @@ fun whatsNewAfterUpdate(versionCode: Int, lastRunVersionCode: Int?, config: AppC
     config == null || config.latestVersionCode > versionCode -> emptyList()
     else -> config.whatsNew.filter { it.isNotBlank() }
 }
+
+/**
+ * Whether Home's banner offers the update: a newer version is out ([prompt] is Available) and the
+ * banner wasn't closed for it ([dismissedForVersionCode] is the latest version it was closed for;
+ * a newer release brings it back).
+ */
+fun updateBannerShown(prompt: UpdatePrompt, latestVersionCode: Int, dismissedForVersionCode: Int?): Boolean =
+    prompt == UpdatePrompt.Available && (dismissedForVersionCode == null || dismissedForVersionCode < latestVersionCode)
 
 /** At most one check per [intervalMs] (15 minutes): on a cold start and on coming back to the app. */
 fun shouldCheck(nowMs: Long, lastCheckMs: Long?, intervalMs: Long = CHECK_INTERVAL_MS): Boolean =

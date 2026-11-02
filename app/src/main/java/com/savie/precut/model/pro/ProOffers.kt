@@ -27,6 +27,9 @@ data class PlanOffer(
 data class ProOffers(val yearly: PlanOffer?, val monthly: PlanOffer?) {
     val isEmpty: Boolean get() = yearly == null && monthly == null
 
+    /** The longest free trial on offer, in days; 0 without one. */
+    val trialDays: Int get() = maxOf(yearly?.freeTrialDays ?: 0, monthly?.freeTrialDays ?: 0)
+
     /**
      * How much cheaper yearly is than twelve months, in whole percent; null without both or when
      * it isn't cheaper.

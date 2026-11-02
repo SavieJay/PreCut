@@ -1113,7 +1113,12 @@
     <string name="update_downloaded">The update is downloaded.</string>
     <string name="update_action">Update</string>
     <string name="update_restart">Restart</string>
-    <string name="whats_new_title">What\'s new</string>
+    <string name="update_restart_to_install">Restart to update</string>
+    <string name="update_downloading">Downloading the update… %1$d%%</string>
+    <string name="update_versions">You have %1$s · Latest %2$s</string>
+    <string name="update_version_installed">You have %1$s</string>
+    <string name="update_dismiss">Hide this</string>
+    <string name="whats_new_title">What\'s new in %1$s</string>
     <string name="whats_new_done">Got it</string>
 
     <!-- Onboarding (Phase 24) -->
@@ -1215,7 +1220,10 @@
     <string name="pro_restored">Pro restored on this phone.</string>
     <string name="pro_nothing_to_restore">No PreCut Pro purchase found for this Google account.</string>
     <string name="pro_badge">PRO</string>
-    <string name="onboarding_pro_title">Try PreCut Pro free for 7 days</string>
+    <plurals name="onboarding_pro_title">
+        <item quantity="one">Try PreCut Pro free for %1$d day</item>
+        <item quantity="other">Try PreCut Pro free for %1$d days</item>
+    </plurals>
     <string name="onboarding_pro_start">Start free trial</string>
     <string name="onboarding_pro_continue_free">Continue free</string>
 

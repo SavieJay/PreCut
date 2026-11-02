@@ -155,6 +155,7 @@ export class MemoryQuota implements QuotaStore {
   config: AppConfig = {
     minSupportedVersionCode: 0,
     latestVersionCode: 0,
+    latestVersionName: null,
     forceMessage: null,
     whatsNew: [],
     downloadUrl: null,

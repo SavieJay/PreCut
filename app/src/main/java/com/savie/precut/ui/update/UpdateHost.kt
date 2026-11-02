@@ -13,6 +13,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.play.core.install.model.AppUpdateType
+import com.savie.precut.BuildConfig
 import com.savie.precut.model.update.UpdatePrompt
 import com.savie.precut.update.PlayUpdates
 import com.savie.precut.update.UpdateChecker
@@ -31,37 +32,52 @@ val LocalUpdates = staticCompositionLocalOf<Updates?> { null }
 @Composable
 fun UpdateHost(checker: UpdateChecker, play: PlayUpdates) {
     val ui by checker.state.collectAsStateWithLifecycle()
+    val fraction by play.progress.collectAsStateWithLifecycle()
+    val downloaded by play.downloaded.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // A cancelled immediate update just leaves the blocking screen up.
     val launcher = rememberUpdateLauncher()
     when (val prompt = ui.prompt) {
-        is UpdatePrompt.Required -> ForceUpdateScreen(prompt.message) {
-            scope.launch {
-                if (!play.start(AppUpdateType.IMMEDIATE, launcher)) openStore(context, play, prompt.downloadUrl)
-            }
-        }
-        else -> if (ui.whatsNew.isNotEmpty()) WhatsNewSheet(ui.whatsNew, checker::onWhatsNewSeen)
+        is UpdatePrompt.Required -> ForceUpdateScreen(
+            message = prompt.message,
+            installed = BuildConfig.VERSION_NAME,
+            latest = prompt.latestVersionName,
+            progress = updateProgress(fraction, downloaded),
+            onUpdate = {
+                scope.launch {
+                    if (!play.start(AppUpdateType.IMMEDIATE, launcher)) openStore(context, play, prompt.downloadUrl)
+                }
+            },
+            onRestart = play::completeUpdate,
+        )
+        else -> if (ui.whatsNew.isNotEmpty()) WhatsNewSheet(BuildConfig.VERSION_NAME, ui.whatsNew, checker::onWhatsNewSeen)
     }
 }
 
-/** Home's banner while a newer version is out; Play's flexible update, or the store. */
+/**
+ * Home's banner while a newer version is out and not closed for it, or while Play downloads or
+ * holds one: Play's flexible update, or the store.
+ */
 @Composable
 fun HomeUpdateBanner(checker: UpdateChecker, play: PlayUpdates) {
     val ui by checker.state.collectAsStateWithLifecycle()
+    val fraction by play.progress.collectAsStateWithLifecycle()
     val downloaded by play.downloaded.collectAsStateWithLifecycle()
-    if (ui.prompt != UpdatePrompt.Available && !downloaded) return
+    val progress = updateProgress(fraction, downloaded)
+    if (!ui.banner && progress == UpdateProgress.Idle) return
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val launcher = rememberUpdateLauncher()
     UpdateBanner(
-        downloaded = downloaded,
+        progress = progress,
         onUpdate = {
             scope.launch {
                 if (!play.start(AppUpdateType.FLEXIBLE, launcher)) openStore(context, play, downloadUrl = null)
             }
         },
         onRestart = play::completeUpdate,
+        onDismiss = checker::onBannerDismissed,
     )
 }
 

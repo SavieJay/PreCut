@@ -49,9 +49,22 @@ class PlayUpdates internal constructor(
     /** A flexible update finished downloading: restarting installs it. */
     val downloaded: StateFlow<Boolean> = _downloaded.asStateFlow()
 
+    private val _progress = MutableStateFlow<Float?>(null)
+
+    /** While Play downloads an update in the background: how far, 0 to 1; null otherwise. */
+    val progress: StateFlow<Float?> = _progress.asStateFlow()
+
     // App-wide, like the manager: it lives as long as the process.
     private val listener = InstallStateUpdatedListener { state ->
-        if (state.installStatus() == InstallStatus.DOWNLOADED) _downloaded.value = true
+        when (state.installStatus()) {
+            InstallStatus.PENDING -> _progress.value = 0f
+            InstallStatus.DOWNLOADING -> _progress.value = downloadFraction(state.bytesDownloaded(), state.totalBytesToDownload())
+            InstallStatus.DOWNLOADED -> {
+                _progress.value = null
+                _downloaded.value = true
+            }
+            else -> _progress.value = null
+        }
     }
 
     /** Whether Google Play installed this copy (only then can Play update it in the app). */
@@ -100,6 +113,10 @@ class PlayUpdates internal constructor(
 
     internal companion object {
         private const val TAG = "PlayUpdates"
+
+        /** Bytes so far as a fraction; 0 until Play knows the size. */
+        fun downloadFraction(downloaded: Long, total: Long): Float =
+            if (total <= 0L) 0f else (downloaded.toFloat() / total).coerceIn(0f, 1f)
         const val PLAY_STORE = "com.android.vending"
 
         /** The package that installed this copy (Play is `com.android.vending`), or null. */

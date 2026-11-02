@@ -9,7 +9,7 @@
 3. Test it through internal testing or internal app sharing (below) before production.
 4. Publish on Play. **Wait until the release is live** for everyone in the rollout (Play Console shows the release as available; on a test phone, the Play listing offers the new version).
 5. Update the update rules in Supabase (Table Editor → `app_config`, row `android`):
-   - `latest_version_code` = the new version code. Older versions then show a banner on Home offering the update (Play's flexible update).
+   - `latest_version_code` = the new version code, and `latest_version_name` = its name (e.g. `1.2.0`). Older versions then show a banner on Home offering the update (Play's flexible update; closing it hides it until the next release), and the blocking screen says "You have 1.1.0 · Latest 1.2.0".
    - `whats_new` = a JSON list of short bullets, e.g. `["AI edit: describe a change and review it", "Faster exports"]`. Shown once to people who updated to this version.
    - Only to **force** the update: `min_supported_version_code` = the new version code. Every older version then shows the blocking "Update PreCut" screen and can't be used until it updates. Optionally `force_message` (the screen's words) and `download_url` (where copies not installed from Play get the APK; empty sends them to the website's `/download` page).
 6. Changes apply within about 15 minutes for open apps (each app checks on start and when it comes back to the front, at most every 15 minutes; the server lets caches keep the answer 5 minutes).

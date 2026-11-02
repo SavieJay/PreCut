@@ -84,6 +84,8 @@ export interface EditUsageRecord {
 export interface AppConfig {
   minSupportedVersionCode: number;
   latestVersionCode: number;
+  /** The newest release's version name, e.g. "1.2.0"; null when not set. */
+  latestVersionName: string | null;
   forceMessage: string | null;
   whatsNew: string[];
   downloadUrl: string | null;

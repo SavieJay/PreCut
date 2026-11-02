@@ -7,6 +7,7 @@ Deno.test("config: public, for any app version, cacheable for 5 minutes", async 
   deps.quota.config = {
     minSupportedVersionCode: 40,
     latestVersionCode: 42,
+    latestVersionName: "1.2.0",
     forceMessage: "Please update",
     whatsNew: ["AI edit"],
     downloadUrl: null,

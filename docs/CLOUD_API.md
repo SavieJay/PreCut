@@ -47,7 +47,7 @@ Returns `{"transcript": {"language": "en", "durationMs": 2400, "words": [{"text"
 
 **`POST /rtdn?secret=...`** (Phase 25) — Google Play's Real-time developer notifications through a Pub/Sub push subscription; no `X-PreCut-Api`. The secret must match `RTDN_SECRET` (`forbidden` otherwise). A subscription notification makes the server look that purchase up again, if an app ever sent it; anything else is acknowledged and ignored. Answers 2xx except when Google can't be asked (`billing_unavailable`, so Pub/Sub retries).
 
-**`GET /config?platform=android`** (Phase 23) — public: no `X-PreCut-Api` check, no install token, no Play Integrity, so any app version learns when it must update. Returns `{"minSupportedVersionCode": int, "latestVersionCode": int, "forceMessage": string|null, "whatsNew": [string], "downloadUrl": string|null, "updatedAt": string|null}` from the `app_config` table (zeros when unset), with `Cache-Control: public, max-age=300`. How to use it: `docs/RELEASING.md`.
+**`GET /config?platform=android`** (Phase 23) — public: no `X-PreCut-Api` check, no install token, no Play Integrity, so any app version learns when it must update. Returns `{"minSupportedVersionCode": int, "latestVersionCode": int, "latestVersionName": string|null (from 2026-11-02), "forceMessage": string|null, "whatsNew": [string], "downloadUrl": string|null, "updatedAt": string|null}` from the `app_config` table (zeros when unset), with `Cache-Control: public, max-age=300`. How to use it: `docs/RELEASING.md`.
 
 **`DELETE /me`** — `X-Install-Token`. Deletes everything kept about the install. Returns `{"deleted": true|false}`.
 

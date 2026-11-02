@@ -401,12 +401,14 @@ sqlTest(
       call(db, "public.cloud_app_config($1)", [platform]);
     assertEquals((await config("android")).minSupportedVersionCode, 0);
     assertEquals((await config("android")).whatsNew, []);
+    assertEquals((await config("android")).latestVersionName, null);
     await db.exec(`update public.app_config
-      set min_supported_version_code = 40, latest_version_code = 42,
+      set min_supported_version_code = 40, latest_version_code = 42, latest_version_name = '1.2.0',
           whats_new = '["AI edit", "Forced updates"]' where platform = 'android'`);
     const set = await config("android");
     assertEquals(set.minSupportedVersionCode, 40);
     assertEquals(set.latestVersionCode, 42);
+    assertEquals(set.latestVersionName, "1.2.0");
     assertEquals(set.whatsNew, ["AI edit", "Forced updates"]);
     assert(set.updatedAt);
     // An unknown platform never blocks.

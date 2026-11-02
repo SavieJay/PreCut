@@ -226,16 +226,20 @@ Needs the `app_config` migration on the server (`npx supabase db push --linked`)
 
 | Check | Expected | Result |
 |---|---|---|
-| `latest_version_code` above the installed one; leave the app and come back after 15 minutes (or force-stop and reopen) | Home shows "A new version of PreCut is ready." with Update | |
-| Update on the banner (debug build, not from Play) | The Play listing opens | |
-| `min_supported_version_code` above the installed one; reopen the app | "Update PreCut" covers everything; Back and taps do nothing | |
+| `latest_version_code` above the installed one; leave the app and come back after 15 minutes (or force-stop and reopen) | Home shows "A new version of PreCut is ready." with Update and × | |
+| × on the banner, then force-stop and reopen | No banner; raising `latest_version_code` again brings it back | |
+| Update on the banner (debug build, not from Play) | The website's `/download` page opens (or `download_url`) | |
+| `min_supported_version_code` above the installed one, `latest_version_name` set (e.g. 1.2.0); reopen the app | "Update required" covers everything: the logo, a phone with a rising arrow, "You have 1.1.0 · Latest 1.2.0", Update now; Back and taps do nothing | |
+| Same with `latest_version_name` empty | "You have 1.1.0" alone | |
 | With a project open in the editor when it appears | Reopening after lowering the minimum shows the last edits saved | |
 | Start an export, then raise the minimum and come back to the app | The export finishes; the update screen appears after it | |
 | Airplane mode, force-stop, reopen (after the minimum was raised once) | Still blocked (the last answer is kept) | |
 | Clear the app's data, airplane mode, open | Opens normally (nothing kept, never blocks) | |
 | Lower the minimum again, come back after 15 minutes | The app is usable again | |
 | From Play internal app sharing (docs/RELEASING.md): install the lower build, raise the minimum, Update now | Play's full-screen update runs and the app restarts on the new version | |
-| After that update, with `whats_new` set | "What's new" with the bullets, once | |
+| Internal app sharing, `latest_version_code` raised: the banner's Update | Play asks; then the banner shows "Downloading the update… N%" with a bar, then "The update is downloaded." with Restart, which installs it | |
+| While that download runs, raise the minimum too | The blocking screen shows the bar and percentage instead of Update now, then Restart to update | |
+| After that update, with `whats_new` set | "What's new in 1.1.0" (the new version) with a row and icon per bullet and Got it, once | |
 | Open a draft saved by an older PreCut build | It opens as before | |
 
 ## 4n. Onboarding (Phase 24)
@@ -268,7 +272,8 @@ Needs the Play Console setup and server steps in `docs/BILLING.md`, a build inst
 | Wait for the test subscription to end (test renewals take minutes) | Pro ends; quotas back to the free ones | |
 | Payment declined test card | "Google Play couldn't take your payment…" (grace), later "Pro is on hold…" and not Pro | |
 | Airplane mode with Pro | Pro stays | |
-| Onboarding's last page (Settings → Replay intro) | "Try PreCut Pro free for 7 days", Continue free, Skip; Start free trial opens the paywall over Projects | |
+| Onboarding's last page (Settings → Replay intro), installed from Play with a trial offer | "Try PreCut Pro free for N days" with Play's N, Continue free, Skip; Start free trial opens the paywall over Projects | |
+| The same on the website's APK, offline, or once the trial was used | No Pro page: onboarding ends after the experience (or notifications) page | |
 | A phone without the Play Store | The paywall says Pro can't be bought right now | |
 
 ## 4p. Follow person (Phase 26A)
@@ -328,7 +333,6 @@ Template links need the `shared_templates` migration and the function deployed; 
 | Export twice successfully | After the second, Play's rating card may show (Play decides) | |
 | A failed export | No rating card | |
 | Settings → About → Privacy policy, Terms of use, Help and support | Each opens the website's page in the browser | |
-| An APK copy (not from Play) below `latest_version_code` → the banner's Update | The website's `/download` page (or `download_url`) | |
 
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.

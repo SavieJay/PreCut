@@ -37,10 +37,16 @@ class UpdateStore @Inject constructor(@ApplicationContext context: Context) {
         get() = prefs.getInt(KEY_WHATS_NEW_FROM, -1).takeIf { it >= 0 }
         set(value) = prefs.edit { if (value == null) remove(KEY_WHATS_NEW_FROM) else putInt(KEY_WHATS_NEW_FROM, value) }
 
+    /** The latest version code Home's banner was closed for; null when never closed. */
+    var bannerDismissedFor: Int?
+        get() = prefs.getInt(KEY_BANNER_DISMISSED, -1).takeIf { it >= 0 }
+        set(value) = prefs.edit { if (value == null) remove(KEY_BANNER_DISMISSED) else putInt(KEY_BANNER_DISMISSED, value) }
+
     private companion object {
         const val PREFS = "updates"
         const val KEY_CONFIG = "config"
         const val KEY_LAST_RUN = "lastRunVersionCode"
         const val KEY_WHATS_NEW_FROM = "whatsNewFrom"
+        const val KEY_BANNER_DISMISSED = "bannerDismissedFor"
     }
 }

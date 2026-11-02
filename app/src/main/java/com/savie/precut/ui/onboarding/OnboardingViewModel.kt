@@ -2,16 +2,20 @@ package com.savie.precut.ui.onboarding
 
 import android.os.Build
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.AppSettings
 import com.savie.precut.model.onboarding.CreationGoal
 import com.savie.precut.model.onboarding.Experience
 import com.savie.precut.model.onboarding.defaultAspectRatio
 import com.savie.precut.model.onboarding.simpleModeFor
+import com.savie.precut.pro.TrialOffers
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 /**
@@ -27,13 +31,23 @@ data class OnboardingState(
     val done: Boolean = false,
     /** Finished with "Start free trial": the paywall opens next. */
     val openPaywall: Boolean = false,
+    /** Google Play's free trial for this user, in days; 0 hides the Pro page. */
+    val trialDays: Int = 0,
 ) {
-    val pages: List<OnboardingPage> get() = pagesFor(Build.VERSION.SDK_INT)
+    val pages: List<OnboardingPage> get() = pagesFor(Build.VERSION.SDK_INT, trialDays)
 }
 
-/** The pages on Android [sdk]: below 13 there's no notifications prompt to prepare for. */
-fun pagesFor(sdk: Int): List<OnboardingPage> =
-    OnboardingPage.entries.filter { it != OnboardingPage.NOTIFICATIONS || sdk >= Build.VERSION_CODES.TIRAMISU }
+/**
+ * The pages on Android [sdk]: below 13 there's no notifications prompt to prepare for, and the Pro
+ * trial page shows only while Google Play offers this user [trialDays] free.
+ */
+fun pagesFor(sdk: Int, trialDays: Int): List<OnboardingPage> = OnboardingPage.entries.filter {
+    when (it) {
+        OnboardingPage.NOTIFICATIONS -> sdk >= Build.VERSION_CODES.TIRAMISU
+        OnboardingPage.PRO -> trialDays > 0
+        else -> true
+    }
+}
 
 /**
  * First-run onboarding (Phase 24): a few skippable pages whose answers set the default aspect
@@ -41,7 +55,7 @@ fun pagesFor(sdk: Int): List<OnboardingPage> =
  * chosen so far and sensible defaults for the rest.
  */
 @HiltViewModel
-class OnboardingViewModel @Inject constructor(private val settings: AppSettings) : ViewModel() {
+class OnboardingViewModel @Inject constructor(private val settings: AppSettings, trials: TrialOffers) : ViewModel() {
     private val _state = MutableStateFlow(
         settings.values.value.let { values ->
             // Replaying the intro starts from the earlier answers.
@@ -50,6 +64,14 @@ class OnboardingViewModel @Inject constructor(private val settings: AppSettings)
         },
     )
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
+
+    init {
+        // Asked while the first pages show; no answer in time (or none from Play) means no Pro page.
+        viewModelScope.launch {
+            val days = withTimeoutOrNull(TRIAL_LOOKUP_MS) { trials.trialDays() } ?: 0
+            _state.update { it.copy(trialDays = days) }
+        }
+    }
 
     fun onGoal(goal: CreationGoal) = _state.update { it.copy(goals = if (goal in it.goals) it.goals - goal else it.goals + goal) }
 
@@ -90,5 +112,9 @@ class OnboardingViewModel @Inject constructor(private val settings: AppSettings)
             )
         }
         _state.update { it.copy(done = true, openPaywall = openPaywall) }
+    }
+
+    private companion object {
+        const val TRIAL_LOOKUP_MS = 10_000L
     }
 }

@@ -65,7 +65,7 @@ fun OnboardingScreen(onDone: (openPaywall: Boolean) -> Unit, viewModel: Onboardi
                     // Not now: the export screen can still ask later.
                     onNotNow = viewModel::onNext,
                 )
-                OnboardingPage.PRO -> ProTrialPage(onStartTrial = viewModel::onStartTrial, onContinueFree = viewModel::onSkip)
+                OnboardingPage.PRO -> ProTrialPage(state.trialDays, onStartTrial = viewModel::onStartTrial, onContinueFree = viewModel::onSkip)
             }
         }
     }

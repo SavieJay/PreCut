@@ -51,6 +51,8 @@ import com.savie.precut.media.SpeechAudio
 import com.savie.precut.media.VideoExporter
 import com.savie.precut.media.audio.AndroidBeatDetector
 import com.savie.precut.media.audio.BeatDetector
+import com.savie.precut.pro.PlayTrialOffers
+import com.savie.precut.pro.TrialOffers
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -86,6 +88,9 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindEndCards(impl: EndCardMaker): EndCards
+
+    @Binds
+    abstract fun bindTrialOffers(impl: PlayTrialOffers): TrialOffers
 
     @Binds
     abstract fun bindBeatDetector(impl: AndroidBeatDetector): BeatDetector

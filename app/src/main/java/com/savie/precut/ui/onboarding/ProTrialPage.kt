@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
@@ -27,13 +28,14 @@ private val TRIAL_BENEFITS = listOf(
 )
 
 /**
- * The Pro trial offer (A5): soft, never pushy. Continue free is always there (and Skip at the top);
- * Start free trial shows the plans with Play's prices on the paywall.
+ * The Pro trial offer (A5): soft, never pushy, and only when Google Play offers this user a trial
+ * ([trialDays], from Play). Continue free is always there (and Skip at the top); Start free trial
+ * shows the plans with Play's prices on the paywall.
  */
 @Composable
-internal fun ProTrialPage(onStartTrial: () -> Unit, onContinueFree: () -> Unit) {
+internal fun ProTrialPage(trialDays: Int, onStartTrial: () -> Unit, onContinueFree: () -> Unit) {
     OnboardingPageLayout(
-        title = stringResource(R.string.onboarding_pro_title),
+        title = pluralStringResource(R.plurals.onboarding_pro_title, trialDays, trialDays),
         subtitle = stringResource(R.string.pro_free_forever),
         bottom = {
             FilledButton(stringResource(R.string.onboarding_pro_start), onStartTrial, Modifier.fillMaxWidth(), large = true)

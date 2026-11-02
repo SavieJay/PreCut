@@ -56,4 +56,22 @@ class UpdateRulesTest {
         assertTrue(shouldCheck(nowMs = 15 * 60_000L, lastCheckMs = 0L))
         assertTrue(shouldCheck(nowMs = 0L, lastCheckMs = 60_000L))
     }
+
+    @Test
+    fun `the blocking screen names the latest version when the server does`() {
+        assertEquals(
+            UpdatePrompt.Required("Please update", "https://example.com/get", "1.2.0"),
+            updatePrompt(39, config.copy(latestVersionName = "1.2.0"), exporting = false),
+        )
+        assertEquals(null, (updatePrompt(39, config.copy(latestVersionName = " "), exporting = false) as UpdatePrompt.Required).latestVersionName)
+    }
+
+    @Test
+    fun `a closed banner stays away until a newer release`() {
+        assertTrue(updateBannerShown(UpdatePrompt.Available, latestVersionCode = 42, dismissedForVersionCode = null))
+        assertFalse(updateBannerShown(UpdatePrompt.Available, latestVersionCode = 42, dismissedForVersionCode = 42))
+        assertTrue(updateBannerShown(UpdatePrompt.Available, latestVersionCode = 43, dismissedForVersionCode = 42))
+        assertFalse(updateBannerShown(UpdatePrompt.None, latestVersionCode = 42, dismissedForVersionCode = null))
+        assertFalse(updateBannerShown(UpdatePrompt.Required(null, null), latestVersionCode = 42, dismissedForVersionCode = null))
+    }
 }
