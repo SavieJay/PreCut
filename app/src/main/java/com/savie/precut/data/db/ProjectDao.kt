@@ -16,6 +16,9 @@ interface ProjectDao {
     @Query("SELECT json FROM projects")
     suspend fun allJson(): List<String>
 
+    @Query("SELECT EXISTS(SELECT 1 FROM projects)")
+    suspend fun any(): Boolean
+
     @Upsert
     suspend fun upsert(entity: ProjectEntity)
 

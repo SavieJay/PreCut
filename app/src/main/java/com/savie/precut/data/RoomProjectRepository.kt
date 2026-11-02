@@ -67,4 +67,6 @@ class RoomProjectRepository @Inject constructor(
     }
 
     override suspend fun loadAll(): List<Project> = dao.allJson().mapNotNull(ProjectSerializer::decode)
+
+    override suspend fun hasAny(): Boolean = dao.any()
 }

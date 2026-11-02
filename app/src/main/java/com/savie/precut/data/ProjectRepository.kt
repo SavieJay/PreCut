@@ -31,6 +31,9 @@ interface ProjectRepository {
 
     /** Every saved project (for housekeeping such as unused-file cleanup). */
     suspend fun loadAll(): List<Project>
+
+    /** Whether any project is saved (someone updating, not a fresh install, skips onboarding). */
+    suspend fun hasAny(): Boolean
 }
 
 /** In-memory store, used by unit tests. */
@@ -59,4 +62,6 @@ class InMemoryProjectRepository : ProjectRepository {
     }
 
     override suspend fun loadAll(): List<Project> = projects.value.values.toList()
+
+    override suspend fun hasAny(): Boolean = projects.value.isNotEmpty()
 }

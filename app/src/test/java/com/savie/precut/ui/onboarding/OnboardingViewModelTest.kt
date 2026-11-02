@@ -1,8 +1,11 @@
 package com.savie.precut.ui.onboarding
 
 import com.savie.precut.data.InMemoryAppSettings
+import com.savie.precut.data.InMemoryProjectRepository
 import com.savie.precut.data.SettingsValues
 import com.savie.precut.model.AspectRatio
+import com.savie.precut.model.project
+import kotlinx.coroutines.runBlocking
 import com.savie.precut.model.onboarding.CreationGoal
 import com.savie.precut.model.onboarding.Experience
 import com.savie.precut.pro.TrialOffers
@@ -35,7 +38,7 @@ class OnboardingViewModelTest {
     @Test
     fun `answers set the ratio, the templates' order and simple mode`() {
         val settings = InMemoryAppSettings()
-        val vm = OnboardingViewModel(settings, trial)
+        val vm = OnboardingViewModel(settings, trial, InMemoryProjectRepository())
         vm.onNext()
         vm.onGoal(CreationGoal.YOUTUBE)
         vm.onNext()
@@ -55,7 +58,7 @@ class OnboardingViewModelTest {
     @Test
     fun `skip keeps the defaults for what wasn't answered`() {
         val settings = InMemoryAppSettings(SettingsValues(aspectRatio = AspectRatio.RATIO_4_5))
-        val vm = OnboardingViewModel(settings, trial)
+        val vm = OnboardingViewModel(settings, trial, InMemoryProjectRepository())
         vm.onSkip()
         val values = settings.values.value
         assertTrue(values.onboardingDone)
@@ -65,7 +68,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun `back steps through the pages, and goals toggle`() {
-        val vm = OnboardingViewModel(InMemoryAppSettings(), trial)
+        val vm = OnboardingViewModel(InMemoryAppSettings(), trial, InMemoryProjectRepository())
         assertFalse(vm.onBack())
         vm.onNext()
         vm.onGoal(CreationGoal.SOCIAL)
@@ -77,7 +80,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun `start free trial finishes onboarding and opens the paywall`() {
-        val vm = OnboardingViewModel(InMemoryAppSettings(), trial)
+        val vm = OnboardingViewModel(InMemoryAppSettings(), trial, InMemoryProjectRepository())
         vm.onStartTrial()
         assertTrue(vm.state.value.done)
         assertTrue(vm.state.value.openPaywall)
@@ -93,7 +96,7 @@ class OnboardingViewModelTest {
     fun `without a trial from Google Play there's no Pro page`() {
         assertFalse(OnboardingPage.PRO in pagesFor(33, trialDays = 0))
         val settings = InMemoryAppSettings()
-        val vm = OnboardingViewModel(settings, noTrial)
+        val vm = OnboardingViewModel(settings, noTrial, InMemoryProjectRepository())
         vm.onNext()
         vm.onNext()
         assertEquals(OnboardingPage.EXPERIENCE, vm.state.value.page)
@@ -106,14 +109,33 @@ class OnboardingViewModelTest {
 
     @Test
     fun `the trial page carries Google Play's days`() {
-        val vm = OnboardingViewModel(InMemoryAppSettings(), TrialOffers { 14 })
+        val vm = OnboardingViewModel(InMemoryAppSettings(), TrialOffers { 14 }, InMemoryProjectRepository())
         assertEquals(14, vm.state.value.trialDays)
     }
 
     @Test
     fun `replaying the intro starts from the earlier answers`() {
-        val vm = OnboardingViewModel(InMemoryAppSettings(SettingsValues(onboardingDone = true, simpleMode = true, creationGoals = setOf(CreationGoal.BUSINESS))), trial)
+        val vm = OnboardingViewModel(InMemoryAppSettings(SettingsValues(onboardingDone = true, simpleMode = true, creationGoals = setOf(CreationGoal.BUSINESS))), trial, InMemoryProjectRepository())
         assertEquals(setOf(CreationGoal.BUSINESS), vm.state.value.goals)
         assertEquals(Experience.NEW, vm.state.value.experience)
+    }
+
+    @Test
+    fun `someone updating with projects skips onboarding and the tips`() {
+        val settings = InMemoryAppSettings()
+        val projects = InMemoryProjectRepository().apply { runBlocking { save(project()) } }
+        val vm = OnboardingViewModel(settings, trial, projects)
+        assertTrue(vm.state.value.done)
+        assertTrue(settings.values.value.onboardingDone)
+        assertTrue(settings.values.value.coachMarksShown)
+        assertFalse(vm.state.value.openPaywall)
+    }
+
+    @Test
+    fun `a fresh install sees the pages once the check is done`() {
+        val vm = OnboardingViewModel(InMemoryAppSettings(), trial, InMemoryProjectRepository())
+        assertFalse(vm.state.value.checking)
+        assertFalse(vm.state.value.done)
+        assertEquals(OnboardingPage.WELCOME, vm.state.value.page)
     }
 }

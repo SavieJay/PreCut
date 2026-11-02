@@ -25,9 +25,10 @@ PreCut Pro is sold through Google Play, which handles the payment under Google's
 ## Template links (optional)
 When you share a template as a link, PreCut's server keeps the template (its layout, texts, effects and timing; never your photos, videos or music) under a short code, so anyone with the link can open it in PreCut or on PreCut's website. It's kept until you tap Settings → Cloud AI → Delete my cloud data.
 
-## Updates and ratings
+## Updates, ratings and installs
 - Now and then PreCut asks its server whether a newer version is out, so it can tell you. The request carries nothing about you; the server sees it like any web request.
 - After a few good exports, PreCut may let Google Play show its rating card. What you write there goes to Google Play under Google's terms. PreCut only remembers, on your phone, when it last let the card show.
+- If you install PreCut from Google Play through a shared template's page, PreCut reads Google Play's install referrer once, on your phone, to open that template on its first start. Nothing is sent.
 
 ## What stays on your phone
 To edit, PreCut works with files on your device:

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.lifecycleScope
 import com.savie.precut.data.AppSettings
+import com.savie.precut.data.InstallReferrerCheck
 import com.savie.precut.data.TemplateLinkInbox
 import com.savie.precut.model.template.TemplateLinks
 import com.savie.precut.pro.EntitlementRepository
@@ -49,6 +50,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var templateLinks: TemplateLinkInbox
 
+    @Inject
+    lateinit var installReferrers: InstallReferrerCheck
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app is dark-only, so always use light system bar icons.
         enableEdgeToEdge(
@@ -57,7 +61,11 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         // A recreated activity has already handled its launch intent.
-        if (savedInstanceState == null) receive(intent)
+        if (savedInstanceState == null) {
+            receive(intent)
+            // First start after a Play install from a shared template's page: open that template.
+            lifecycleScope.launch { installReferrers.runOnce() }
+        }
         // Read once: finishing onboarding mustn't swap the start screen under the user.
         val showOnboarding = !appSettings.values.value.onboardingDone
         setContent {

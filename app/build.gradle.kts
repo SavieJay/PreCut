@@ -131,6 +131,7 @@ dependencies {
     implementation(libs.play.app.update)
     implementation(libs.play.billing)
     implementation(libs.play.review)
+    implementation(libs.play.install.referrer)
     // Remove background (Phase 22A): runs MediaPipe's selfie segmenter on the phone.
     implementation(libs.litert)
 

@@ -13,6 +13,8 @@ import com.savie.precut.ai.cloud.NetworkState
 import com.savie.precut.ai.cloud.PlayIntegrityTokens
 import com.savie.precut.ai.cloud.PrefsInstallStore
 import com.savie.precut.data.AndroidSubtitleFiles
+import com.savie.precut.data.InstallReferrerSource
+import com.savie.precut.data.PlayInstallReferrerSource
 import com.savie.precut.data.SubtitleFiles
 import com.savie.precut.data.AndroidAppStorage
 import com.savie.precut.data.AppMediaJanitor
@@ -91,6 +93,9 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindTrialOffers(impl: PlayTrialOffers): TrialOffers
+
+    @Binds
+    abstract fun bindInstallReferrerSource(impl: PlayInstallReferrerSource): InstallReferrerSource
 
     @Binds
     abstract fun bindBeatDetector(impl: AndroidBeatDetector): BeatDetector

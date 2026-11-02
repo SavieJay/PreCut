@@ -43,6 +43,8 @@ data class SettingsValues(
     val coachMarksShown: Boolean = false,
     /** The brand kit (Phase 26B, Pro). */
     val brandKit: BrandKit = BrandKit(),
+    /** Google Play's install referrer was read (once, on the first start; Phase 28). */
+    val installReferrerChecked: Boolean = false,
 )
 
 interface AppSettings {

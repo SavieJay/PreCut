@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.savie.precut.data.AppSettings
+import com.savie.precut.data.ProjectRepository
 import com.savie.precut.model.onboarding.CreationGoal
 import com.savie.precut.model.onboarding.Experience
 import com.savie.precut.model.onboarding.defaultAspectRatio
@@ -33,6 +34,8 @@ data class OnboardingState(
     val openPaywall: Boolean = false,
     /** Google Play's free trial for this user, in days; 0 hides the Pro page. */
     val trialDays: Int = 0,
+    /** First run: finding out whether this is a fresh install (nothing shows meanwhile). */
+    val checking: Boolean = false,
 ) {
     val pages: List<OnboardingPage> get() = pagesFor(Build.VERSION.SDK_INT, trialDays)
 }
@@ -55,17 +58,33 @@ fun pagesFor(sdk: Int, trialDays: Int): List<OnboardingPage> = OnboardingPage.en
  * chosen so far and sensible defaults for the rest.
  */
 @HiltViewModel
-class OnboardingViewModel @Inject constructor(private val settings: AppSettings, trials: TrialOffers) : ViewModel() {
+class OnboardingViewModel @Inject constructor(
+    private val settings: AppSettings,
+    trials: TrialOffers,
+    projects: ProjectRepository,
+) : ViewModel() {
     private val _state = MutableStateFlow(
         settings.values.value.let { values ->
             // Replaying the intro starts from the earlier answers.
             val experience = if (!values.onboardingDone) null else if (values.simpleMode) Experience.NEW else Experience.SOME
-            OnboardingState(goals = values.creationGoals, experience = experience)
+            OnboardingState(goals = values.creationGoals, experience = experience, checking = !values.onboardingDone)
         },
     )
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
 
     init {
+        // Onboarding is for fresh installs: someone updating already has projects and knows the
+        // editor, so it ends at once for them (their settings stay as they were, tips included).
+        if (_state.value.checking) {
+            viewModelScope.launch {
+                if (projects.hasAny()) {
+                    settings.update { it.copy(onboardingDone = true, coachMarksShown = true) }
+                    _state.update { it.copy(checking = false, done = true) }
+                } else {
+                    _state.update { it.copy(checking = false) }
+                }
+            }
+        }
         // Asked while the first pages show; no answer in time (or none from Play) means no Pro page.
         viewModelScope.launch {
             val days = withTimeoutOrNull(TRIAL_LOOKUP_MS) { trials.trialDays() } ?: 0

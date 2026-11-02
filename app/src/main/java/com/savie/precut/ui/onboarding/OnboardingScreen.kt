@@ -47,6 +47,11 @@ fun OnboardingScreen(onDone: (openPaywall: Boolean) -> Unit, viewModel: Onboardi
     LaunchedEffect(state.done) { if (state.done) onDone(state.openPaywall) }
     BackHandler(enabled = state.page != OnboardingPage.WELCOME) { viewModel.onBack() }
     val notifications = rememberLauncherForActivityResult(RequestPermission()) { viewModel.onNotificationsAnswered() }
+    // A moment on first run while it checks for existing projects: just the app's background.
+    if (state.checking || state.done) {
+        Box(Modifier.fillMaxSize().background(Ink0))
+        return
+    }
     Column(Modifier.fillMaxSize().background(Ink0).systemBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             ProgressDots(state.pages.indexOf(state.page), state.pages.size, Modifier.weight(1f))

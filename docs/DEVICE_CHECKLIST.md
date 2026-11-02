@@ -257,6 +257,7 @@ Clear the app's data first (Settings → Apps → PreCut → Storage → Clear s
 | Settings → Replay intro → Skip | Back in Settings; the earlier answers were kept | |
 | Clear data again, then Skip on Welcome | Projects with the usual defaults (9:16, full toolbar); onboarding doesn't come back after a restart | |
 | Not now on the notifications page, then export | The export still asks for notifications | |
+| Install 1.1.0 over 1.0.0 with projects | No onboarding and no editor tips; Projects opens as before | |
 | Android 12 or older | No notifications page | |
 
 ## 4o. PreCut Pro (Phase 25)
