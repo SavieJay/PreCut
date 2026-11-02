@@ -222,7 +222,7 @@ Needs the Anthropic key on the server (`ANTHROPIC_API_KEY` in `supabase/.env.sec
 | Settings → Cloud AI off, then AI edit → Send | "Cloud AI is off in Settings." | |
 
 ## 4m. Forced updates (Phase 23)
-Needs the `app_config` migration on the server (`npx supabase db push --linked`) and the function deployed. The installed version code is the number in brackets in Settings → About (Version 1.0.0 (N)). Change the row in Supabase → Table Editor → `app_config`.
+The server side is live since 2 November (migrations and function deployed). The installed version code is the number in brackets in Settings → About (Version 1.0.0 (N)). Change the row in Supabase → Table Editor → `app_config`.
 
 | Check | Expected | Result |
 |---|---|---|

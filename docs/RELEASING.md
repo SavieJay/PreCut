@@ -27,3 +27,7 @@
 - **Internal testing track:** the same with a testers' list; updates can take a while to reach Play's cache.
 - In-App Updates only work for apps installed by Google Play. A debug build from Android Studio gets the store fallback instead.
 - Unit tests cover the decisions (`UpdateRulesTest`); `PlayUpdatesTest` runs the Play flows against `FakeAppUpdateManager` on a phone or emulator (`./gradlew connectedDebugAndroidTest`).
+
+## Deploying the server
+
+From the repository root on a machine that can reach the database: `npx supabase db push --linked`, then `npx supabase functions deploy cloud`. From an environment without direct Postgres access (such as a cloud coding session), apply each pending file in `supabase/migrations/` through the Management API (`POST https://api.supabase.com/v1/projects/<ref>/database/query`, one transaction per file) and add its row to `supabase_migrations.schema_migrations` (version, name, statements), then deploy with `npx supabase functions deploy cloud --project-ref <ref> --use-api`. Always push migrations before deploying the function that needs them.
