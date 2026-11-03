@@ -58,7 +58,7 @@ class PlayBillingGateway @Inject constructor(@ApplicationContext context: Contex
                 },
             )
         }
-        .enablePendingPurchases(PendingPurchasesParams.newBuilder().enablePrepaidPlans().build())
+        .enablePendingPurchases(pendingPurchases())
         .enableAutoServiceReconnection()
         .build()
 
@@ -140,7 +140,16 @@ class PlayBillingGateway @Inject constructor(@ApplicationContext context: Contex
         }
     }
 
-    private companion object {
-        const val TAG = "PlayBilling"
+    internal companion object {
+        private const val TAG = "PlayBilling"
+
+        /**
+         * Pending purchases (a payment still going through), as Play Billing 7+ requires: it refuses
+         * prepaid plans without one-time products ("Pending purchases for one-time products must be
+         * supported.") and throws while the client is built, which crashed the app at every start.
+         * PreCut sells only subscriptions, so pending one-time products never arrive.
+         */
+        fun pendingPurchases(): PendingPurchasesParams =
+            PendingPurchasesParams.newBuilder().enableOneTimeProducts().enablePrepaidPlans().build()
     }
 }
