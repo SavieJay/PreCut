@@ -247,11 +247,13 @@ Clear the app's data first (Settings → Apps → PreCut → Storage → Clear s
 
 | Check | Expected | Result |
 |---|---|---|
-| Open PreCut | Welcome: moving tiles, the logo, "Edit like a pro. In minutes.", Get started, I already have projects, Skip, dots | |
+| Open PreCut | Welcome (design O-01): a tilted wall of clips with a white playhead through it, the logo, "Edit like a pro. In minutes.", Get started, I already have projects, Skip; at the top a track of clips, the first part-filled with a playhead | |
+| Get started → What will you create? | Each card shows its shape (9:16, 16:9, 1:1); picking Social and Travel says "New projects will start in 9:16…" under the grid; Continue is off until one is picked | |
+| Your editing experience | Radio cards; the picked one opens: New shows the Simple toolbar (AI edit to Filters, then More), the others the full toolbar running off the edge | |
 | Get started → pick YouTube videos → Continue → New to editing → Continue | Android 13+: the notifications page; Allow asks the system; then Projects | |
 | New project | Starts in 16:9 | |
 | Templates tab | Vlog templates first | |
-| Open a project | Three tips in turn: timeline, tools, Export; a tap moves on; the toolbar shows six tools and More | |
+| Open a project | Three tips in turn: timeline, tools, Export, each with an accent ring and a light bubble pointing at it; Next or a tap anywhere moves on; the toolbar shows six tools and More | |
 | More, then Less | The full row, then the six again | |
 | Settings → Simple mode off | The full toolbar in the editor | |
 | Settings → Replay intro → Skip | Back in Settings; the earlier answers were kept | |

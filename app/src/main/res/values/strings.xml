@@ -1123,18 +1123,24 @@
 
     <!-- Onboarding (Phase 24) -->
     <string name="onboarding_skip">Skip</string>
-    <string name="onboarding_welcome_title">Edit like a pro. In minutes.</string>
+    <string name="onboarding_close">Close</string>
+    <string name="onboarding_step">Step %1$d of %2$d</string>
+    <string name="onboarding_welcome_title">Edit like a pro.\nIn minutes.</string>
     <string name="onboarding_welcome_body">Free pro-level tools, no watermark.</string>
     <string name="onboarding_get_started">Get started</string>
     <string name="onboarding_have_projects">I already have projects</string>
     <string name="onboarding_goals_title">What will you create?</string>
-    <string name="onboarding_goals_subtitle">Pick all that apply.</string>
+    <string name="onboarding_goals_subtitle">Pick all that apply. New projects start in the right shape, with matching templates first.</string>
+    <string name="onboarding_goals_summary">New projects will start in %1$s, with templates for your picks first.</string>
     <string name="onboarding_goal_social">Short videos for social</string>
     <string name="onboarding_goal_youtube">YouTube videos</string>
     <string name="onboarding_goal_memories">Travel and family memories</string>
     <string name="onboarding_goal_business">Business and brand</string>
     <string name="onboarding_continue">Continue</string>
     <string name="onboarding_experience_title">Your editing experience</string>
+    <string name="onboarding_experience_subtitle">PreCut sets up the editor to match.</string>
+    <string name="onboarding_experience_simple_preview">Simple toolbar · six everyday tools, the rest under More</string>
+    <string name="onboarding_experience_full_preview">Full toolbar · every tool, scrolls sideways</string>
     <string name="onboarding_experience_new">New to editing</string>
     <string name="onboarding_experience_new_body">Keep it simple</string>
     <string name="onboarding_experience_some">Some experience</string>
@@ -1144,6 +1150,7 @@
     <string name="onboarding_experience_note">You can change this any time in Settings.</string>
     <string name="onboarding_notifications_title">Know when your video is ready</string>
     <string name="onboarding_notifications_body">We\'ll only notify you about exports and important updates.</string>
+    <string name="onboarding_notifications_now">%1$s · now</string>
     <string name="onboarding_notifications_mock">Exporting your video… 62%</string>
     <string name="onboarding_notifications_allow">Allow notifications</string>
     <string name="onboarding_not_now">Not now</string>
