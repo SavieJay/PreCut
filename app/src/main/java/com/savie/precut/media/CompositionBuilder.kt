@@ -52,7 +52,7 @@ class CompositionBuilder @Inject constructor(private val effectsFactory: Effects
             listOfNotNull(effectsFactory.overlayLayersEffect(spec.overlayLanes, spec.transitions, spec.outputSize)) +
             effectsFactory.lookLayerEffects(spec.lookLayers) +
             effectsFactory.effectLayerEffects(spec.effectLayers) +
-            listOfNotNull(effectsFactory.overlayEffect(spec.texts, spec.cover, spec.outputSize))
+            effectsFactory.overlayEffects(spec.texts, spec.cover, spec.outputSize)
         if (videoEffects.isNotEmpty()) builder.setEffects(Effects(/* audioProcessors= */ emptyList(), videoEffects))
         return builder.build()
     }

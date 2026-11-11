@@ -116,11 +116,15 @@ class EffectsFactory @Inject constructor(
     }
 
     /**
-     * One overlay effect for the cover and all texts and stickers, applied to the whole
-     * composition in timeline time. The cover is drawn first so texts stay on top.
+     * The overlay effects for the cover and all texts and stickers, applied to the whole
+     * composition in timeline time. The cover is drawn first so texts stay on top. Texts never on
+     * screen together share one overlay ([overlaySlots]), and the overlays are split into effects
+     * of at most [MAX_OVERLAYS_PER_EFFECT]; usually there's one.
      */
-    fun overlayEffect(texts: List<TextSpec>, cover: CoverSpec?, outputSize: OutputSize): Effect? {
-        if (texts.isEmpty() && cover == null) return null
+    fun overlayEffects(allTexts: List<TextSpec>, cover: CoverSpec?, outputSize: OutputSize): List<Effect> {
+        // A text with no time on screen never shows.
+        val texts = allTexts.filter { it.endUs > it.startUs }
+        if (texts.isEmpty() && cover == null) return emptyList()
         val coverOverlay = cover?.let { spec ->
             val source = spec.source
             // Runs once on the effects thread; the loader's own IO work happens on its dispatcher.
@@ -142,7 +146,11 @@ class EffectsFactory @Inject constructor(
                 },
             )
         }
-        return OverlayEffect(listOfNotNull(coverOverlay) + textOverlays)
+        val slots = overlaySlots(texts.map { it.startUs until it.endUs })
+        val slotOverlays = texts.indices.groupBy { slots[it] }.toSortedMap().values.map { members ->
+            members.singleOrNull()?.let { textOverlays[it] } ?: TextSlotOverlay(members.map { texts[it] to textOverlays[it] })
+        }
+        return overlayChunks(listOfNotNull(coverOverlay) + slotOverlays).map { OverlayEffect(it) }
     }
 
     /** Overlapping transitions, then picture-in-picture rows (bottom row first), over the main video; null without either. */
