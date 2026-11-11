@@ -1,0 +1,27 @@
+PreCut crash report
+Time: 2026-11-10T14:59:11.739Z
+App: 1.1.0 (64)
+Device: TECNO MOBILE LIMITED TECNO LD7
+Android: 10 (API 29)
+Thread: main
+
+java.lang.NoClassDefFoundError: Failed resolution of: Landroid/media/metrics/LogSessionId;
+	at lm.z(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:73)
+	at yl3.z(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:25)
+	at iv4.<init>(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:185)
+	at os5.<init>(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:201)
+	at ks5.f(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:369)
+	at ge4.d(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:382)
+	at dd0.r(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:1200)
+	at pu.i(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:8)
+	at d41.run(r8-map-id-23732f13f8ec273138851130d5f6f15be12df02de5f3ace1c16c578c5b1aaec7:114)
+	at android.os.Handler.handleCallback(Handler.java:883)
+	at android.os.Handler.dispatchMessage(Handler.java:100)
+	at android.os.Looper.loop(Looper.java:264)
+	at android.app.ActivityThread.main(ActivityThread.java:7684)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:507)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:980)
+	Suppressed: d31: [t55{Cancelling}@fad0ad9, Dispatchers.Main.immediate]
+Caused by: java.lang.ClassNotFoundException: android.media.metrics.LogSessionId
+	... 16 more
