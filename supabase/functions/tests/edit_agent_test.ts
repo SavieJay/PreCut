@@ -70,7 +70,18 @@ Deno.test("the request: the model, every tool, the effort, caching and the defau
     (body.tools as { name: string; strict: boolean }[]).map((t) => t.name),
     [...EDIT_TOOL_NAMES],
   );
-  assert((body.tools as { strict: boolean }[]).every((t) => t.strict));
+  // Anthropic refuses strict tools with over 16 nullable parameters or a grammar too large to
+  // compile (both seen live), so the four tools with the most optional values aren't strict.
+  assertEquals(
+    (body.tools as { name: string; strict: boolean }[])
+      .filter((t) => !t.strict).map((t) => t.name),
+    [
+      "set_clip_sound",
+      "set_clip_look",
+      "set_clip_animation",
+      "set_audio_track",
+    ],
+  );
   assertEquals(body.output_config, { effort: "medium" });
   assertEquals(body.cache_control, { type: "ephemeral" });
   assertEquals(body.fallbacks, "default");

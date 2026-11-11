@@ -126,8 +126,8 @@
   },
   {
     "name": "set_clip_sound",
-    "description": "A clip's own sound: volume_percent 0 to 200, muted, and fades in seconds. Null leaves a value as it is.",
-    "strict": true,
+    "description": "A clip's own sound: volume_percent 0 to 200, muted, and fades in seconds. Leave a value out (or null) to keep it as it is.",
+    "strict": false,
     "input_schema": {
       "type": "object",
       "properties": {
@@ -160,19 +160,15 @@
         }
       },
       "required": [
-        "clip_id",
-        "volume_percent",
-        "muted",
-        "fade_in_seconds",
-        "fade_out_seconds"
+        "clip_id"
       ],
       "additionalProperties": false
     }
   },
   {
     "name": "set_clip_look",
-    "description": "A clip's colour: a filter from catalog.filters (filter_id; \"none\" removes it) at filter_strength_percent 0 to 100, and adjustments from -100 to 100 (vignette 0 to 100). Null leaves a value as it is.",
-    "strict": true,
+    "description": "A clip's colour: a filter from catalog.filters (filter_id; \"none\" removes it) at filter_strength_percent 0 to 100, and adjustments from -100 to 100 (vignette 0 to 100). Leave a value out (or null) to keep it as it is.",
+    "strict": false,
     "input_schema": {
       "type": "object",
       "properties": {
@@ -229,15 +225,7 @@
         }
       },
       "required": [
-        "clip_id",
-        "filter_id",
-        "filter_strength_percent",
-        "brightness",
-        "contrast",
-        "saturation",
-        "exposure",
-        "temperature",
-        "vignette"
+        "clip_id"
       ],
       "additionalProperties": false
     }
@@ -272,8 +260,8 @@
   },
   {
     "name": "set_clip_animation",
-    "description": "How a clip enters and leaves: in and out animations from catalog.animations, or a looping combo from catalog.combos that replaces them. \"none\" removes one; null leaves it as it is. Durations in seconds (null keeps the default).",
-    "strict": true,
+    "description": "How a clip enters and leaves: in and out animations from catalog.animations, or a looping combo from catalog.combos that replaces them. \"none\" removes one; leaving one out (or null) keeps it as it is. Durations in seconds (left out or null keeps the default).",
+    "strict": false,
     "input_schema": {
       "type": "object",
       "properties": {
@@ -312,12 +300,7 @@
         }
       },
       "required": [
-        "clip_id",
-        "in_animation",
-        "out_animation",
-        "combo",
-        "in_seconds",
-        "out_seconds"
+        "clip_id"
       ],
       "additionalProperties": false
     }
@@ -482,8 +465,8 @@
   },
   {
     "name": "set_audio_track",
-    "description": "An audio clip (music, voiceover, extracted sound): volume_percent 0 to 200, fades in seconds, and where it starts on the timeline. Null leaves a value as it is.",
-    "strict": true,
+    "description": "An audio clip (music, voiceover, extracted sound): volume_percent 0 to 200, fades in seconds, and where it starts on the timeline. Leave a value out (or null) to keep it as it is.",
+    "strict": false,
     "input_schema": {
       "type": "object",
       "properties": {
@@ -516,11 +499,7 @@
         }
       },
       "required": [
-        "audio_id",
-        "volume_percent",
-        "fade_in_seconds",
-        "fade_out_seconds",
-        "start_seconds"
+        "audio_id"
       ],
       "additionalProperties": false
     }

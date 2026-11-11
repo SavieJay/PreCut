@@ -6,6 +6,9 @@ import com.savie.precut.model.motion.TransitionType
 import com.savie.precut.model.timelineDurationMs
 import com.savie.precut.model.totalDurationMs
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -64,9 +67,40 @@ class EditToolsTest {
             val schema = tool.getValue("input_schema").jsonObject
             val required = schema.getValue("required").jsonArray.map { it.jsonPrimitive.content }.toSet()
             val properties = schema.getValue("properties").jsonObject.keys
-            assertEquals("$name: strict tools require every property", properties, required)
-            assertEquals("$name's sample", required, json(samples.getValue(name)).keys)
+            if (tool.isStrict()) {
+                assertEquals("$name: strict tools require every property", properties, required)
+                assertEquals("$name's sample", required, json(samples.getValue(name)).keys)
+            } else {
+                assertTrue("$name's sample", json(samples.getValue(name)).keys.let { it.containsAll(required) && properties.containsAll(it) })
+            }
         }
+    }
+
+    /**
+     * Anthropic compiles strict tools into a grammar and refuses a request whose strict tools have
+     * more than 16 parameters that can take several types (here: nullable ones), so every AI Edit
+     * request would fail. Tools with many optional values are left non-strict instead; the reducer
+     * checks their input either way.
+     */
+    @Test
+    fun `strict tools stay within Anthropic's limits`() {
+        val tools = Json.parseToJsonElement(File("../supabase/functions/_shared/edit_tools.json").readText()).jsonArray.map { it.jsonObject }
+        val strict = tools.filter { it.isStrict() }
+        assertTrue("at most 20 strict tools", strict.size <= 20)
+        val unions = strict.sumOf { tool ->
+            tool.getValue("input_schema").jsonObject.unionCount()
+        }
+        assertTrue("strict tools have $unions union-typed parameters; Anthropic allows 16", unions <= 16)
+    }
+
+    private fun JsonObject.isStrict() = this["strict"]?.jsonPrimitive?.booleanOrNull == true
+
+    /** Parameters, at any depth, whose type is a list (e.g. ["number", "null"]) or an anyOf. */
+    private fun JsonObject.unionCount(): Int {
+        val self = if (this["type"] is JsonArray || "anyOf" in this) 1 else 0
+        val children = (this["properties"] as? JsonObject)?.values.orEmpty() + listOfNotNull(this["items"]) +
+            (this["anyOf"] as? JsonArray).orEmpty()
+        return self + children.sumOf { (it as? JsonObject)?.unionCount() ?: 0 }
     }
 
     @Test

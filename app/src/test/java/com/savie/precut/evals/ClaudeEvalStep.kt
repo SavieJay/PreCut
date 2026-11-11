@@ -106,7 +106,8 @@ class ClaudeEvalStep(private val client: AnthropicClient, private val model: Str
         return Tool.builder()
             .name(getValue("name").jsonPrimitive.content)
             .description(getValue("description").jsonPrimitive.content)
-            .strict(true)
+            // As the server sends them: the tools with many optional values aren't strict (edit_tools.json).
+            .strict(this["strict"]?.jsonPrimitive?.booleanOrNull == true)
             .inputSchema(
                 Tool.InputSchema.builder()
                     .properties(properties.build())
