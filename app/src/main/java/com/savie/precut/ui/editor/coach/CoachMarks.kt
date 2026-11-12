@@ -1,5 +1,8 @@
 package com.savie.precut.ui.editor.coach
 
+import androidx.compose.foundation.layout.Spacer
+import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.components.AccentTextButton
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -110,13 +113,11 @@ fun CoachMarksOverlay(targets: CoachTargets, onDone: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(stringResource(target.tip), style = MaterialTheme.typography.bodyLarge, color = TextPrimary, modifier = Modifier.padding(end = 6.dp))
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        stringResource(R.string.coach_step, step + 1, CoachTarget.entries.size),
-                        style = PreCutType.timecode,
-                        color = TextMuted,
-                        modifier = Modifier.weight(1f),
-                    )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // RD-O06: "Skip tips" ends them at once, the same as finishing them.
+                    if (step < CoachTarget.entries.lastIndex) AccentTextButton(stringResource(R.string.coach_skip), onDone, color = TextSecondary)
+                    Spacer(Modifier.weight(1f))
+                    Text(stringResource(R.string.coach_step, step + 1, CoachTarget.entries.size), style = PreCutType.timecode, color = TextMuted)
                     AccentPill(
                         stringResource(if (step == CoachTarget.entries.lastIndex) R.string.coach_done else R.string.coach_next),
                         enabled = true,

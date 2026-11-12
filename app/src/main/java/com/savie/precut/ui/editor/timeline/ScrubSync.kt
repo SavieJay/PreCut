@@ -1,5 +1,10 @@
 package com.savie.precut.ui.editor.timeline
 
+import kotlinx.coroutines.launch
+import com.savie.precut.ui.components.PreCutMotion
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.runtime.Composable
@@ -18,6 +23,10 @@ import kotlin.math.roundToInt
  * scrubs, between [onScrubStart] and [onScrubEnd]; otherwise the timeline follows [positionMs].
  * Scroll px == timeline px because the content is padded by half the viewport on each side,
  * putting time 0 under the centre playhead.
+ *
+ * Snapping (Phase 29D): while scrubbing, a time within [snapSlopPx] of one of [snapPoints] seeks to
+ * that point exactly, with one light haptic tick on arrival; when the finger lifts and any fling
+ * settles near it, the timeline springs onto it before the scrub ends.
  */
 @Composable
 fun ScrubSync(
@@ -27,12 +36,20 @@ fun ScrubSync(
     onScrubStart: () -> Unit,
     onScrubEnd: () -> Unit,
     onSeek: (Long) -> Unit,
+    snapPoints: () -> List<Long> = { emptyList() },
+    snapSlopPx: Float = 0f,
 ) {
     val dragged by scrollState.interactionSource.collectIsDraggedAsState()
     var userScrolling by remember { mutableStateOf(false) }
     val currentOnScrubStart by rememberUpdatedState(onScrubStart)
     val currentOnScrubEnd by rememberUpdatedState(onScrubEnd)
     val currentOnSeek by rememberUpdatedState(onSeek)
+    val currentSnapPoints by rememberUpdatedState(snapPoints)
+    val haptics = LocalHapticFeedback.current
+    val settleScope = rememberCoroutineScope()
+    var snappedMs by remember { mutableStateOf<Long?>(null) }
+    fun snapOf(px: Int): Long? =
+        TimelineGeometry.snapEdge(TimelineGeometry.pxToMs(px.toFloat(), pxPerMs), currentSnapPoints(), (snapSlopPx / pxPerMs).toLong())
 
     // A scrub ends once the finger is up and any fling has settled; the two can change in either
     // order, so both are watched.
@@ -43,14 +60,26 @@ fun ScrubSync(
                 currentOnScrubStart()
             }
             !dragged && !scrollState.isScrollInProgress && userScrolling -> {
-                userScrolling = false
-                currentOnScrubEnd()
+                val target = snapOf(scrollState.value)?.let { TimelineGeometry.msToPx(it, pxPerMs).roundToInt() }
+                if (target != null && target != scrollState.value) {
+                    // Spring onto the snap point; this effect runs again when the spring settles.
+                    settleScope.launch { scrollState.animateScrollTo(target, PreCutMotion.snap) }
+                } else {
+                    userScrolling = false
+                    snappedMs = null
+                    currentOnScrubEnd()
+                }
             }
         }
     }
     LaunchedEffect(pxPerMs) {
         snapshotFlow { scrollState.value }.collect { px ->
-            if (userScrolling) currentOnSeek(TimelineGeometry.pxToMs(px.toFloat(), pxPerMs))
+            if (userScrolling) {
+                val snap = snapOf(px)
+                if (snap != null && snap != snappedMs) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                snappedMs = snap
+                currentOnSeek(snap ?: TimelineGeometry.pxToMs(px.toFloat(), pxPerMs))
+            }
         }
     }
     // Follows the playhead without recomposing: the snapshot flow re-reads it when it changes.

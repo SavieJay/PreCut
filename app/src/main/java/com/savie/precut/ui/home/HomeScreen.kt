@@ -109,6 +109,7 @@ fun HomeScreen(
             override fun onRename(projectId: String, name: String) = viewModel.onRename(projectId, name)
             override fun onDuplicate(projectId: String) = viewModel.onDuplicate(projectId)
             override fun onDelete(projectId: String) = viewModel.onDelete(projectId)
+            override fun onRemix(projectId: String) = onOpenAiEdit(projectId)
         },
     )
     if (autoCutDialog) {

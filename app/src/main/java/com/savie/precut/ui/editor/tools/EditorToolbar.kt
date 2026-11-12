@@ -74,7 +74,10 @@ fun EditorToolbar(
     free: Boolean = true,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var aiTools by rememberSaveable { mutableStateOf(false) }
     ToolRow(modifier) {
+        // Phase 29D: every AI tool on one sheet (RD-AI1); the tools' own buttons stay in the dock.
+        AiToolButton(R.drawable.ic_auto_fix_high, R.string.tool_ai_tools, hasClips) { aiTools = true }
         if (simple && !expanded) {
             AiToolButton(R.drawable.ic_auto_awesome, R.string.tool_ai_edit, hasClips, actions::onAiEdit)
             ToolButton(R.drawable.ic_split, R.string.tool_split, canSplit, actions::onSplit)
@@ -88,6 +91,7 @@ fun EditorToolbar(
             if (simple) ToolButton(R.drawable.ic_apps, R.string.tool_less, onClick = { expanded = false })
         }
     }
+    if (aiTools) AiToolsSheet(actions, enabled = hasClips, free = free, onDismiss = { aiTools = false })
 }
 
 @Composable

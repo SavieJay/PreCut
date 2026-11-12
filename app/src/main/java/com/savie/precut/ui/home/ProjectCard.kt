@@ -62,6 +62,7 @@ fun ProjectCard(
     onRename: () -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
+    onRemix: () -> Unit = onOpen,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     Column(
@@ -82,7 +83,7 @@ fun ProjectCard(
             MediaBadge(formatDurationMs(project.durationMs), Modifier.align(Alignment.BottomEnd).padding(8.dp))
             Box(Modifier.align(Alignment.TopEnd)) {
                 MoreButton(onClick = { menuOpen = true }, modifier = Modifier.padding(4.dp))
-                ProjectMenu(menuOpen, onDismiss = { menuOpen = false }, onRename, onDuplicate, onDelete)
+                ProjectMenu(menuOpen, onDismiss = { menuOpen = false }, onRename, onDuplicate, onDelete, onRemix)
             }
         }
         Column(Modifier.padding(start = 6.dp, end = 6.dp, bottom = 4.dp)) {

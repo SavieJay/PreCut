@@ -1,0 +1,108 @@
+# Builds, tests and signs PreCut on every push to main, then publishes the APK as this
+# repository's latest GitHub Release, which the website's download links to
+# (https://github.com/SavieJay/PreCut/releases/latest/download/PreCut.apk).
+#
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   PRECUT_KEYSTORE_B64        the upload key, `base64 -w0 keystore/precut-upload.jks`
+#   PRECUT_KEYSTORE_PROPERTIES the contents of keystore.properties (storeFile=keystore/precut-upload.jks …)
+#   PRECUT_CLOUD_PROPERTIES    the contents of cloud.properties
+#   NETLIFY_BUILD_HOOK         optional: the website's build hook, so its size and checksum refresh
+# Without the keystore secrets the job stops before building: unsigned or debug-signed copies would
+# not install over the website's APK. Set the repository variable PUBLISH_APK to "false" to pause.
+name: Publish APK
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", "gradle/**", "*.gradle.kts", "gradle.properties", ".github/workflows/publish-apk.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-apk
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: vars.PUBLISH_APK != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NETLIFY_HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # versionCode is the commit count
+
+      - name: Check the signing secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.PRECUT_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::PRECUT_KEYSTORE_B64 isn't set; see the comment at the top of this workflow."
+            exit 1
+          fi
+
+      - name: Write the signing and cloud files (never logged)
+        env:
+          KEYSTORE_B64: ${{ secrets.PRECUT_KEYSTORE_B64 }}
+          KEYSTORE_PROPERTIES: ${{ secrets.PRECUT_KEYSTORE_PROPERTIES }}
+          CLOUD_PROPERTIES: ${{ secrets.PRECUT_CLOUD_PROPERTIES }}
+        run: |
+          mkdir -p keystore
+          printf '%s' "$KEYSTORE_B64" | base64 -d > keystore/precut-upload.jks
+          printf '%s\n' "$KEYSTORE_PROPERTIES" > keystore.properties
+          printf '%s\n' "$CLOUD_PROPERTIES" > cloud.properties
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests and the signed release APK
+        run: ./gradlew testDebugUnitTest assembleRelease --console=plain
+
+      - name: Check the APK
+        id: apk
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "$APK" | grep -q "2c108e1a3cf6490e9913e73eefe02bdde2ebd028aedb9ac57502ad45f4342912" \
+            || { echo "::error::The APK isn't signed with PreCut's upload key."; exit 1; }
+          python3 -I tools/dex_check.py "$APK" 26
+          BADGING=$("$BT/aapt2" dump badging "$APK" | head -1)
+          echo "code=$(echo "$BADGING" | sed -E "s/.*versionCode='([0-9]+)'.*/\1/")" >> "$GITHUB_OUTPUT"
+          echo "name=$(echo "$BADGING" | sed -E "s/.*versionName='([^']+)'.*/\1/")" >> "$GITHUB_OUTPUT"
+          echo "sha=$(sha256sum "$APK" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "size=$(stat -c %s "$APK")" >> "$GITHUB_OUTPUT"
+          cp "$APK" PreCut.apk
+          cp "$APK" "PreCut-$(echo "$BADGING" | sed -E "s/.*versionName='([^']+)'.*/\1/").apk"
+
+      - name: Publish as the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.apk.outputs.name }}
+        run: |
+          NOTES="PreCut ${{ steps.apk.outputs.name }} (version code ${{ steps.apk.outputs.code }}), built from ${GITHUB_SHA::7}.
+
+          - SHA-256: \`${{ steps.apk.outputs.sha }}\`
+          - Signing certificate SHA-256: \`2c108e1a3cf6490e9913e73eefe02bdde2ebd028aedb9ac57502ad45f4342912\`
+          - Android 8.0 or newer. Installs over earlier versions and keeps your projects."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes "$NOTES" --latest
+          else
+            gh release create "$TAG" --title "PreCut ${{ steps.apk.outputs.name }}" --notes "$NOTES" --latest
+          fi
+          gh release upload "$TAG" PreCut.apk "PreCut-${{ steps.apk.outputs.name }}.apk" --clobber
+
+      - name: Refresh the website
+        if: env.NETLIFY_HOOK != ''
+        run: curl -fsS -X POST -d '{}' "$NETLIFY_HOOK" > /dev/null
+
+      - name: Clean up the key
+        if: always()
+        run: rm -f keystore/precut-upload.jks keystore.properties cloud.properties

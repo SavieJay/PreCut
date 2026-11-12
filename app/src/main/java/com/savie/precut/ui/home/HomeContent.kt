@@ -37,6 +37,9 @@ interface ProjectActions {
     fun onRename(projectId: String, name: String)
     fun onDuplicate(projectId: String)
     fun onDelete(projectId: String)
+
+    /** "Remix with AI" (RD-H03): the project opens with the AI Edit prompt; plain open by default. */
+    fun onRemix(projectId: String) = onOpen(projectId)
 }
 
 /** Projects screen on the pink-glow background: drafts grid (RD-H02), empty state (RD-H01) or importing (RD-H07/H08). */
@@ -103,6 +106,7 @@ fun HomeContent(
                     onRename = { renaming = it },
                     onDuplicate = { actions.onDuplicate(it.id) },
                     onDelete = { deleting = it },
+                    onRemix = { actions.onRemix(it.id) },
                     modifier = modifier,
                 )
             }

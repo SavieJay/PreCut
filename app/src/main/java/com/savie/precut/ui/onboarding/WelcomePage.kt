@@ -89,7 +89,8 @@ internal fun WelcomePage(onStart: () -> Unit, onHaveProjects: () -> Unit) {
                 Icon(painterResource(R.drawable.ic_logo), contentDescription = null, tint = TextPrimary, modifier = Modifier.size(32.dp))
                 Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, color = TextPrimary)
             }
-            Text(stringResource(R.string.onboarding_welcome_title), style = MaterialTheme.typography.displaySmall, color = TextPrimary, modifier = Modifier.padding(top = 14.dp))
+            Text(welcomeTitle(), style = MaterialTheme.typography.displaySmall, color = TextPrimary, modifier = Modifier.padding(top = 14.dp))
+            WelcomeTags(Modifier.padding(top = 14.dp))
             Text(stringResource(R.string.onboarding_welcome_body), style = MaterialTheme.typography.bodyLarge, color = TextSecondary, modifier = Modifier.padding(top = 14.dp))
             FilledButton(stringResource(R.string.onboarding_get_started), onStart, Modifier.fillMaxWidth().padding(top = 22.dp), large = true)
             AccentTextButton(stringResource(R.string.onboarding_have_projects), onHaveProjects, Modifier.fillMaxWidth().padding(top = 6.dp), color = TextSecondary)

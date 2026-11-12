@@ -351,6 +351,13 @@ Compare each screen side by side with its frame on the canvas's "Redesign 2026" 
 10. **Small screen (RD-E03b, T06c):** on a 360 dp wide phone (or Display size set to largest), nothing is cut off in the editor or the Filters panel.
 11. **Reduce motion:** Settings → Accessibility → Remove animations on: buttons no longer shrink when pressed, and panels appear without sliding.
 
+## 4u. Finishing touches (Phase 29D)
+1. **Welcome:** Settings → Replay intro. "In minutes." is pink, with two tags under the title ("No watermark", lime "New: AI edit") and the line about describing a video.
+2. **Skip tips:** open a project as a new user (or after Replay intro); on the first or second tip, tap **Skip tips**: the tips close and don't come back.
+3. **Playhead snapping:** in a project with two clips, scrub slowly past the cut between them: the playhead jumps onto the cut with one light vibration, and the time bubble shows the cut's exact time. Let go a little past it: the timeline springs onto the cut. Scrub in the middle of a clip: no snapping, as before. With a song with beats marked, scrubbing catches each beat; select a clip with keyframes and it catches those too.
+4. **AI tools sheet:** the lime **AI** item at the start of the dock opens the sheet: seven lime cards with Cloud or On-device tags and PRO on Pro tools (free users). Tap each: it opens the same tool as its own dock button (consent and paywall included).
+5. **Remix with AI:** on Home, a project's ⋮ menu has lime **Remix with AI** at the top: it opens that project with the AI Edit prompt showing.
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

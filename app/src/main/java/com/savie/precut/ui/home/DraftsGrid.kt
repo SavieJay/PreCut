@@ -31,6 +31,7 @@ internal fun DraftsGrid(
     onDuplicate: (ProjectSummary) -> Unit,
     onDelete: (ProjectSummary) -> Unit,
     modifier: Modifier = Modifier,
+    onRemix: (ProjectSummary) -> Unit = onOpen,
 ) {
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
@@ -54,6 +55,7 @@ internal fun DraftsGrid(
                 onRename = { onRename(project) },
                 onDuplicate = { onDuplicate(project) },
                 onDelete = { onDelete(project) },
+                onRemix = { onRemix(project) },
             )
         }
     }

@@ -73,7 +73,11 @@ fun Timeline(
         val halfWidth = maxWidth / 2
 
         val scrollState = rememberScrollState()
-        ScrubSync(scrollState, positionMs, pxPerMs, actions::onScrubStart, actions::onScrubEnd, actions::onSeek)
+        val snapPoints = remember(project, selection) { playheadSnapPoints(project, selection) }
+        ScrubSync(
+            scrollState, positionMs, pxPerMs, actions::onScrubStart, actions::onScrubEnd, actions::onSeek,
+            snapPoints = { snapPoints }, snapSlopPx = with(density) { PLAYHEAD_SNAP_SLOP.toPx() },
+        )
         val coroutineScope = rememberCoroutineScope()
         val autoScroller = remember(scrollState) {
             with(density) { EdgeAutoScroller(scrollState, coroutineScope, edgePx = 48.dp.toPx(), maxSpeedPx = 14.dp.toPx()) }
@@ -149,3 +153,6 @@ fun Timeline(
         }
     }
 }
+
+/** How near (8 dp) an edge, beat or keyframe pulls the playhead while scrubbing (motion spec). */
+private val PLAYHEAD_SNAP_SLOP = 8.dp

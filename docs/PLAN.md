@@ -673,6 +673,12 @@ Source: the "Redesign 2026" page of the Claude Design canvas (https://claude.ai/
 - [x] Export (RD-EX, redline RD-R-EX01) — Audio only, GIF and Save frame stay as text pills (the UI test finds them by text); "AI upscale" skipped
 - [x] Release build checked with the dex scan (0 risky casts, upload-key signature, version code 67); `docs/DEVICE_CHECKLIST.md` gains a visual check per page (section 4t) — the phone check is the user's
 
+*29D — Finishing touches from the 2026 design (approved 2026-11-12)*
+- [x] Welcome (RD-O01): "In minutes." in pink, "No watermark" and "New: AI edit" tags, the body line about describing a video; editor tips (RD-O06) get "Skip tips"
+- [x] Playhead snapping (motion spec): while scrubbing, a clip edge, beat or keyframe within 8 dp pulls the playhead to it with one light haptic tick; on release the timeline springs there (`PreCutMotion.snap`); pure `snapTime` with unit tests
+- [x] AI tools sheet (RD-AI1, existing tools only): a lime "AI" item first in the dock opens cards for AI Edit, Auto-captions, Remove background, Auto-reframe, Edit by transcript, Long video to shorts and Smart B-roll (ON-DEVICE/CLOUD tag, PRO badge); each card runs the dock button's own action
+- [x] "Remix with AI" (RD-H03) in a project card's menu: opens that project with the AI Edit prompt (`EditorRoute(projectId, aiEdit = true)`)
+
 **Acceptance:** every existing screen matches its RD frame on a phone (Android 10 without blur, Android 12+ with it); all unit tests pass; no feature, edit or export result changes.
 
 ## 4. Manual test matrix (use at the end of phases 3–12)

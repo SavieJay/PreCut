@@ -1,5 +1,6 @@
 package com.savie.precut.ui.home
 
+import com.savie.precut.ui.theme.AiAccent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
@@ -29,9 +30,9 @@ import com.savie.precut.ui.theme.TextSecondary
 private val MenuShape = RoundedCornerShape(20.dp)
 private val MenuRowShape = RoundedCornerShape(14.dp)
 
-/** RD-H03: Rename, Duplicate, Delete (ErrorRed) as 52 dp rows on a raised glass menu (20 dp corners). */
+/** RD-H03: Remix with AI (lime), Rename, Duplicate, Delete (ErrorRed) as 52 dp rows on a raised glass menu (20 dp corners). */
 @Composable
-internal fun ProjectMenu(expanded: Boolean, onDismiss: () -> Unit, onRename: () -> Unit, onDuplicate: () -> Unit, onDelete: () -> Unit) {
+internal fun ProjectMenu(expanded: Boolean, onDismiss: () -> Unit, onRename: () -> Unit, onDuplicate: () -> Unit, onDelete: () -> Unit, onRemix: () -> Unit) {
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
@@ -41,6 +42,8 @@ internal fun ProjectMenu(expanded: Boolean, onDismiss: () -> Unit, onRename: () 
         shadowElevation = 20.dp,
         modifier = Modifier.widthIn(min = 220.dp),
     ) {
+        // Phase 29D: opens the project with the AI Edit prompt (lime: it's AI).
+        MenuRow(R.drawable.ic_auto_awesome, stringResource(R.string.project_remix_ai), AiAccent) { onDismiss(); onRemix() }
         MenuRow(R.drawable.ic_edit, stringResource(R.string.action_rename), TextPrimary) { onDismiss(); onRename() }
         MenuRow(R.drawable.ic_duplicate, stringResource(R.string.action_duplicate), TextPrimary) { onDismiss(); onDuplicate() }
         MenuRow(R.drawable.ic_delete, stringResource(R.string.action_delete), ErrorRed) { onDismiss(); onDelete() }

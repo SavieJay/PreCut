@@ -1125,8 +1125,11 @@
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_close">Close</string>
     <string name="onboarding_step">Step %1$d of %2$d</string>
-    <string name="onboarding_welcome_title">Edit like a pro.\nIn minutes.</string>
-    <string name="onboarding_welcome_body">Free pro-level tools, no watermark.</string>
+    <string name="onboarding_welcome_title">Edit like a pro.</string>
+    <string name="onboarding_welcome_title_accent">In minutes.</string>
+    <string name="onboarding_welcome_body">Free pro-level tools, no watermark. Or describe a video and let PreCut make the first cut.</string>
+    <string name="onboarding_tag_no_watermark">No watermark</string>
+    <string name="onboarding_tag_ai_edit">New: AI edit</string>
     <string name="onboarding_get_started">Get started</string>
     <string name="onboarding_have_projects">I already have projects</string>
     <string name="onboarding_goals_title">What will you create?</string>
@@ -1160,6 +1163,7 @@
     <string name="coach_step">%1$d of %2$d</string>
     <string name="coach_next">Next</string>
     <string name="coach_done">Got it</string>
+    <string name="coach_skip">Skip tips</string>
     <string name="tool_more">More</string>
     <string name="tool_less">Less</string>
     <string name="settings_editor">Editor</string>
@@ -1399,4 +1403,20 @@
     <string name="export_end_card">"Made with PreCut" end card</string>
     <string name="export_end_card_note">Adds two seconds with PreCut\'s logo at the end of videos. Off unless you turn it on; there\'s never a watermark.</string>
     <string name="end_card_text">Made with PreCut</string>
+    <!-- Phase 29D: the AI tools sheet (RD-AI1). -->
+    <string name="tool_ai_tools">AI</string>
+    <string name="ai_tools_title">AI tools</string>
+    <string name="ai_tools_tag">PreCut AI</string>
+    <string name="ai_tools_subtitle">One tap. Everything stays editable on the timeline.</string>
+    <string name="ai_tools_cloud_note">Cloud tools send only the sound, or a written summary of your project, after you agree. Nothing else leaves your phone.</string>
+    <string name="ai_tools_cloud">Cloud</string>
+    <string name="ai_tools_on_device">On-device</string>
+    <string name="ai_tools_ai_edit">Describe the edit, then review each change</string>
+    <string name="ai_tools_captions">Speech to captions you can edit</string>
+    <string name="ai_tools_cutout">Cut out people, keep the motion</string>
+    <string name="ai_tools_reframe">Keep the subject in frame</string>
+    <string name="ai_tools_transcript">Cut the video by striking words</string>
+    <string name="ai_tools_shorts">The best moments as short videos</string>
+    <string name="ai_tools_broll">Fitting clips from your gallery</string>
+    <string name="project_remix_ai">Remix with AI</string>
 </resources>
