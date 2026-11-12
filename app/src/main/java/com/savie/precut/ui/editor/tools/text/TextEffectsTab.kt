@@ -1,5 +1,9 @@
 package com.savie.precut.ui.editor.tools.text
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -7,15 +11,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.text.MAX_TEXT_CURVE
 import com.savie.precut.model.text.TextGlow
 import com.savie.precut.model.text.TextShadow
 import com.savie.precut.model.text.TextStroke
-import com.savie.precut.ui.components.PillTab
-import com.savie.precut.ui.components.PillTabs
+import com.savie.precut.ui.components.PreCutChip
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.components.SwitchRow
@@ -27,11 +32,11 @@ import kotlin.math.roundToInt
 @Composable
 fun TextEffectsTab(overlay: TextOverlay, recentColors: List<Int>, onChange: (TextOverlay) -> Unit) {
     var effect by rememberSaveable { mutableIntStateOf(0) }
-    PillTabs(
-        listOf(R.string.text_stroke, R.string.text_shadow, R.string.text_glow, R.string.text_background, R.string.text_curve).map { PillTab(stringResource(it)) },
-        selected = effect,
-        onSelect = { effect = it },
-    )
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(R.string.text_stroke, R.string.text_shadow, R.string.text_glow, R.string.text_background, R.string.text_curve).forEachIndexed { index, label ->
+            PreCutChip(stringResource(label), selected = effect == index, onClick = { effect = index })
+        }
+    }
     when (effect) {
         0 -> {
             val stroke = overlay.stroke

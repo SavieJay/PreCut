@@ -1,6 +1,10 @@
 package com.savie.precut.ui.editor.timeline
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,11 +41,14 @@ import com.savie.precut.model.audioLanes
 import com.savie.precut.model.sourceAt
 import com.savie.precut.model.timelineEndMs
 import com.savie.precut.ui.theme.ExtractedAudioBar
-import com.savie.precut.ui.theme.Ink2
 import com.savie.precut.ui.theme.MusicBar
 import com.savie.precut.ui.theme.TextSecondary
 import com.savie.precut.ui.theme.VoiceoverBar
 import kotlin.math.roundToLong
+
+private val GhostShape = RoundedCornerShape(8.dp)
+private val GhostFill = Color.White.copy(alpha = 0.04f)
+private val GhostLine = Color.White.copy(alpha = 0.2f)
 
 /** Callbacks from the audio rows. */
 interface AudioRowActions {
@@ -76,15 +83,17 @@ fun AudioRows(
             Row(
                 Modifier
                     .height(rowHeight)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Ink2)
+                    .clip(GhostShape)
+                    .background(GhostFill)
+                    .border(1.5.dp, GhostLine, GhostShape)
                     .clickable(onClick = actions::onAddAudio)
-                    .padding(horizontal = 10.dp),
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = TextSecondary, modifier = Modifier.size(14.dp))
-                Text(stringResource(R.string.audio_add_audio), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                // RD-E01's ghost bar.
+                Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = TextSecondary, modifier = Modifier.size(15.dp))
+                Text(stringResource(R.string.audio_add_audio), style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold), color = TextSecondary)
             }
         }
         lanes.forEach { lane ->

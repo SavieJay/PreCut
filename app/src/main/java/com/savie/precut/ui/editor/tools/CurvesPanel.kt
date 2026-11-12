@@ -14,12 +14,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import com.savie.precut.R
-import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.components.PreCutChip
 import com.savie.precut.model.look.CurveChannel
 import com.savie.precut.model.look.CurvePoint
 import com.savie.precut.model.look.Curves
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 
 /** CapCut Pro's Curves: an RGB master curve and one per channel. */
 @Composable
@@ -37,12 +41,7 @@ fun CurvesPanel(
         modifier,
         onBack = onBack,
         actions = {
-            AccentTextButton(
-                stringResource(R.string.adjust_reset),
-                { onCurve(channel, Curves.IDENTITY) },
-                enabled = curves[channel] != Curves.IDENTITY,
-                color = TextSecondary,
-            )
+            ResetIconButton({ onCurve(channel, Curves.IDENTITY) }, enabled = curves[channel] != Curves.IDENTITY)
         },
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -52,6 +51,8 @@ fun CurvesPanel(
                     selected = c == channel,
                     onClick = { channel = c },
                     dot = curves[c] != Curves.IDENTITY,
+                    // The R, G and B chips lead with their channel's colour (RD-T09).
+                    leading = c.takeIf { it != CurveChannel.RGB }?.let { channelOf -> @Composable { ChannelDot(channelOf.strokeColor()) } },
                 )
             }
         }
@@ -59,8 +60,14 @@ fun CurvesPanel(
         Text(
             stringResource(R.string.curves_hint),
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
+            color = TextMuted,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
     }
+}
+
+/** The 6 dp colour dot leading the R, G and B chips. */
+@Composable
+private fun ChannelDot(color: Color) {
+    Box(Modifier.size(6.dp).background(color, CircleShape))
 }

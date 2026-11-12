@@ -1,6 +1,5 @@
 package com.savie.precut.ui.editor.aiedit
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,8 +26,12 @@ import com.savie.precut.ui.components.PreCutSwitch
 import com.savie.precut.ui.components.TonalButton
 import com.savie.precut.ui.editor.AiEditUi
 import com.savie.precut.ui.editor.ReviewNote
-import com.savie.precut.ui.theme.Ink1
+import com.savie.precut.ui.components.AiTag
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextMuted
 import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.glass
 
 /** What the review panel can do. */
 interface AiEditReviewActions {
@@ -45,20 +48,27 @@ interface AiEditReviewActions {
  */
 @Composable
 fun AiEditReviewPanel(review: AiEditUi.Review, actions: AiEditReviewActions, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth().background(Ink1).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(stringResource(R.string.ai_edit_review_title), style = MaterialTheme.typography.titleMedium)
+    // RD panel: glass inset 8 dp with 28 dp corners, under the preview (never over it).
+    Column(
+        modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp).glass(Radius.panel).padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.ai_edit_review_title), style = PreCutType.panelTitle, modifier = Modifier.weight(1f, fill = false))
+            AiTag(stringResource(R.string.rd_editor_ai_tag))
+        }
         if (review.message.isNotBlank()) {
             Text(review.message, style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
         }
-        review.note?.let { Text(noteText(it), style = MaterialTheme.typography.bodySmall, color = TextSecondary) }
+        review.note?.let { Text(noteText(it), style = MaterialTheme.typography.bodySmall, color = TextMuted) }
         LazyColumn(Modifier.fillMaxWidth().heightIn(max = 220.dp)) {
             itemsIndexed(review.changes) { index, label ->
                 val step = review.steps.getOrNull(index)
                 if (step != null && step != review.steps.getOrNull(index - 1)) {
-                    Text(stringResource(R.string.ai_edit_step, step), style = MaterialTheme.typography.labelLarge, color = TextSecondary, modifier = Modifier.padding(top = 6.dp))
+                    Text(stringResource(R.string.ai_edit_step, step).uppercase(), style = PreCutType.section, color = TextMuted, modifier = Modifier.padding(top = 8.dp, bottom = 2.dp))
                 }
                 Row(
-                    Modifier.fillMaxWidth().clickable { actions.onToggle(index) }.padding(vertical = 6.dp),
+                    Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable { actions.onToggle(index) }.padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -68,7 +78,7 @@ fun AiEditReviewPanel(review: AiEditUi.Review, actions: AiEditReviewActions, mod
             }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AccentTextButton(stringResource(R.string.ai_edit_discard), actions::onDiscard)
+            AccentTextButton(stringResource(R.string.ai_edit_discard), actions::onDiscard, color = TextSecondary)
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
                 TonalButton(stringResource(R.string.ai_edit_refine), actions::onRefine)
             }

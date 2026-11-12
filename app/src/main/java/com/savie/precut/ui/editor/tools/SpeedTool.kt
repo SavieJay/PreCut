@@ -22,14 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.savie.precut.R
 import com.savie.precut.model.SpeedScale
 import com.savie.precut.model.speed.SpeedCurve
-import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.components.PillTab
 import com.savie.precut.ui.components.PillTabs
 import com.savie.precut.ui.components.PreCutChip
@@ -38,8 +36,8 @@ import com.savie.precut.ui.components.PreCutSwitch
 import com.savie.precut.ui.components.SliderTick
 import com.savie.precut.ui.components.formatSeconds
 import com.savie.precut.ui.components.formatSpeed
-import com.savie.precut.ui.theme.TextSecondary
-import com.savie.precut.ui.theme.tabular
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
 import kotlin.math.roundToLong
 
 /** Presets for clips (CapCut's 0.1x–100x) and for audio clips. */
@@ -75,7 +73,7 @@ fun SpeedTool(
         onDone,
         modifier,
         actions = {
-            AccentTextButton(stringResource(R.string.adjust_reset), { onSpeedChanged(1f) }, enabled = speed != 1f || curve != null, color = TextSecondary)
+            ResetIconButton({ onSpeedChanged(1f) }, enabled = speed != 1f || curve != null)
         },
     ) {
         if (showCurveTab) {
@@ -83,6 +81,8 @@ fun SpeedTool(
                 listOf(PillTab(stringResource(R.string.speed_normal)), PillTab(stringResource(R.string.speed_curve))),
                 selected = tab,
                 onSelect = { tab = it },
+                modifier = Modifier.fillMaxWidth(),
+                fillWidth = true,
             )
             if (tab == 1) {
                 SpeedCurveTab(curve, sourceLengthMs ?: 0L, onCurve)
@@ -112,10 +112,10 @@ fun SpeedTool(
                 Text(
                     buildAnnotatedString {
                         append(formatSeconds(length))
-                        withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Normal)) { append(" → ") }
+                        withStyle(SpanStyle(color = TextMuted)) { append(" → ") }
                         append(formatSeconds((length / shown.toDouble()).roundToLong()))
                     },
-                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp).tabular(),
+                    style = PreCutType.timecode.copy(fontSize = 15.sp, lineHeight = 20.sp),
                 )
             }
             Spacer(Modifier.weight(1f))
@@ -135,7 +135,7 @@ private fun KeepPitchRow(keepPitch: Boolean?, onKeepPitchChanged: (Boolean) -> U
 
 @Composable
 private fun KeepPitchSwitch(checked: Boolean, onKeepPitchChanged: (Boolean) -> Unit) {
-    Text(stringResource(R.string.speed_keep_pitch), style = MaterialTheme.typography.bodyMedium)
+    Text(stringResource(R.string.speed_keep_pitch), style = MaterialTheme.typography.bodyLarge)
     Spacer(Modifier.width(12.dp))
     PreCutSwitch(checked = checked, onCheckedChange = onKeepPitchChanged)
 }

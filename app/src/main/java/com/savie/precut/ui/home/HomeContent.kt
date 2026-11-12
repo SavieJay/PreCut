@@ -1,30 +1,19 @@
 package com.savie.precut.ui.home
 
+import com.savie.precut.ui.components.PreCutSnackbar
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -33,16 +22,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.data.ProjectSummary
-import com.savie.precut.ui.components.TonalButton
-import com.savie.precut.ui.theme.AccentFill
-import com.savie.precut.ui.theme.OnAccent
-import com.savie.precut.ui.theme.PreCutType
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.components.FilledButton
+import com.savie.precut.ui.components.PreCutSpinner
+import com.savie.precut.ui.theme.afterglowBackground
 
 /** What the drafts grid can do with a project. */
 interface ProjectActions {
@@ -52,7 +39,7 @@ interface ProjectActions {
     fun onDelete(projectId: String)
 }
 
-/** Projects screen: drafts grid (H-02), empty state (H-01) or importing (H-07). */
+/** Projects screen on the pink-glow background: drafts grid (RD-H02), empty state (RD-H01) or importing (RD-H07/H08). */
 @Composable
 fun HomeContent(
     isImporting: Boolean,
@@ -79,20 +66,22 @@ fun HomeContent(
 
     Scaffold(
         topBar = { HomeTopBar(cameraEnabled = !isImporting, onCamera = onCamera, onSettings = onSettings, onAiEdit = onAiEdit) },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) { PreCutSnackbar(it) } },
+        floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
             AnimatedVisibility(tab == HomeTab.DRAFTS && !isImporting && !projects.isNullOrEmpty() && fabVisible, enter = scaleIn(), exit = scaleOut()) {
-                FloatingActionButton(
+                // RD-H02: the floating pink New project pill, centred over the drafts.
+                FilledButton(
+                    text = stringResource(R.string.home_new_project),
                     onClick = onNewProject,
-                    shape = RoundedCornerShape(16.dp),
-                    containerColor = AccentFill,
-                    contentColor = OnAccent,
-                    modifier = Modifier.size(56.dp),
-                ) {
-                    Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.home_new_project))
-                }
+                    icon = R.drawable.ic_add,
+                    large = true,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
             }
         },
+        containerColor = Color.Transparent,
+        modifier = Modifier.afterglowBackground(),
     ) { innerPadding ->
         Column(Modifier.fillMaxSize().padding(innerPadding)) {
             banner()
@@ -104,32 +93,18 @@ fun HomeContent(
             }
             when {
                 isImporting -> ImportingMedia(modifier)
-                projects == null -> Box(modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                projects == null -> Box(modifier, contentAlignment = Alignment.Center) { PreCutSpinner() }
                 projects.isEmpty() -> EmptyProjects(onNewProject, onAutoCut, modifier)
-                else -> LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
+                else -> DraftsGrid(
+                    projects = projects,
                     state = gridState,
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalItemSpacing = 16.dp,
+                    onAutoCut = onAutoCut,
+                    onOpen = { actions.onOpen(it.id) },
+                    onRename = { renaming = it },
+                    onDuplicate = { actions.onDuplicate(it.id) },
+                    onDelete = { deleting = it },
                     modifier = modifier,
-                ) {
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.home_drafts_count, projects.size), style = PreCutType.section, color = TextSecondary, modifier = Modifier.weight(1f))
-                            TonalButton(stringResource(R.string.autocut_title), onAutoCut, icon = R.drawable.ic_beats)
-                        }
-                    }
-                    items(projects, key = { it.id }) { project ->
-                        ProjectCard(
-                            project = project,
-                            onOpen = { actions.onOpen(project.id) },
-                            onRename = { renaming = project },
-                            onDuplicate = { actions.onDuplicate(project.id) },
-                            onDelete = { deleting = project },
-                        )
-                    }
-                }
+                )
             }
         }
     }
@@ -147,6 +122,7 @@ fun HomeContent(
     deleting?.let { project ->
         DeleteDialog(
             name = displayName(project),
+            coverPath = project.coverPath,
             onConfirm = {
                 actions.onDelete(project.id)
                 deleting = null

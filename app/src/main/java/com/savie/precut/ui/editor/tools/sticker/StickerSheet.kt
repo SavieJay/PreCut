@@ -1,10 +1,12 @@
 package com.savie.precut.ui.editor.tools.sticker
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.savie.precut.R
 import com.savie.precut.media.sticker.LibraryImage
@@ -35,6 +37,8 @@ fun StickerSheet(recent: List<String>, images: List<LibraryImage>, actions: Stic
             listOf(R.string.sticker_tab_emoji, R.string.sticker_tab_animated, R.string.sticker_tab_3d, R.string.sticker_tab_images).map { PillTab(stringResource(it)) },
             tab,
             { tab = it },
+            Modifier.fillMaxWidth(),
+            fillWidth = true,
         )
         when (tab) {
             0 -> EmojiTab(recent, actions::onEmoji)

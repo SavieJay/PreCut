@@ -13,12 +13,12 @@ import com.savie.precut.R
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.components.formatSeconds
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
 import kotlin.math.roundToLong
 
 private const val MAX_FADE_MS = 10_000L
 
-/** T-05: fade-in and fade-out of a clip's sound, each up to half its length (max 10 s); applied on release. */
+/** RD-T05: fade-in and fade-out of a clip's sound, each up to half its length (max 10 s); applied on release. */
 @Composable
 fun FadeTool(
     fadeInMs: Long,
@@ -35,7 +35,7 @@ fun FadeTool(
     ToolPanel(stringResource(R.string.fade_title), onDone, modifier) {
         FadeRow(stringResource(R.string.fade_in), fadeIn, max.toFloat(), { fadeIn = it }, commit)
         FadeRow(stringResource(R.string.fade_out), fadeOut, max.toFloat(), { fadeOut = it }, commit)
-        Text(stringResource(R.string.fade_limit, formatSeconds(max)), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        Text(stringResource(R.string.fade_limit, formatSeconds(max)), style = MaterialTheme.typography.bodySmall, color = TextMuted)
     }
 }
 

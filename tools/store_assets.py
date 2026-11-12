@@ -15,8 +15,9 @@ from PIL import Image, ImageDraw, ImageFont
 RES = "app/src/main/res"
 OUT = "docs/store"
 A = "{http://schemas.android.com/apk/res/android}"
-INK0, INK2, TEXT, TEXT2, ACCENT = "#0E0E10", "#222226", "#F2F2F5", "#9A9AA3", "#FF4D6D"
-LANES = ["#5A5A62", "#8A93A6", "#B8860B", "#E07A2E", "#A3C93A", "#137D6F", "#7B5BD6"]
+INK0, INK2, TEXT, TEXT2, ACCENT = "#0B0B0F", "#1A1A22", "#F4F4F7", "#B8B8C4", "#FF4D6D"
+# The 2026 track colours (Afterglow): video, music, voice, text, overlay, sticker, effect.
+LANES = ["#FF4D6D", "#3DD9C1", "#7CC4FF", "#FFC14D", "#8EA2FF", "#FF9157", "#D6A8FF"]
 
 
 def colour(argb):
@@ -77,15 +78,34 @@ def font(size, weight):
     return f
 
 
+def halo(size, centre, radius, peak):
+    """RD-A01's pink halo: PreCut pink fading from [peak] opacity at [centre] to nothing at [radius] (px)."""
+    layer = Image.new("RGBA", size, (0, 0, 0, 0))
+    pixels = layer.load()
+    cx, cy = centre
+    for y in range(size[1]):
+        for x in range(size[0]):
+            t = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 / radius
+            if t >= 1:
+                continue
+            # Stops 0 → peak, 0.55 → 0.12, 1 → 0, as in the icon's background layer.
+            a = peak + (0.12 - peak) * t / 0.55 if t < 0.55 else 0.12 * (1 - (t - 0.55) / 0.45)
+            pixels[x, y] = (255, 77, 109, int(255 * a))
+    return layer
+
+
 def icon():
-    """512 x 512, full bleed (Play applies its own mask): the launcher's visible 72 dp middle."""
+    """512 x 512, full bleed (Play applies its own mask): the whole 108 dp adaptive icon, halo and mark."""
     image = Image.new("RGBA", (512, 512), INK0)
-    image.alpha_composite(render(logo_svg("18 18 72 72"), 512))
+    image.alpha_composite(halo((512, 512), (256, 256 * 0.92), 512 * 0.55, 0.55))
+    image.alpha_composite(render(logo_svg("0 0 108 108"), 512))
     image.convert("RGB").save(f"{OUT}/icon-512.png")
 
 
 def feature_graphic():
     image = Image.new("RGBA", (1024, 500), INK0)
+    image.alpha_composite(halo((1024, 500), (220, 210), 300, 0.5))
+    image.alpha_composite(halo((1024, 500), (1024, 500), 420, 0.22))
     draw = ImageDraw.Draw(image)
     # A timeline strip along the bottom, in the app's lane colours.
     x = 0
@@ -93,9 +113,9 @@ def feature_graphic():
     for i, w in enumerate(widths):
         draw.rounded_rectangle((x + 6, 404, x + w - 6, 452), radius=10, fill=LANES[i % len(LANES)])
         x += w
-    draw.rectangle((618, 380, 622, 476), fill=TEXT)  # the playhead
+    draw.rounded_rectangle((618, 380, 621, 476), radius=1, fill=TEXT)  # the playhead
     image.alpha_composite(render(logo_svg("18 18 72 72"), 300), (70, 60))
-    draw.text((400, 120), "PreCut", font=font(124, 700), fill=TEXT)
+    draw.text((400, 120), "PreCut", font=font(124, 800), fill=TEXT)
     draw.text((404, 268), "Cut, layer and polish videos", font=font(40, 500), fill=TEXT2)
     draw.text((404, 318), "right on your phone", font=font(40, 500), fill=ACCENT)
     image.convert("RGB").save(f"{OUT}/feature-graphic.png")

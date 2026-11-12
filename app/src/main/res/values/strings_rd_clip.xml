@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 29C, group C (clip tools): copy added by the 2026 restyle. -->
+<resources>
+    <string name="rd_clip_transform_x">X</string>
+    <string name="rd_clip_transform_y">Y</string>
+    <string name="rd_clip_transform_scale">Scale</string>
+    <string name="rd_clip_transform_rotate">Rotate</string>
+    <string name="rd_clip_crop_apply">Apply</string>
+    <string name="rd_clip_crop_hint">Drag corners or pinch</string>
+</resources>

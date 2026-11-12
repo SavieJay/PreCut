@@ -43,6 +43,9 @@ import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.theme.PreCutType
 import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.PreviewScrimTop
+import com.savie.precut.ui.theme.PreviewScrimBottom
+import com.savie.precut.ui.theme.PreviewButton
 
 /**
  * The preview over the whole screen with system bars hidden (E-09). Tap toggles the controls:
@@ -142,9 +145,9 @@ fun FullScreenPreview(
     }
 }
 
-private val TopScrim = Color(0x8C000000)
-private val BottomScrim = Color(0xB3000000)
-private val ButtonScrim = Color(0x990E0E10)
+private val TopScrim = PreviewScrimTop
+private val BottomScrim = PreviewScrimBottom
+private val ButtonScrim = PreviewButton
 
 /** Hides the status and navigation bars while composed (swipe from an edge shows them briefly). */
 @Composable

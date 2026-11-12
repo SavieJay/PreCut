@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 
-/** Dims outside [crop], then draws its 1.5 dp border, thirds grid and 4 dp corner marks (T-12b). */
+/** Dims outside [crop], then draws its 1.5 dp border, thirds grid and 5 dp corner marks (RD-T12b). */
 fun DrawScope.drawCropFrame(crop: Rect) {
     val dim = Color.Black.copy(alpha = 0.62f)
     drawRect(dim, Offset.Zero, Size(size.width, crop.top))
@@ -28,8 +28,8 @@ fun DrawScope.drawCropFrame(crop: Rect) {
     drawRect(Color.White, crop.topLeft, crop.size, style = Stroke(1.5.dp.toPx()))
 
     // The marks sit just outside the border, like the design's -4 dp offset.
-    val thick = 4.dp.toPx()
-    val arm = 22.dp.toPx()
+    val thick = 5.dp.toPx()
+    val arm = 26.dp.toPx()
     listOf(
         Triple(crop.topLeft, 1f, 1f),
         Triple(crop.topRight, -1f, 1f),
@@ -37,7 +37,7 @@ fun DrawScope.drawCropFrame(crop: Rect) {
         Triple(crop.bottomRight, -1f, -1f),
     ).forEach { (corner, sx, sy) ->
         val c = Offset(corner.x - sx * thick / 2, corner.y - sy * thick / 2)
-        drawLine(Color.White, c, Offset(c.x + sx * arm, c.y), thick, cap = StrokeCap.Square)
-        drawLine(Color.White, c, Offset(c.x, c.y + sy * arm), thick, cap = StrokeCap.Square)
+        drawLine(Color.White, c, Offset(c.x + sx * arm, c.y), thick, cap = StrokeCap.Round)
+        drawLine(Color.White, c, Offset(c.x, c.y + sy * arm), thick, cap = StrokeCap.Round)
     }
 }

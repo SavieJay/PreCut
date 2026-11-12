@@ -7,26 +7,37 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.data.AppSettings
-import com.savie.precut.model.outputSize
-import com.savie.precut.model.export.ExportSettings
-import com.savie.precut.model.totalDurationMs
 import com.savie.precut.export.ExportKind
+import com.savie.precut.model.export.ExportSettings
+import com.savie.precut.model.outputSize
+import com.savie.precut.model.totalDurationMs
+import com.savie.precut.ui.components.AccentTextButton
+import com.savie.precut.ui.components.FilledButton
 import com.savie.precut.ui.editor.EditorEvent
 import com.savie.precut.ui.editor.EditorUiState
 import com.savie.precut.ui.editor.EditorViewModel
+import com.savie.precut.ui.theme.Accent
+import com.savie.precut.ui.theme.GlassSolid
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextPrimary
+import com.savie.precut.ui.theme.TextSecondary
 
 /** Opens the export screen, asking once for notifications first (A-03) on Android 13+. */
 class ExportNavigator(private val onExport: (EditorEvent.NavigateExport) -> Unit) {
@@ -97,19 +108,22 @@ fun EditorExportHost(state: EditorUiState.Ready, viewModel: EditorViewModel, nav
                 answered()
                 navigator.proceed()
             },
-            title = { Text(stringResource(R.string.notif_permission_title)) },
-            text = { Text(stringResource(R.string.notif_permission_text)) },
+            containerColor = GlassSolid,
+            shape = Radius.sheet,
+            icon = { Icon(painterResource(R.drawable.ic_notifications), contentDescription = null, tint = Accent) },
+            title = { Text(stringResource(R.string.notif_permission_title), style = PreCutType.panelTitle, color = TextPrimary, textAlign = TextAlign.Center) },
+            text = { Text(stringResource(R.string.notif_permission_text), style = MaterialTheme.typography.bodyMedium, color = TextSecondary) },
             confirmButton = {
-                TextButton(onClick = {
+                FilledButton(stringResource(R.string.notif_permission_allow), onClick = {
                     answered()
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) permission.launch(Manifest.permission.POST_NOTIFICATIONS) else navigator.proceed()
-                }) { Text(stringResource(R.string.notif_permission_allow)) }
+                })
             },
             dismissButton = {
-                TextButton(onClick = {
+                AccentTextButton(stringResource(R.string.notif_permission_later), onClick = {
                     answered()
                     navigator.proceed()
-                }) { Text(stringResource(R.string.notif_permission_later)) }
+                }, color = TextSecondary)
             },
         )
     }

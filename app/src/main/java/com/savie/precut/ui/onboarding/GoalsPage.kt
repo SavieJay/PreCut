@@ -36,11 +36,14 @@ import com.savie.precut.ui.components.FilledButton
 import com.savie.precut.ui.editor.tools.label
 import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.AccentFill
-import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.OnAccent
-import com.savie.precut.ui.theme.Outline
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
-import com.savie.precut.ui.theme.tabular
+
+private val PreviewWell = Color.Black.copy(alpha = 0.3f)
 
 @StringRes
 private fun CreationGoal.label(): Int = when (this) {
@@ -87,18 +90,18 @@ internal fun GoalsPage(goals: Set<CreationGoal>, onGoal: (CreationGoal) -> Unit,
 
 @Composable
 private fun GoalCard(goal: CreationGoal, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = Radius.card
     Box(modifier.clip(shape).choiceCard(selected, shape).toggleable(value = selected, role = Role.Checkbox, onValueChange = { onClick() })) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.fillMaxWidth().height(128.dp).background(Ink0, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth().height(128.dp).background(PreviewWell, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
                 RatioFrame(goal.ratio(), goal.scene())
             }
             Column(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(stringResource(goal.label()), style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold))
-                Text(goal.ratio().label(), style = MaterialTheme.typography.labelMedium.tabular(), color = TextSecondary)
+                Text(stringResource(goal.label()), style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold), color = TextPrimary)
+                Text(goal.ratio().label(), style = PreCutType.timecode.copy(fontSize = 11.sp, lineHeight = 20.sp), color = TextMuted)
             }
         }
-        CheckMark(selected, Modifier.align(Alignment.TopEnd).padding(10.dp))
+        CheckMark(selected, Modifier.align(Alignment.TopEnd).padding(12.dp))
     }
 }
 
@@ -118,10 +121,10 @@ private fun RatioFrame(ratio: AspectRatio, scene: ClipScene) {
 @Composable
 private fun CheckMark(selected: Boolean, modifier: Modifier = Modifier) {
     if (selected) {
-        Box(modifier.size(24.dp).background(AccentFill, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = OnAccent, modifier = Modifier.size(16.dp))
+        Box(modifier.size(26.dp).background(AccentFill, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = OnAccent, modifier = Modifier.size(18.dp))
         }
     } else {
-        Box(modifier.size(24.dp).border(2.dp, Outline, CircleShape))
+        Box(modifier.size(26.dp).border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape))
     }
 }

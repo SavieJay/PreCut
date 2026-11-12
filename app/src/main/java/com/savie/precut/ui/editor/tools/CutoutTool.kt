@@ -16,12 +16,13 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.frame.Cutout
 import com.savie.precut.ui.components.AccentTextButton
+import com.savie.precut.ui.components.AiTag
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.components.SwitchRow
 import com.savie.precut.ui.theme.ErrorRed
 import com.savie.precut.ui.theme.PreCutType
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
 import kotlin.math.roundToInt
 
 /** What the Remove background panel reports. */
@@ -40,13 +41,14 @@ interface CutoutActions {
  */
 @Composable
 fun CutoutTool(cutout: Cutout?, coversClip: Boolean, showingOriginal: Boolean, actions: CutoutActions, onDone: () -> Unit) {
-    ToolPanel(stringResource(R.string.cutout_title), onDone) {
+    ToolPanel(stringResource(R.string.cutout_title), onDone, actions = { AiTag(stringResource(R.string.rd_media_ai_tag)) }) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SwitchRow(
                 stringResource(R.string.cutout_switch),
                 checked = cutout != null,
                 onCheckedChange = actions::onEnabled,
                 description = stringResource(if (cutout == null) R.string.cutout_intro else R.string.cutout_limits),
+                ai = true,
             )
             if (cutout != null) {
                 if (!coversClip) {
@@ -59,7 +61,7 @@ fun CutoutTool(cutout: Cutout?, coversClip: Boolean, showingOriginal: Boolean, a
                 CutoutSlider(R.string.cutout_edge, cutout.edge, -1f..1f, anchor = 0f, onChanged = actions::onEdge)
                 SwitchRow(stringResource(R.string.cutout_show_original), checked = showingOriginal, onCheckedChange = { actions.onShowOriginal() })
             } else {
-                Text(stringResource(R.string.cutout_limits), style = PreCutType.labelChip, color = TextSecondary)
+                Text(stringResource(R.string.cutout_limits), style = PreCutType.labelChip, color = TextMuted)
             }
         }
     }

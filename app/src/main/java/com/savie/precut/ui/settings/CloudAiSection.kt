@@ -1,18 +1,13 @@
 package com.savie.precut.ui.settings
 
 import android.text.format.DateUtils
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
@@ -21,7 +16,6 @@ import com.savie.precut.ui.cloud.DAY_FLAGS
 import com.savie.precut.ui.cloud.UploadConsentDialog
 import com.savie.precut.ui.cloud.aiFailureMessage
 import com.savie.precut.ui.components.PreCutSwitch
-import com.savie.precut.ui.theme.TextSecondary
 
 /**
  * Settings → Cloud AI (Phase 20): the switch, this phone's free minutes, a check that sends a test
@@ -32,18 +26,18 @@ internal fun CloudAiSection(viewModel: CloudAiViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
     var explain by remember { mutableStateOf(false) }
-    Text(
-        stringResource(R.string.cloud_header), style = MaterialTheme.typography.labelLarge, color = TextSecondary,
-        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp),
-    )
-    SettingRow(
-        R.drawable.ic_auto_awesome, stringResource(R.string.cloud_switch), stringResource(R.string.cloud_switch_note),
-        trailing = { PreCutSwitch(checked = state.enabled, onCheckedChange = viewModel::onEnabled) },
-    )
-    SettingRow(R.drawable.ic_schedule, stringResource(R.string.cloud_minutes), minutesText(state.minutes))
-    SettingRow(R.drawable.ic_check_circle, stringResource(R.string.cloud_check), checkText(state.check), onClick = viewModel::onCheck)
-    SettingRow(R.drawable.ic_delete, stringResource(R.string.cloud_delete), deletionText(state.deletion), onClick = { confirmDelete = true })
-    SettingRow(R.drawable.ic_info, stringResource(R.string.cloud_what), null, chevron = true, onClick = { explain = true })
+    // RD-H09's AI group: a lime label and hairline, lime icons, the lime switch.
+    SettingsGroup(stringResource(R.string.cloud_header), ai = true) {
+        SettingRow(
+            R.drawable.ic_auto_awesome, stringResource(R.string.cloud_switch), stringResource(R.string.cloud_switch_note),
+            trailing = { PreCutSwitch(checked = state.enabled, onCheckedChange = viewModel::onEnabled, ai = true) },
+            ai = true,
+        )
+        SettingRow(R.drawable.ic_schedule, stringResource(R.string.cloud_minutes), minutesText(state.minutes), ai = true)
+        SettingRow(R.drawable.ic_check_circle, stringResource(R.string.cloud_check), checkText(state.check), onClick = viewModel::onCheck, ai = true)
+        SettingRow(R.drawable.ic_delete, stringResource(R.string.cloud_delete), deletionText(state.deletion), onClick = { confirmDelete = true })
+        SettingRow(R.drawable.ic_info, stringResource(R.string.cloud_what), null, chevron = true, onClick = { explain = true })
+    }
 
     state.consent?.let { UploadConsentDialog(it, onSend = viewModel::onConsentSend, onCancel = viewModel::onConsentCancel) }
     if (confirmDelete) DeleteCloudDataDialog(onDelete = { confirmDelete = false; viewModel.onDelete() }, onDismiss = { confirmDelete = false })

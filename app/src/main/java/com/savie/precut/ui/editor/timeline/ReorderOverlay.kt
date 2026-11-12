@@ -1,6 +1,8 @@
 package com.savie.precut.ui.editor.timeline
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -40,10 +42,10 @@ data class ReorderLayout(val tilePx: Float, val startPx: Float) {
     }
 }
 
-private val TileShape = RoundedCornerShape(6.dp)
+private val TileShape = RoundedCornerShape(16.dp)
 
 /** Reorder tiles are equal squares (E-05). */
-internal val ReorderTileSize = 48.dp
+internal val ReorderTileSize = 64.dp
 
 @Composable
 fun ReorderOverlay(
@@ -64,13 +66,14 @@ fun ReorderOverlay(
         order.forEachIndexed { slot, clipIndex ->
             val slotX = layout.startPx + slot * layout.tilePx
             if (clipIndex == state.fromIndex) {
-                // Where the lifted clip will land: a 3 dp white bar in its slot.
+                // Where the lifted clip will land: a 4 dp white bar in its slot (RD-E05).
                 Box(
                     Modifier
-                        .offset { IntOffset((slotX + layout.tilePx / 2).roundToInt() - 3.dp.roundToPx() / 2, 0) }
-                        .width(3.dp)
-                        .height(tileSize)
-                        .background(ClipSelection, RoundedCornerShape(2.dp)),
+                        .offset { IntOffset((slotX + layout.tilePx / 2).roundToInt() - 4.dp.roundToPx() / 2, 0) }
+                        .width(4.dp)
+                        .height(tileSize + 16.dp)
+                        .shadow(6.dp, RoundedCornerShape(2.dp), ambientColor = Color.White, spotColor = Color.White)
+                        .background(Color.White, RoundedCornerShape(2.dp)),
                 )
             } else {
                 ReorderTile(
@@ -84,7 +87,7 @@ fun ReorderOverlay(
                 )
             }
         }
-        // The lifted tile follows the finger, scaled ×1.1 with a shadow.
+        // The lifted tile follows the finger, scaled up with a pink ring and glow.
         ReorderTile(
             clip = clips[state.fromIndex],
             loader = loader,
@@ -92,8 +95,9 @@ fun ReorderOverlay(
             modifier = Modifier
                 .offset { IntOffset((state.fingerX - layout.tilePx / 2).roundToInt(), 0) }
                 .size(tileSize)
-                .scale(1.1f)
-                .shadow(8.dp, TileShape),
+                .scale(1.12f)
+                .shadow(16.dp, TileShape, ambientColor = ClipSelection, spotColor = ClipSelection)
+                .border(3.dp, ClipSelection, TileShape),
         )
     }
 }

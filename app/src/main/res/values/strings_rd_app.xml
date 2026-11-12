@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 29C (Redesign 2026), group A: Projects, Settings, Onboarding. -->
+<resources>
+    <string name="rd_app_rename_title">Rename project</string>
+    <string name="rd_app_name_label">Name</string>
+    <string name="rd_app_clear_name">Clear name</string>
+    <string name="rd_app_import_note">Getting your clips ready for a new project. Your originals aren\'t changed.</string>
+    <string name="rd_app_cloud_tag">Cloud</string>
+</resources>

@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
-import com.savie.precut.ui.components.PreCutChip
-import com.savie.precut.ui.theme.OnAccentContainer
+import com.savie.precut.ui.components.TileFrame
+import androidx.compose.foundation.layout.padding
 import com.savie.precut.ui.theme.TextPrimary
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -30,15 +30,13 @@ fun RatioTool(
     modifier: Modifier = Modifier,
 ) {
     ToolPanel(stringResource(R.string.ratio_title), onDone, modifier) {
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // RD-T10: 68 dp tiles, each with the frame's shape drawn as an outline.
+        Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             AspectRatio.entries.forEach { ratio ->
                 val shape = if (ratio == AspectRatio.ORIGINAL) originalRatio else ratio.widthRatio to ratio.heightRatio
-                PreCutChip(
-                    label = ratio.label(),
-                    selected = ratio == selected,
-                    onClick = { onSelected(ratio) },
-                    leading = { RatioGlyph(shape.first, shape.second, if (ratio == selected) OnAccentContainer else TextPrimary) },
-                )
+                TileFrame(label = ratio.label(), selected = ratio == selected, onClick = { onSelected(ratio) }) {
+                    RatioGlyph(shape.first, shape.second, TextPrimary)
+                }
             }
         }
     }
@@ -54,12 +52,11 @@ fun AspectRatio.label(): String = when (this) {
 }
 
 @Composable
-internal fun RatioGlyph(width: Int, height: Int, color: Color) {
-    val longSide = 16f
+internal fun RatioGlyph(width: Int, height: Int, color: Color, longSide: Float = 34f) {
     val scale = longSide / maxOf(width, height, 1)
     Box(
         Modifier
             .size((width * scale).dp, (height * scale).dp)
-            .border(1.5.dp, color, RoundedCornerShape(2.dp)),
+            .border(2.dp, color, RoundedCornerShape(3.dp)),
     )
 }

@@ -15,11 +15,13 @@ import com.savie.precut.R
 import com.savie.precut.model.AspectRatio
 import com.savie.precut.model.frame.ReframeSpeed
 import com.savie.precut.ui.components.AccentTextButton
+import com.savie.precut.ui.components.AiTag
 import com.savie.precut.ui.components.FilledButton
 import com.savie.precut.ui.components.PillTab
 import com.savie.precut.ui.components.PillTabs
 import com.savie.precut.ui.components.SwitchRow
 import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
 import com.savie.precut.ui.theme.TextSecondary
 
 /** What the Auto reframe panel reports. */
@@ -39,10 +41,13 @@ fun ReframeTool(ratio: AspectRatio, speed: ReframeSpeed, showingOriginal: Boolea
     ToolPanel(
         stringResource(R.string.reframe_title),
         onDone,
-        actions = { AccentTextButton(stringResource(R.string.action_apply_to_all), onClick = actions::onApplyAll, color = TextSecondary) },
+        actions = {
+            AiTag(stringResource(R.string.rd_media_ai_tag))
+            AccentTextButton(stringResource(R.string.action_apply_to_all), onClick = actions::onApplyAll, color = TextSecondary)
+        },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.reframe_intro, ratio.label()), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            Text(stringResource(R.string.reframe_intro, ratio.label()), style = MaterialTheme.typography.bodySmall, color = TextMuted)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.reframe_follow), style = PreCutType.labelChip, color = TextSecondary)
                 val speeds = ReframeSpeed.entries
@@ -50,11 +55,13 @@ fun ReframeTool(ratio: AspectRatio, speed: ReframeSpeed, showingOriginal: Boolea
                     tabs = speeds.map { PillTab(stringResource(it.label())) },
                     selected = speeds.indexOf(speed),
                     onSelect = { actions.onSpeed(speeds[it]) },
+                    modifier = Modifier.weight(1f),
+                    fillWidth = true,
                 )
             }
-            FilledButton(stringResource(R.string.reframe_apply), onClick = actions::onApply, modifier = Modifier.fillMaxWidth())
+            FilledButton(stringResource(R.string.reframe_apply), onClick = actions::onApply, modifier = Modifier.fillMaxWidth(), large = true)
             SwitchRow(stringResource(R.string.reframe_show_original), checked = showingOriginal, onCheckedChange = { actions.onShowOriginal() })
-            Text(stringResource(R.string.reframe_limits), style = PreCutType.labelChip, color = TextSecondary)
+            Text(stringResource(R.string.reframe_limits), style = PreCutType.labelChip, color = TextMuted)
         }
     }
 }

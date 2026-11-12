@@ -6,13 +6,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -23,17 +32,20 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.ui.editor.KeyframeButton
 import com.savie.precut.media.PreviewState
-import com.savie.precut.ui.components.formatDurationMs
+import com.savie.precut.ui.components.PreCutIconButton
+import com.savie.precut.ui.components.formatPreciseMs
+import com.savie.precut.ui.components.pressScale
 import com.savie.precut.ui.theme.PreCutTheme
 import com.savie.precut.ui.theme.Accent
+import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.PreCutType
-import com.savie.precut.ui.theme.TextDisabled
+import com.savie.precut.ui.theme.TextMuted
 import com.savie.precut.ui.theme.TextPrimary
-import com.savie.precut.ui.theme.TextSecondary
 
 /**
- * The 48 dp playback row: "0:07 / 0:18" at the start, a filled Play/Pause in the middle, Full
- * screen at the end. The timeline is the scrubber.
+ * The 56 dp transport row (RD-E03, redline 3): "0:07.0 / 0:18.0" in tabular figures at the start,
+ * a 48 dp white Play/Pause disc in the middle, the keyframe diamond and Full screen at the end. The
+ * timeline is the scrubber.
  */
 @Composable
 fun PlaybackControls(
@@ -47,56 +59,70 @@ fun PlaybackControls(
     onKeyframeEasing: () -> Unit = {},
 ) {
     val hasMedia = state.durationMs > 0L
-    val colors = IconButtonDefaults.iconButtonColors(contentColor = TextPrimary, disabledContentColor = TextDisabled)
     Box(
         modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .padding(start = 16.dp, end = 4.dp),
+            .height(56.dp)
+            .padding(start = 20.dp, end = 8.dp),
     ) {
         Text(
             text = buildAnnotatedString {
-                append(formatDurationMs(state.positionMs))
-                withStyle(SpanStyle(color = TextSecondary)) { append(" / " + formatDurationMs(state.durationMs)) }
+                append(formatPreciseMs(state.positionMs))
+                withStyle(SpanStyle(color = TextMuted)) { append(" / " + formatPreciseMs(state.durationMs)) }
             },
             style = PreCutType.timecode,
             color = TextPrimary,
             modifier = Modifier.align(Alignment.CenterStart),
         )
-        IconButton(onClick = onPlayPause, enabled = hasMedia, colors = colors, modifier = Modifier.align(Alignment.Center)) {
-            Icon(
-                painterResource(if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-                stringResource(if (state.isPlaying) R.string.action_pause else R.string.action_play),
-                modifier = Modifier.size(32.dp),
-            )
-        }
-        keyframe?.let { button ->
-            val label = stringResource(if (button.atKeyframe) R.string.keyframe_remove else R.string.keyframe_add)
-            Box(
-                Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 52.dp)
-                    .size(48.dp)
-                    .combinedClickable(
-                        onClickLabel = label,
-                        onLongClickLabel = stringResource(R.string.keyframe_easing),
-                        onLongClick = onKeyframeEasing,
-                        onClick = onKeyframe,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painterResource(if (button.atKeyframe) R.drawable.ic_diamond else R.drawable.ic_add_diamond),
-                    label,
-                    tint = if (button.atKeyframe) Accent else TextPrimary,
-                )
+        PlayButton(state.isPlaying, hasMedia, onPlayPause, Modifier.align(Alignment.Center))
+        Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+            keyframe?.let { button ->
+                val label = stringResource(if (button.atKeyframe) R.string.keyframe_remove else R.string.keyframe_add)
+                Box(
+                    Modifier
+                        .size(48.dp)
+                        .combinedClickable(
+                            onClickLabel = label,
+                            onLongClickLabel = stringResource(R.string.keyframe_easing),
+                            onLongClick = onKeyframeEasing,
+                            onClick = onKeyframe,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(if (button.atKeyframe) R.drawable.ic_diamond else R.drawable.ic_add_diamond),
+                        label,
+                        tint = if (button.atKeyframe) Accent else TextPrimary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
-        }
-        IconButton(onClick = onFullScreen, enabled = hasMedia, colors = colors, modifier = Modifier.align(Alignment.CenterEnd)) {
-            Icon(painterResource(R.drawable.ic_fullscreen), stringResource(R.string.preview_full_screen))
+            PreCutIconButton(R.drawable.ic_fullscreen, stringResource(R.string.preview_full_screen), onFullScreen, small = true, enabled = hasMedia)
         }
     }
 }
+
+/** The white 48 dp disc with a dark 30 dp Play or Pause; 35% while there's nothing to play. */
+@Composable
+private fun PlayButton(playing: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val interaction = remember { MutableInteractionSource() }
+    val label = stringResource(if (playing) R.string.action_pause else R.string.action_play)
+    Box(
+        modifier
+            .size(48.dp)
+            .alpha(if (enabled) 1f else 0.35f)
+            .pressScale(interaction)
+            .shadow(6.dp, CircleShape, ambientColor = Color.Transparent, spotColor = Color.Black.copy(alpha = 0.4f))
+            .clip(CircleShape)
+            .background(PlayDisc)
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClickLabel = label, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(painterResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play), label, tint = Ink0, modifier = Modifier.size(30.dp))
+    }
+}
+
+private val PlayDisc = Color.White
 
 @Preview
 @Composable

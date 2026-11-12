@@ -39,6 +39,7 @@ import com.savie.precut.ui.theme.tabular
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import com.savie.precut.ui.theme.OnVideoChip
 
 /** [v] rotated clockwise (screen space) by [degrees]. */
 /** [at] moved inside a [width] × [height] area, [margin] from its edges, so a handle stays on the preview. */
@@ -102,7 +103,7 @@ internal fun AngleChip(degrees: Float, frame: FrameRect) {
                 }
             }
             .height(28.dp)
-            .background(Color(0xD90E0E10), RoundedCornerShape(14.dp))
+            .background(OnVideoChip, RoundedCornerShape(14.dp))
             .padding(start = 8.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),

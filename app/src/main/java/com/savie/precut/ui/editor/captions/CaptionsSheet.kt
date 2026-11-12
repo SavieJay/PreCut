@@ -25,11 +25,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.text.CaptionStyle
+import com.savie.precut.ui.components.AiTag
 import com.savie.precut.ui.components.FilledButton
 import com.savie.precut.ui.components.PreCutChip
 import com.savie.precut.ui.editor.CAPTION_LANGUAGES
 import com.savie.precut.ui.editor.CaptionsUi
-import com.savie.precut.ui.theme.Ink1
+import com.savie.precut.ui.theme.GlassSolid
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
 
 /** What the Captions sheet can do. */
@@ -47,24 +51,26 @@ fun CaptionsSheet(options: CaptionsUi.Options, actions: CaptionsSheetActions) {
     ModalBottomSheet(
         onDismissRequest = actions::onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Ink1,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        containerColor = GlassSolid,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
     ) {
         Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(stringResource(R.string.captions_title), style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.captions_title), style = PreCutType.panelTitle, color = TextPrimary)
+                AiTag(stringResource(R.string.rd_media_cloud_tag))
+            }
             Section(R.string.captions_language) {
                 CAPTION_LANGUAGES.forEach { code ->
                     PreCutChip(stringResource(languageName(code)), selected = options.language == code, onClick = { actions.onLanguage(code) })
                 }
             }
-            Section(R.string.captions_style) {
-                CaptionStyle.entries.forEach { style ->
-                    PreCutChip(stringResource(style.label()), selected = options.style == style, onClick = { actions.onStyle(style) })
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SectionLabel(R.string.captions_style)
+                CaptionStyleTiles(options.style, actions::onStyle)
             }
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(painterResource(R.drawable.ic_info), contentDescription = null, tint = TextSecondary, modifier = Modifier.padding(top = 2.dp).size(16.dp))
-                Text(stringResource(R.string.captions_sound), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Icon(painterResource(R.drawable.ic_info), contentDescription = null, tint = TextMuted, modifier = Modifier.padding(top = 1.dp).size(16.dp))
+                Text(stringResource(R.string.captions_sound), style = MaterialTheme.typography.bodySmall, color = TextMuted)
             }
             CaptionsMinutes(options)
             if (options.replacing > 0) {
@@ -89,9 +95,15 @@ fun CaptionsSheet(options: CaptionsUi.Options, actions: CaptionsSheetActions) {
 @Composable
 private fun Section(@StringRes title: Int, chips: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(title), style = MaterialTheme.typography.labelLarge, color = TextSecondary)
+        SectionLabel(title)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { chips() }
     }
+}
+
+/** A section label (the design's caps label): 12 sp, muted. */
+@Composable
+private fun SectionLabel(@StringRes title: Int) {
+    Text(stringResource(title).uppercase(), style = PreCutType.section, color = TextMuted)
 }
 
 @StringRes

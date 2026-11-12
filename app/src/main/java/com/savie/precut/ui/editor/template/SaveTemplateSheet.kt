@@ -10,12 +10,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,12 +38,14 @@ import com.savie.precut.ui.components.PreCutChip
 import com.savie.precut.ui.components.PreCutSwitch
 import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.editor.timeline.ThumbnailTile
-import com.savie.precut.ui.theme.Ink1
+import com.savie.precut.ui.editor.EditorSheet
+import com.savie.precut.ui.editor.FieldShape
+import com.savie.precut.ui.editor.sheetFieldColors
 import com.savie.precut.ui.templates.label
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
 
-/** Save as template: a title, a category, which clips take new media and which texts are meant to change. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Save as template (2026 sheet): a title, a category, which clips take new media and which texts are meant to change. */
 @Composable
 fun SaveTemplateSheet(
     project: Project,
@@ -59,22 +59,17 @@ fun SaveTemplateSheet(
     var category by rememberSaveable { mutableStateOf(TemplateCategory.OTHER) }
     var slots by rememberSaveable { mutableStateOf(clips.map { it.first.id }) }
     var texts by rememberSaveable { mutableStateOf(project.textOverlays.filter { it.sticker == null }.map { it.id }) }
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Ink1,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-    ) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.template_save_title), style = MaterialTheme.typography.titleMedium)
+    EditorSheet(onDismiss = onDismiss) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.template_save_title), style = MaterialTheme.typography.titleLarge)
             OutlinedTextField(
-                value = title, onValueChange = { title = it }, singleLine = true, shape = RoundedCornerShape(8.dp),
+                value = title, onValueChange = { title = it }, singleLine = true, shape = FieldShape, colors = sheetFieldColors(),
                 label = { Text(stringResource(R.string.template_name)) }, modifier = Modifier.fillMaxWidth(),
             )
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TemplateCategory.entries.forEach { PreCutChip(stringResource(it.label), selected = it == category, onClick = { category = it }) }
             }
-            Text(stringResource(R.string.template_replaceable), style = MaterialTheme.typography.labelLarge, color = TextSecondary)
+            Text(stringResource(R.string.template_replaceable).uppercase(), style = PreCutType.section, color = TextMuted, modifier = Modifier.padding(top = 4.dp))
             val thumbHeight = with(LocalDensity.current) { 48.dp.roundToPx() }
             clips.forEachIndexed { index, (clip, overlay) ->
                 ToggleRow(
@@ -82,20 +77,21 @@ fun SaveTemplateSheet(
                     checked = clip.id in slots,
                     onChecked = { on -> slots = if (on) slots + clip.id else slots - clip.id },
                 ) {
-                    ThumbnailTile(thumbnails, ThumbnailKey(clip.uri, clip.type, clip.trimStartMs, thumbHeight, clip.sourceRotationDegrees), Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)))
+                    ThumbnailTile(thumbnails, ThumbnailKey(clip.uri, clip.type, clip.trimStartMs, thumbHeight, clip.sourceRotationDegrees), Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
                 }
             }
             val editable = project.textOverlays.filter { it.sticker == null }
-            if (editable.isNotEmpty()) Text(stringResource(R.string.template_texts), style = MaterialTheme.typography.labelLarge, color = TextSecondary)
+            if (editable.isNotEmpty()) Text(stringResource(R.string.template_texts).uppercase(), style = PreCutType.section, color = TextMuted, modifier = Modifier.padding(top = 4.dp))
             editable.forEach { text ->
                 ToggleRow(text.text.ifBlank { " " }, checked = text.id in texts, onChecked = { on -> texts = if (on) texts + text.id else texts - text.id })
             }
-            Text(stringResource(R.string.template_save_hint), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            Text(stringResource(R.string.template_save_hint), style = MaterialTheme.typography.bodySmall, color = TextMuted)
             FilledButton(
                 stringResource(if (saving) R.string.template_saving else R.string.template_save),
                 onClick = { onSave(title.trim(), category, slots.toSet(), texts.toSet()) },
                 enabled = !saving && slots.isNotEmpty() && title.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
+                large = true,
             )
         }
     }
@@ -103,9 +99,9 @@ fun SaveTemplateSheet(
 
 @Composable
 private fun ToggleRow(label: String, checked: Boolean, onChecked: (Boolean) -> Unit, leading: (@Composable () -> Unit)? = null) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(Modifier.heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         leading?.invoke()
-        Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Text(label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         PreCutSwitch(checked, onChecked)
     }
 }

@@ -18,7 +18,14 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import com.savie.precut.R
 import com.savie.precut.ui.theme.ClipSelection
+import com.savie.precut.ui.theme.OnAccent
 import com.savie.precut.ui.theme.Ink0
 
 /** Which end of an item a [TrimHandle] trims. */
@@ -29,7 +36,7 @@ private val GrabInward = 14.dp
 private val GrabOutward = 16.dp
 
 /**
- * White grip on a selected item's edge; reports horizontal drag deltas in px, including the
+ * Grip on a selected item's edge; reports horizontal drag deltas in px, including the
  * timeline's auto-scroll when held near the screen edge. Its grab area is wider than the grip,
  * reaching [GrabInward] into the item and [GrabOutward] away from it, so the edge is easy to catch.
  */
@@ -43,6 +50,11 @@ fun TrimHandle(
     width: Dp = 14.dp,
     gripHeight: Dp = 20.dp,
     shape: Shape = RoundedCornerShape(4.dp),
+    color: Color = ClipSelection,
+    /** A dark chevron pointing outward (clips, RD-E04) instead of the 2 dp grip line (bars). */
+    chevron: Boolean = false,
+    /** How far the grab area reaches away from the item, past the drawn handle. */
+    grabOutward: Dp = GrabOutward,
 ) {
     val currentOnDrag by rememberUpdatedState(onDrag)
     val currentOnDragEnd by rememberUpdatedState(onDragEnd)
@@ -50,7 +62,7 @@ fun TrimHandle(
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
     val density = LocalDensity.current
     val inward = with(density) { GrabInward.roundToPx() }
-    val outward = with(density) { GrabOutward.roundToPx() }
+    val outward = with(density) { grabOutward.roundToPx() }
     fun end() {
         autoScroller?.stop()
         currentOnDragEnd()
@@ -59,7 +71,7 @@ fun TrimHandle(
         modifier
             .width(width)
             .fillMaxHeight()
-            .background(ClipSelection, shape)
+            .background(color, shape)
             .onGloballyPositioned { coordinates[0] = it }
             .expandedHorizontalDrag(
                 expandLeftPx = if (side == TrimSide.START) outward else inward,
@@ -74,11 +86,20 @@ fun TrimHandle(
             },
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            Modifier
-                .width(2.dp)
-                .height(gripHeight)
-                .background(Ink0, RoundedCornerShape(1.dp)),
-        )
+        if (chevron) {
+            Icon(
+                painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = OnAccent,
+                modifier = Modifier.size(20.dp).graphicsLayer { if (side == TrimSide.START) scaleX = -1f },
+            )
+        } else {
+            Box(
+                Modifier
+                    .width(2.dp)
+                    .height(gripHeight)
+                    .background(Ink0, RoundedCornerShape(1.dp)),
+            )
+        }
     }
 }

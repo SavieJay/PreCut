@@ -11,8 +11,6 @@ import com.savie.precut.R
 import com.savie.precut.media.text.ImportedFont
 import com.savie.precut.model.OutputSize
 import com.savie.precut.model.TextOverlay
-import com.savie.precut.ui.components.PillTab
-import com.savie.precut.ui.components.PillTabs
 import com.savie.precut.ui.editor.tools.ApplyToAllButton
 import com.savie.precut.ui.editor.tools.ToolPanel
 
@@ -46,9 +44,9 @@ fun TextStyleTool(
         onBack = actions::onBack,
     ) {
         scope?.invoke()
-        PillTabs(
+        TextUnderlineTabs(
             listOf(R.string.text_tab_font, R.string.text_tab_style, R.string.text_tab_effects, R.string.text_tab_animation, R.string.text_tab_templates)
-                .map { PillTab(stringResource(it)) },
+                .map { stringResource(it) },
             selected = tab,
             onSelect = { tab = it },
         )

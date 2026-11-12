@@ -10,17 +10,18 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.theme.RulerTick
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
+import androidx.compose.ui.text.font.FontWeight
 import com.savie.precut.ui.theme.tabular
 
 /** Time ruler (see [TimelineGeometry.rulerTicks]): labelled seconds, and frames ("10f") when zoomed in. */
 @Composable
 fun TimelineRuler(totalMs: Long, pxPerMs: Float, modifier: Modifier = Modifier) {
     val measurer = rememberTextMeasurer()
-    val labelStyle = MaterialTheme.typography.labelSmall.tabular().copy(color = TextSecondary)
+    val labelStyle = MaterialTheme.typography.labelSmall.tabular().copy(fontWeight = FontWeight.Normal, color = TextMuted)
     Canvas(modifier) {
-        // Uniform 1 × 4 dp ticks; labels centred on their tick at the top.
-        val tickHeight = 4.dp.toPx()
+        // RD-E03: uniform 1 × 5 dp ticks; labels centred on their tick, 3 dp from the top.
+        val tickHeight = 5.dp.toPx()
         TimelineGeometry.rulerTicks(pxPerMs, minSpacingPx = 56.dp.toPx(), totalMs).forEach { tick ->
             val x = TimelineGeometry.msToPx(tick.ms, pxPerMs)
             drawLine(RulerTick, Offset(x, size.height - tickHeight), Offset(x, size.height), strokeWidth = 1.dp.toPx())
@@ -30,7 +31,7 @@ fun TimelineRuler(totalMs: Long, pxPerMs: Float, modifier: Modifier = Modifier) 
                 null -> return@forEach
             }
             val measured = measurer.measure(text, labelStyle)
-            drawText(measured, topLeft = Offset(x - measured.size.width / 2f, 0f))
+            drawText(measured, topLeft = Offset(x - measured.size.width / 2f, 3.dp.toPx()))
         }
     }
 }

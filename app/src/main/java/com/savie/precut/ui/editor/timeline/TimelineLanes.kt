@@ -24,18 +24,18 @@ import com.savie.precut.model.timelineEndMs
 import com.savie.precut.model.totalDurationMs
 import com.savie.precut.model.overlayLanes
 
-// DESIGN.md "Timeline": 2 top padding, 18 ruler, 6 around the 56 main strip, 22/24 rows 4 apart.
-internal val TopPadding = 2.dp
-internal val BottomPadding = 10.dp
-internal val RulerHeight = 18.dp
+// RD-E03 redline 6: a 22 ruler, the 68 main strip, 30 text/layer rows and 40 audio rows, 6 apart.
+internal val TopPadding = 0.dp
+internal val BottomPadding = 8.dp
+internal val RulerHeight = 22.dp
 internal val StripGap = 6.dp
-internal val RowGap = 4.dp
-internal val ClipHeight = 56.dp
+internal val RowGap = 6.dp
+internal val ClipHeight = 68.dp
 /** Distance from the timeline's top to the main strip, below any overlay rows (none when [compact]). */
 internal fun stripTop(project: Project, compact: Boolean): Dp =
     TopPadding + RulerHeight + StripGap + if (compact) 0.dp else overlayRowsHeight(project.overlayLanes().size)
-private val TextLaneHeight = 22.dp
-private val AudioRowHeight = 24.dp
+internal val TextLaneHeight = 30.dp
+internal val AudioRowHeight = 40.dp
 
 /**
  * Height the timeline needs: its look, text and audio rows (at least one text and one audio row),

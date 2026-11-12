@@ -3,10 +3,6 @@ package com.savie.precut.ui.editor.tools
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -17,20 +13,20 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.savie.precut.R
 import com.savie.precut.model.MAX_TEXT_SIZE_SP
 import com.savie.precut.model.MIN_TEXT_SIZE_SP
 import com.savie.precut.model.TextOverlay
+import com.savie.precut.ui.components.PreCutIconButton
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.components.SwitchRow
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.Outline
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.RowFill
+import com.savie.precut.ui.theme.RowLine
 import kotlin.math.roundToInt
 
 /** What the text panel can do with the selected text. */
@@ -81,15 +77,15 @@ fun TextTool(
                 actions.onChange(overlay.copy(text = it))
             },
             placeholder = { Text(stringResource(R.string.text_placeholder)) },
-            textStyle = MaterialTheme.typography.bodyLarge,
+            textStyle = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp, lineHeight = 26.sp, letterSpacing = 0.sp),
             minLines = 2,
             maxLines = 3,
-            shape = RoundedCornerShape(8.dp),
+            shape = Radius.dock,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Accent,
-                unfocusedBorderColor = Outline,
-                focusedContainerColor = Ink0,
-                unfocusedContainerColor = Ink0,
+                unfocusedBorderColor = RowLine,
+                focusedContainerColor = RowFill,
+                unfocusedContainerColor = RowFill,
                 cursorColor = Accent,
             ),
             modifier = Modifier.fillMaxWidth(),
@@ -129,7 +125,5 @@ fun TextTool(
 
 @Composable
 private fun HeaderIcon(icon: Int, description: String, enabled: Boolean, onClick: () -> Unit) {
-    IconButton(onClick = onClick, enabled = enabled) {
-        Icon(painterResource(icon), contentDescription = description, tint = if (enabled) MaterialTheme.colorScheme.onSurface else TextSecondary, modifier = Modifier.size(20.dp))
-    }
+    PreCutIconButton(icon, description, onClick, small = true, enabled = enabled)
 }

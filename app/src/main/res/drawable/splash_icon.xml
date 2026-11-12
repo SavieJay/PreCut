@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RD-A02: the Android 12+ splash icon. The splash can't draw a gradient behind the icon, so the halo is part of the icon. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_background_halo" />
+    <item android:drawable="@drawable/ic_launcher_foreground" />
+</layer-list>

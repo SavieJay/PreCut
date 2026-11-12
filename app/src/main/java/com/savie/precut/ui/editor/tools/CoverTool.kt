@@ -15,19 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.savie.precut.R
 import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.model.ProjectCover
-import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.components.OutlinedPreCutButton
 import com.savie.precut.ui.components.SwitchRow
 import com.savie.precut.ui.components.TonalButton
 import com.savie.precut.ui.components.formatPreciseMs
 import com.savie.precut.ui.editor.timeline.ThumbnailTile
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.TextSecondary
 import com.savie.precut.ui.theme.tabular
 
 /** Callbacks of the Cover panel. */
@@ -39,7 +36,7 @@ interface CoverActions {
 }
 
 /**
- * T-11 (CapCut's Cover): the current cover beside "Use frame" (the frame under the playhead) and
+ * RD-T11 (CapCut's Cover): the current cover beside "Use frame" (the frame under the playhead) and
  * "From gallery"; optionally shown as the video's first frame so apps use it as the thumbnail.
  */
 @Composable
@@ -57,12 +54,13 @@ fun CoverTool(
         stringResource(R.string.cover_title),
         onDone,
         modifier,
-        actions = { AccentTextButton(stringResource(R.string.cover_reset), actions::onReset, enabled = cover != null, color = TextSecondary) },
+        actions = { ResetIconButton(actions::onReset, enabled = cover != null, description = stringResource(R.string.cover_reset)) },
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            val shape = RoundedCornerShape(8.dp)
+            // RD-T11: the picked frame is ringed in 3 dp pink with 12 dp corners.
+            val shape = RoundedCornerShape(12.dp)
             coverKey?.let { key ->
-                ThumbnailTile(loader, key, modifier = Modifier.width(72.dp).height(128.dp).clip(shape).border(2.dp, Accent, shape))
+                ThumbnailTile(loader, key, modifier = Modifier.width(72.dp).height(128.dp).clip(shape).border(3.dp, Accent, shape))
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -71,7 +69,7 @@ fun CoverTool(
                         is ProjectCover.Frame -> stringResource(R.string.cover_current_frame, formatPreciseMs(cover.timelineMs))
                         is ProjectCover.Image -> stringResource(R.string.cover_current_photo)
                     },
-                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp).tabular(),
+                    style = MaterialTheme.typography.titleMedium.tabular(),
                 )
                 TonalButton(stringResource(R.string.cover_use_frame, formatPreciseMs(playheadMs)), actions::onUseFrame, icon = R.drawable.ic_add_photo_alternate)
                 OutlinedPreCutButton(stringResource(R.string.cover_from_gallery), actions::onPickImage, icon = R.drawable.ic_gallery)

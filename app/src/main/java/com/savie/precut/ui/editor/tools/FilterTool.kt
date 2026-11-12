@@ -2,6 +2,7 @@ package com.savie.precut.ui.editor.tools
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -69,7 +70,7 @@ fun FilterTool(
         }
         fun tap(id: String?) = if (id != null && id == current) actions.onPeek() else actions.onFilter(id)
         val none = stringResource(R.string.filter_none)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(top = 4.dp)) {
             item(key = "none") { IconTile(none, R.drawable.ic_block, { tap(null) }, selected = current == null) }
             val selectedCategory = category
             if (selectedCategory == null) {

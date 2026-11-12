@@ -69,6 +69,7 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import com.savie.precut.ui.theme.OnVideoChip
 
 /**
  * Transform handle for the selected text over the preview. One finger moves it (when the touch
@@ -194,7 +195,7 @@ fun TextTransformOverlay(
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 16.dp)
                     .height(32.dp)
-                    .background(Color(0xD90E0E10), RoundedCornerShape(16.dp))
+                    .background(OnVideoChip, RoundedCornerShape(16.dp))
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),

@@ -60,7 +60,7 @@ interface ToolbarActions {
 }
 
 /**
- * Main bottom tool row. In [simple] mode (Phase 24) it shows the everyday tools and More, which
+ * Main bottom tool row (the floating dock, RD-E03); AI tools are lime (RD-E04b). In [simple] mode (Phase 24) it shows the everyday tools and More, which
  * opens the full row.
  */
 @Composable
@@ -76,7 +76,7 @@ fun EditorToolbar(
     var expanded by rememberSaveable { mutableStateOf(false) }
     ToolRow(modifier) {
         if (simple && !expanded) {
-            ToolButton(R.drawable.ic_auto_awesome, R.string.tool_ai_edit, hasClips, actions::onAiEdit)
+            AiToolButton(R.drawable.ic_auto_awesome, R.string.tool_ai_edit, hasClips, actions::onAiEdit)
             ToolButton(R.drawable.ic_split, R.string.tool_split, canSplit, actions::onSplit)
             ToolButton(R.drawable.ic_trim, R.string.tool_trim, hasClips, actions::onTrim)
             ToolButton(R.drawable.ic_music, R.string.tool_audio, hasClips, actions::onAudio)
@@ -92,7 +92,7 @@ fun EditorToolbar(
 
 @Composable
 private fun RowScope.AllTools(canSplit: Boolean, hasClips: Boolean, actions: ToolbarActions, free: Boolean) {
-        ToolButton(R.drawable.ic_auto_awesome, R.string.tool_ai_edit, hasClips, actions::onAiEdit)
+        AiToolButton(R.drawable.ic_auto_awesome, R.string.tool_ai_edit, hasClips, actions::onAiEdit)
         ToolButton(R.drawable.ic_split, R.string.tool_split, canSplit, actions::onSplit)
         ToolButton(R.drawable.ic_crop, R.string.tool_edit, hasClips, actions::onEdit)
         ToolButton(R.drawable.ic_trim, R.string.tool_trim, hasClips, actions::onTrim)
@@ -104,8 +104,8 @@ private fun RowScope.AllTools(canSplit: Boolean, hasClips: Boolean, actions: Too
         ToolButton(R.drawable.ic_motion_blur, R.string.tool_motion_blur, hasClips, actions::onMotionBlur)
         ToolButton(R.drawable.ic_masks, R.string.tool_mask, hasClips, actions::onMask)
         ToolButton(R.drawable.ic_background_replace, R.string.tool_chroma, hasClips, actions::onChroma)
-        ToolButton(R.drawable.ic_frame_person, R.string.tool_cutout, hasClips, actions::onCutout)
-        ToolButton(R.drawable.ic_reframe, R.string.tool_reframe, hasClips, actions::onReframe)
+        AiToolButton(R.drawable.ic_frame_person, R.string.tool_cutout, hasClips, actions::onCutout)
+        AiToolButton(R.drawable.ic_reframe, R.string.tool_reframe, hasClips, actions::onReframe)
         ToolButton(R.drawable.ic_freeze, R.string.tool_freeze, hasClips, actions::onFreeze)
         ToolButton(R.drawable.ic_reverse, R.string.tool_reverse, hasClips, actions::onReverse)
         ToolButton(R.drawable.ic_volume, R.string.tool_volume, hasClips, actions::onVolume)
@@ -116,13 +116,13 @@ private fun RowScope.AllTools(canSplit: Boolean, hasClips: Boolean, actions: Too
         ToolButton(R.drawable.ic_replace, R.string.audio_replace, hasClips, actions::onReplace)
         ToolButton(R.drawable.ic_flare, R.string.tool_effects, hasClips, actions::onEffects)
         ToolButton(R.drawable.ic_text, R.string.tool_text, hasClips, actions::onText)
-        ToolButton(R.drawable.ic_closed_caption, R.string.tool_captions, hasClips, actions::onCaptions)
-        ProToolButton(R.drawable.ic_text_fields, R.string.tool_transcript, pro = free, enabled = hasClips, onClick = actions::onTranscript)
+        AiToolButton(R.drawable.ic_closed_caption, R.string.tool_captions, hasClips, actions::onCaptions)
+        ProToolButton(R.drawable.ic_text_fields, R.string.tool_transcript, pro = free, enabled = hasClips, ai = true, onClick = actions::onTranscript)
         ProToolButton(R.drawable.ic_lightbulb, R.string.tool_hook, pro = free, enabled = hasClips, onClick = actions::onHookCoach)
         ProToolButton(R.drawable.ic_palette, R.string.tool_brand, pro = free, enabled = hasClips, onClick = actions::onBrand)
         ProToolButton(R.drawable.ic_aspect_ratio, R.string.tool_formats, pro = free, enabled = hasClips, onClick = actions::onFormats)
-        ProToolButton(R.drawable.ic_splitscreen, R.string.tool_shorts, pro = free, enabled = hasClips, onClick = actions::onShorts)
-        ProToolButton(R.drawable.ic_search, R.string.tool_broll, pro = free, enabled = hasClips, onClick = actions::onBroll)
+        ProToolButton(R.drawable.ic_splitscreen, R.string.tool_shorts, pro = free, enabled = hasClips, ai = true, onClick = actions::onShorts)
+        ProToolButton(R.drawable.ic_search, R.string.tool_broll, pro = free, enabled = hasClips, ai = true, onClick = actions::onBroll)
         ToolButton(R.drawable.ic_add_reaction, R.string.tool_stickers, hasClips, actions::onStickers)
         ToolButton(R.drawable.ic_draw, R.string.tool_draw, hasClips, actions::onDraw)
         ToolButton(R.drawable.ic_overlay, R.string.tool_overlay, hasClips, actions::onOverlay)

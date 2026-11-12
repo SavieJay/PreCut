@@ -24,7 +24,6 @@ import com.savie.precut.model.pro.planNotice
 import com.savie.precut.ui.cloud.DAY_FLAGS
 import com.savie.precut.ui.cloud.aiFailureMessage
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.TextSecondary
 
 /**
  * Settings → PreCut Pro (Phase 25, B3): the plan and when it renews or ends, payment notices,
@@ -33,20 +32,21 @@ import com.savie.precut.ui.theme.TextSecondary
 @Composable
 internal fun ProSection(onGetPro: () -> Unit, viewModel: ProSectionViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     LaunchedEffect(Unit) { viewModel.onShown() }
-    Text(
-        stringResource(R.string.pro_settings_header), style = MaterialTheme.typography.labelLarge, color = TextSecondary,
-        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp),
-    )
+    SettingsGroup(stringResource(R.string.pro_settings_header)) { ProRows(state, onGetPro, viewModel::onRestore) }
+}
+
+@Composable
+private fun ProRows(state: ProSectionState, onGetPro: () -> Unit, onRestore: () -> Unit) {
+    val context = LocalContext.current
     val plan = state.known.plan
     val day = plan?.expiresAtMs?.let { DateUtils.formatDateTime(context, it, DAY_FLAGS or DateUtils.FORMAT_SHOW_YEAR) }
     if (state.isPro) {
         val name = stringResource(if (plan?.basePlanId == ProCatalog.MONTHLY) R.string.pro_plan_monthly else R.string.pro_plan_yearly)
         val detail = when {
             day == null -> null
-            plan?.trial == true -> stringResource(R.string.pro_trial_ends, day)
-            plan?.autoRenewing == true -> stringResource(R.string.pro_renews, day)
+            plan.trial == true -> stringResource(R.string.pro_trial_ends, day)
+            plan.autoRenewing == true -> stringResource(R.string.pro_renews, day)
             else -> stringResource(R.string.pro_ends, day)
         }
         SettingRow(R.drawable.ic_diamond, name, detail)
@@ -54,7 +54,7 @@ internal fun ProSection(onGetPro: () -> Unit, viewModel: ProSectionViewModel = h
         SettingRow(R.drawable.ic_diamond, stringResource(R.string.pro_get), stringResource(R.string.pro_get_summary), chevron = true, onClick = onGetPro)
     }
     planNotice(plan)?.let { notice ->
-        Text(stringResource(noticeText(notice)), style = MaterialTheme.typography.bodySmall, color = Accent, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+        Text(stringResource(noticeText(notice)), style = MaterialTheme.typography.bodySmall, color = Accent, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
     }
     state.known.status?.let { status ->
         SettingRow(
@@ -84,7 +84,7 @@ internal fun ProSection(onGetPro: () -> Unit, viewModel: ProSectionViewModel = h
             state.restored -> stringResource(if (state.isPro) R.string.pro_restored else R.string.pro_nothing_to_restore)
             else -> null
         },
-        onClick = viewModel::onRestore,
+        onClick = onRestore,
     )
 }
 

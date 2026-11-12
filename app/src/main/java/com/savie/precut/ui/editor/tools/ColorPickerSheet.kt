@@ -2,6 +2,7 @@ package com.savie.precut.ui.editor.tools
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -28,13 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -45,9 +42,13 @@ import com.savie.precut.ui.components.DonePill
 import com.savie.precut.ui.components.formatHexColor
 import com.savie.precut.ui.components.parseHexColor
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink1
-import com.savie.precut.ui.theme.Outline
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.GlassSolid
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.RowFill
+import com.savie.precut.ui.theme.RowLine
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.tabular
 
 /**
@@ -71,19 +72,19 @@ fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) 
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Ink1,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        containerColor = GlassSolid,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
     ) {
         Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.color_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.color_title), style = PreCutType.panelTitle, color = TextPrimary, modifier = Modifier.weight(1f))
                 DonePill(onClick = { onPicked(color.toArgb()) })
             }
             Canvas(
                 Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .height(180.dp)
+                    .clip(Radius.dock)
                     .pointerInput(Unit) {
                         detectTapGestures { at ->
                             saturation = (at.x / size.width).coerceIn(0f, 1f)
@@ -101,27 +102,9 @@ fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) 
                 drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black)))
                 drawThumb(Offset(saturation * size.width, (1 - value) * size.height), color)
             }
-            Canvas(
-                Modifier
-                    .fillMaxWidth()
-                    .height(24.dp)
-                    .pointerInput(Unit) { detectTapGestures { hue = (it.x / size.width).coerceIn(0f, 1f) * 360f } }
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, _ -> hue = (change.position.x / size.width).coerceIn(0f, 1f) * 360f }
-                    },
-            ) {
-                val barHeight = 16.dp.toPx()
-                val top = (size.height - barHeight) / 2
-                drawRoundRect(
-                    Brush.horizontalGradient((0..6).map { Color.hsv(it * 60f % 360f, 1f, 1f) }),
-                    Offset(0f, top),
-                    Size(size.width, barHeight),
-                    CornerRadius(barHeight / 2),
-                )
-                drawThumb(Offset(hue / 360f * size.width, size.height / 2), Color.hsv(hue, 1f, 1f))
-            }
+            HueBar(hue) { hue = it }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.size(48.dp).background(color, RoundedCornerShape(12.dp)))
+                Box(Modifier.size(52.dp).background(color, Radius.tile).border(1.dp, Color.White.copy(alpha = 0.18f), Radius.tile))
                 OutlinedTextField(
                     value = hex,
                     onValueChange = { text ->
@@ -131,13 +114,19 @@ fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) 
                     singleLine = true,
                     label = { Text(stringResource(R.string.color_hex)) },
                     textStyle = MaterialTheme.typography.bodyLarge.tabular(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = Outline, cursorColor = Accent),
+                    shape = Radius.tile,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Accent,
+                        unfocusedBorderColor = RowLine,
+                        focusedContainerColor = RowFill,
+                        unfocusedContainerColor = RowFill,
+                        cursorColor = Accent,
+                    ),
                     modifier = Modifier.weight(1f),
                 )
             }
             if (recentColors.isNotEmpty()) {
-                Text(stringResource(R.string.color_recent), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Text(stringResource(R.string.color_recent).uppercase(), style = PreCutType.section, color = TextMuted)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     recentColors.take(8).forEach { argb ->
                         ColorDot(Color(argb), selected = argb == color.toArgb(), description = formatHexColor(argb), onClick = { setArgb(argb) })
@@ -146,13 +135,4 @@ fun ColorPickerSheet(initialArgb: Int, recentColors: List<Int>, onPicked: (Int) 
             }
         }
     }
-}
-
-/** A 24 dp thumb: the colour inside a 3 dp white ring with a faint dark edge. */
-private fun DrawScope.drawThumb(center: Offset, fill: Color) {
-    val radius = 12.dp.toPx()
-    drawCircle(Color.Black.copy(alpha = 0.4f), radius + 1.dp.toPx(), center)
-    drawCircle(Color.White, radius, center)
-    drawCircle(fill, radius - 3.dp.toPx(), center)
-    drawCircle(Color.White, radius, center, style = Stroke(0.5.dp.toPx()))
 }

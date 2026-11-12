@@ -1,10 +1,12 @@
 package com.savie.precut.ui.editor.tools.text
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.savie.precut.R
 import com.savie.precut.model.TextOverlay
@@ -22,7 +24,7 @@ import com.savie.precut.ui.editor.tools.DurationRow
 @Composable
 fun TextAnimationTab(overlay: TextOverlay, onChange: (TextOverlay) -> Unit, types: List<TextAnimationType> = TextAnimationType.entries) {
     var slot by rememberSaveable { mutableIntStateOf(0) }
-    PillTabs(listOf(R.string.motion_in, R.string.motion_out, R.string.text_loop).map { PillTab(stringResource(it)) }, slot, { slot = it })
+    PillTabs(listOf(R.string.motion_in, R.string.motion_out, R.string.text_loop).map { PillTab(stringResource(it)) }, slot, { slot = it }, Modifier.fillMaxWidth(), fillWidth = true)
     val current = when (slot) {
         0 -> overlay.animationIn
         1 -> overlay.animationOut

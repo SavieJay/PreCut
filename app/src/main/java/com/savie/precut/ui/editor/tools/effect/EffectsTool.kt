@@ -1,9 +1,9 @@
 package com.savie.precut.ui.editor.tools.effect
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,16 +14,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.effect.EffectCategory
 import com.savie.precut.model.effect.EffectSettings
 import com.savie.precut.model.effect.EffectType
 import com.savie.precut.model.effect.MAX_EFFECT_SPEED
 import com.savie.precut.model.effect.MIN_EFFECT_SPEED
-import com.savie.precut.ui.components.PillTab
-import com.savie.precut.ui.components.PillTabs
+import com.savie.precut.ui.components.PreCutChip
+import com.savie.precut.ui.components.PreCutIconButton
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.PresetTile
 import com.savie.precut.ui.components.SliderRow
@@ -31,7 +31,7 @@ import com.savie.precut.ui.components.TileGrid
 import com.savie.precut.ui.editor.tools.ApplyToAllButton
 import com.savie.precut.ui.editor.tools.ToolPanel
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -68,21 +68,25 @@ fun EffectsTool(
             if (forClip && current != null) ApplyToAllButton(actions::onApplyAll)
             current?.let { effect ->
                 val starred = effect.type in favourites
-                IconButton(onClick = { actions.onToggleFavourite(effect.type) }) {
-                    Icon(
-                        painterResource(if (starred) R.drawable.ic_star_filled else R.drawable.ic_star),
-                        contentDescription = stringResource(if (starred) R.string.effects_favourite_remove else R.string.effects_favourite_add),
-                        tint = if (starred) Accent else MaterialTheme.colorScheme.onSurface,
-                    )
-                }
+                PreCutIconButton(
+                    if (starred) R.drawable.ic_star_filled else R.drawable.ic_star,
+                    stringResource(if (starred) R.string.effects_favourite_remove else R.string.effects_favourite_add),
+                    { actions.onToggleFavourite(effect.type) },
+                    small = true,
+                    tint = if (starred) Accent else null,
+                )
             }
         },
     ) {
-        val tabs = listOf(PillTab(stringResource(R.string.effects_favourites))) + EffectCategory.entries.map { PillTab(stringResource(it.label())) }
-        PillTabs(tabs, tab, { tab = it }, Modifier.horizontalScroll(rememberScrollState()))
+        val tabs = listOf(stringResource(R.string.effects_favourites)) + EffectCategory.entries.map { stringResource(it.label()) }
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            tabs.forEachIndexed { index, label ->
+                PreCutChip(label, selected = tab == index, onClick = { tab = index }, icon = if (index == 0) R.drawable.ic_star else null)
+            }
+        }
         val types = if (tab == 0) EffectType.entries.filter { it in favourites } else EffectType.entries.filter { it.category.ordinal == tab - 1 }
         if (tab == 0 && types.isEmpty()) {
-            Text(stringResource(R.string.effects_no_favourites), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            Text(stringResource(R.string.effects_no_favourites), style = MaterialTheme.typography.bodySmall, color = TextMuted)
         } else {
             TileGrid((if (editing) listOf<EffectType?>(null) else emptyList()) + types, columns = 4) { type ->
                 if (type == null) {

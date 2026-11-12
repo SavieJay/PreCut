@@ -1,8 +1,6 @@
 package com.savie.precut.ui.editor.tools
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,10 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,9 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -34,19 +26,17 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.keyframe.Easing
 import com.savie.precut.model.keyframe.EasingCurve
 import com.savie.precut.model.keyframe.curveOf
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.AccentContainer
-import com.savie.precut.ui.theme.Ink2
-import com.savie.precut.ui.theme.PreCutType
 import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.components.TileFrame
+import androidx.compose.runtime.mutableIntStateOf
 import kotlin.math.hypot
 
 /**
@@ -67,31 +57,17 @@ fun KeyframeEasingTool(easing: Easing, curve: EasingCurve?, onEasing: (Easing, E
             }
             if (easing == Easing.CUSTOM) {
                 CurveEditor(curve ?: EasingCurve.EASE_IN_OUT, onChanged = { onEasing(Easing.CUSTOM, it) })
-                Text(stringResource(R.string.easing_hint), style = PreCutType.labelChip, color = TextSecondary)
+                Text(stringResource(R.string.easing_hint), style = MaterialTheme.typography.bodySmall, color = TextMuted)
             }
         }
     }
 }
 
+/** A 68 dp tile (RD-TOK `.tile`) drawing the easing; pink ring when selected. */
 @Composable
 private fun EasingTile(label: String, curve: EasingCurve, selected: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(8.dp)
-    Column(
-        Modifier.width(60.dp).selectable(selected, role = Role.RadioButton, onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            Modifier
-                .size(56.dp)
-                .clip(shape)
-                .background(if (selected) AccentContainer else Ink2)
-                .then(if (selected) Modifier.border(2.dp, Accent, shape) else Modifier)
-                .padding(12.dp),
-        ) {
-            Canvas(Modifier.fillMaxSize()) { drawCurve(curve, if (selected) Accent else TextPrimary, 2.dp.toPx()) }
-        }
-        Text(label, style = MaterialTheme.typography.labelMedium, color = if (selected) TextPrimary else TextSecondary, textAlign = TextAlign.Center, maxLines = 2)
+    TileFrame(label, selected, onClick) {
+        Canvas(Modifier.matchParentSize().padding(16.dp)) { drawCurve(curve, if (selected) Accent else TextPrimary, 2.dp.toPx()) }
     }
 }
 
@@ -99,20 +75,19 @@ private fun EasingTile(label: String, curve: EasingCurve, selected: Boolean, onC
 @Composable
 private fun CurveEditor(curve: EasingCurve, onChanged: (EasingCurve) -> Unit) {
     var live by remember(curve) { mutableStateOf(curve) }
+    var handle by remember { mutableIntStateOf(0) }
     val current by rememberUpdatedState(live)
     Box(
         Modifier
             .fillMaxWidth()
             .height(160.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Ink2)
+            .graphBox()
             .padding(16.dp),
     ) {
         Canvas(
             Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
-                    var handle = 0
                     detectDragGestures(
                         onDragStart = { at ->
                             // The nearer handle; graph y runs up.
@@ -121,7 +96,11 @@ private fun CurveEditor(curve: EasingCurve, onChanged: (EasingCurve) -> Unit) {
                             val second = Offset(c.x2 * size.width, (1f - c.y2) * size.height)
                             handle = if (hypot(at.x - first.x, at.y - first.y) <= hypot(at.x - second.x, at.y - second.y)) 1 else 2
                         },
-                        onDragEnd = { onChanged(current) },
+                        onDragEnd = {
+                            handle = 0
+                            onChanged(current)
+                        },
+                        onDragCancel = { handle = 0 },
                     ) { change, _ ->
                         change.consume()
                         val x = change.position.x / size.width
@@ -137,8 +116,8 @@ private fun CurveEditor(curve: EasingCurve, onChanged: (EasingCurve) -> Unit) {
             drawLine(TextSecondary, Offset(0f, size.height), first, 1.dp.toPx())
             drawLine(TextSecondary, Offset(size.width, 0f), second, 1.dp.toPx())
             drawCurve(c, Accent, 3.dp.toPx())
-            drawCircle(Color.White, 8.dp.toPx(), first)
-            drawCircle(Color.White, 8.dp.toPx(), second)
+            drawGraphPoint(first, active = handle == 1)
+            drawGraphPoint(second, active = handle == 2)
         }
     }
 }

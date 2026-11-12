@@ -2,6 +2,7 @@ package com.savie.precut.ui.editor.tools
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,8 +25,7 @@ import com.savie.precut.ui.components.PresetTile
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.components.TileGrid
-import com.savie.precut.ui.theme.PreCutType
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
 import kotlin.math.roundToLong
 
 /** What the Transition panel can do. */
@@ -36,7 +36,7 @@ interface TransitionActions {
 }
 
 /**
- * Transition (T-16, P-06): a tab per group, each with None and its transitions in a 5-column
+ * Transition (RD-T16, P-06): a tab per group, each with None and its transitions in a 5-column
  * grid, then the duration, up to [maxMs]. [overlapNote] explains how much shorter an overlapping
  * one makes the video. Picking one plays it once.
  */
@@ -55,7 +55,7 @@ fun TransitionTool(transition: ClipTransition?, maxMs: Long, actions: Transition
         }
         val top = maxMs.coerceIn(MIN_TRANSITION_MS, MAX_TRANSITION_MS)
         DurationRow(transition?.durationMs ?: 0L, MIN_TRANSITION_MS, top, enabled = transition != null && top > MIN_TRANSITION_MS, onChanged = actions::onDuration)
-        overlapNote?.let { Text(it, style = PreCutType.labelChip, color = TextSecondary) }
+        overlapNote?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = TextMuted) }
     }
 }
 

@@ -13,9 +13,11 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.media.ThumbnailKey
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.ui.editor.CropDraft
-import com.savie.precut.ui.theme.Ink1
+import com.savie.precut.ui.theme.Ink0
+import com.savie.precut.ui.theme.Radius
+import androidx.compose.ui.draw.clip
 
-/** Crop mode (T-12b): the picture with its crop rectangle, then the Ratio panel. Replaces the editor body. */
+/** Crop mode (RD-T12b): the picture with its crop rectangle, then the Ratio panel. Replaces the editor body. */
 @Composable
 fun CropMode(draft: CropDraft, frameKey: ThumbnailKey, loader: ThumbnailLoader, actions: CropActions, modifier: Modifier = Modifier) {
     Column(modifier) {
@@ -27,9 +29,10 @@ fun CropMode(draft: CropDraft, frameKey: ThumbnailKey, loader: ThumbnailLoader, 
             crop = draft.crop,
             lockedAspect = draft.lockedAspect,
             onChange = actions::onChange,
-            modifier = Modifier.weight(1f).fillMaxWidth().background(Color.Black).padding(16.dp).fillMaxSize(),
+            // RD-T12b: the picture sits in a black 24 dp rounded preview, inset 16 dp.
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp).clip(Radius.card).background(Color.Black).padding(16.dp).fillMaxSize(),
         )
-        Column(Modifier.background(Ink1).navigationBarsPadding()) {
+        Column(Modifier.background(Ink0).navigationBarsPadding()) {
             CropPanel(draft.clip.cropRatio, actions)
         }
     }

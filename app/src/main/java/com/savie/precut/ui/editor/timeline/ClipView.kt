@@ -46,10 +46,12 @@ import com.savie.precut.ui.theme.ClipBackground
 import com.savie.precut.ui.theme.ClipSelection
 import com.savie.precut.ui.theme.ErrorRed
 import com.savie.precut.ui.theme.Ink0
+import com.savie.precut.ui.theme.OnAccent
+import androidx.compose.ui.draw.shadow
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
-private val ClipShape = RoundedCornerShape(6.dp)
+private val ClipShape = RoundedCornerShape(10.dp)
 
 /** How a clip is drawn on the strip. */
 data class ClipLook(
@@ -115,6 +117,8 @@ fun ClipView(
                 .offset { IntOffset(leftShiftPx.roundToInt(), 0) }
                 .width(with(density) { widthPx.toDp() })
                 .fillMaxHeight()
+                // The selected clip's pink glow (RD-E04 `.sel`).
+                .then(if (look.selected) Modifier.shadow(12.dp, ClipShape, clip = false, ambientColor = ClipSelection, spotColor = ClipSelection) else Modifier)
                 .clip(ClipShape)
                 .background(ClipBackground),
         ) {
@@ -138,63 +142,75 @@ fun ClipView(
                 curved = clip.speedCurve != null,
                 durationMs = if (look.selected) shown.timelineDurationMs() else null,
                 soundOff = look.soundOff,
-                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
             )
             if (look.selected) KeyframeMarks(shown.keyframesOnTimeline().map { it.atMs }, pxPerMs)
-            if (look.multiSelected) Box(Modifier.matchParentSize().border(2.dp, Accent, ClipShape))
-            if (look.multiSelectMode) CheckBadge(look.multiSelected, Modifier.align(Alignment.TopEnd).padding(4.dp))
+            if (look.multiSelected) Box(Modifier.matchParentSize().border(3.dp, Accent, ClipShape))
+            if (look.multiSelectMode) CheckBadge(look.multiSelected, Modifier.align(Alignment.TopEnd).padding(6.dp))
         }
         if (look.selected) {
-            // A 2 dp ring 2 dp outside the clip, and 14 × 60 handles outside its ends (E-04).
-            val ring = with(density) { 2.dp.roundToPx() }
-            val handle = with(density) { 14.dp.roundToPx() }
+            // RD-E04: a 3 dp pink ring 3 dp outside the clip with a pink glow, and 22 dp pink
+            // handles with dark chevrons outside its ends.
+            val ring = with(density) { 3.dp.roundToPx() }
+            val handle = with(density) { HandleWidth.roundToPx() }
+            val ringShape = RoundedCornerShape(12.dp)
             Box(
                 Modifier
                     .offset { IntOffset(leftShiftPx.roundToInt() - ring, -ring) }
-                    .requiredSize(with(density) { widthPx.toDp() } + 4.dp, height + 4.dp)
-                    .border(2.dp, ClipSelection, RoundedCornerShape(7.dp)),
+                    .requiredSize(with(density) { widthPx.toDp() } + 6.dp, height + 6.dp)
+                    .border(3.dp, ClipSelection, ringShape),
             )
+            // Same reach as before (handle + grab area 30 dp from the edge), so the timeline's
+            // long-press hit test still keeps reorders off the handles.
             TrimHandle(
                 TrimSide.START,
                 onDrag = { startDragPx += it }, onDragEnd = ::commitTrim,
                 modifier = Modifier
                     .offset { IntOffset(leftShiftPx.roundToInt() - handle, -ring) }
-                    .requiredHeight(height + 4.dp),
-                shape = RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp),
+                    .requiredHeight(height + 6.dp),
+                width = HandleWidth,
+                shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp),
+                chevron = true,
+                grabOutward = 8.dp,
             )
             TrimHandle(
                 TrimSide.END,
                 onDrag = { endDragPx += it }, onDragEnd = ::commitTrim,
                 modifier = Modifier
                     .offset { IntOffset((leftShiftPx + widthPx).roundToInt(), -ring) }
-                    .requiredHeight(height + 4.dp),
-                shape = RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp),
+                    .requiredHeight(height + 6.dp),
+                width = HandleWidth,
+                shape = RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp),
+                chevron = true,
+                grabOutward = 8.dp,
             )
         }
     }
 }
 
+private val HandleWidth = 22.dp
+
 /** Missing media: the clip tinted ErrorRed with a round "!" (E-06). */
 @Composable
 private fun BoxScope.MissingMark() {
-    Box(Modifier.matchParentSize().background(ErrorRed.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
+    Box(Modifier.matchParentSize().background(ErrorRed.copy(alpha = 0.62f)), contentAlignment = Alignment.Center) {
         Box(Modifier.size(22.dp).background(ErrorRed, CircleShape), contentAlignment = Alignment.Center) {
             Text("!", style = MaterialTheme.typography.titleSmall, color = Ink0)
         }
     }
 }
 
-/** Multi-select check: an Accent disc with a check when picked, an empty white ring otherwise (E-07). */
+/** Multi-select check (22 dp): a pink disc with a dark check when picked, an empty white ring otherwise (E-07). */
 @Composable
 private fun CheckBadge(checked: Boolean, modifier: Modifier = Modifier) {
     Box(
         modifier
-            .size(18.dp)
+            .size(22.dp)
             .background(if (checked) Accent else Ink0.copy(alpha = 0.6f), CircleShape)
-            .then(if (checked) Modifier else Modifier.border(1.5.dp, Color.White, CircleShape)),
+            .then(if (checked) Modifier else Modifier.border(2.dp, Color.White, CircleShape)),
         contentAlignment = Alignment.Center,
     ) {
-        if (checked) Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+        if (checked) Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = OnAccent, modifier = Modifier.size(16.dp))
     }
 }
 

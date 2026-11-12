@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 29C (group D): copy added by the 2026 restyle of text, audio, layers, effects and export. -->
+<resources>
+    <string name="rd_media_ai_tag">AI</string>
+    <string name="rd_media_export_estimated_label">Estimated size</string>
+    <string name="rd_media_cloud_tag">Cloud</string>
+    <string name="rd_media_caption_sample_first" translatable="false">Aa</string>
+    <string name="rd_media_caption_sample_second" translatable="false">bb</string>
+</resources>

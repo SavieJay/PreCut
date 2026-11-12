@@ -1,32 +1,20 @@
 package com.savie.precut.ui.settings
 
 import android.text.format.Formatter
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -41,14 +29,12 @@ import com.savie.precut.ui.editor.export.ExportSettingsSheet
 import com.savie.precut.ui.editor.tools.label
 import com.savie.precut.ui.export.label
 import com.savie.precut.model.OutputSize
-import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.TextPrimary
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.afterglowBackground
 import java.util.Locale
 
 private enum class SettingsDialog { PHOTO, RATIO, EXPORT }
 
-/** H-09: new-project defaults, default export settings, the preview cache and About. */
+/** RD-H09: grouped glass cards for new-project defaults, default export settings, the preview cache and About. */
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -64,42 +50,45 @@ fun SettingsScreen(
     val crashes by viewModel.crashes.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var dialog by remember { mutableStateOf<SettingsDialog?>(null) }
-    Column(Modifier.fillMaxSize().background(Ink0).statusBarsPadding().navigationBarsPadding()) {
-        Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(painterResource(R.drawable.ic_back), stringResource(R.string.action_back), tint = TextPrimary) }
-            Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleLarge, color = TextPrimary)
-        }
+    Column(Modifier.fillMaxSize().afterglowBackground().statusBarsPadding().navigationBarsPadding()) {
+        SettingsTopBar(stringResource(R.string.settings_title), onBack)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
             ProSection(onGetPro)
-            Header(R.string.settings_new_projects)
-            SettingRow(R.drawable.ic_schedule, stringResource(R.string.settings_photo_duration), seconds(values.photoDurationMs)) { dialog = SettingsDialog.PHOTO }
-            SettingRow(R.drawable.ic_aspect_ratio, stringResource(R.string.settings_aspect_ratio), values.aspectRatio.label()) { dialog = SettingsDialog.RATIO }
-            Header(R.string.settings_editor)
-            SettingRow(
-                R.drawable.ic_apps, stringResource(R.string.settings_simple_mode), stringResource(R.string.settings_simple_mode_summary),
-                trailing = { PreCutSwitch(values.simpleMode, viewModel::onSimpleMode) },
-            ) { viewModel.onSimpleMode(!values.simpleMode) }
-            SettingRow(R.drawable.ic_palette, stringResource(R.string.brand_title), stringResource(R.string.brand_summary), chevron = true, onClick = onBrandKit)
-            Header(R.string.settings_export)
-            val export = values.export
-            SettingRow(
-                R.drawable.ic_movie, stringResource(R.string.settings_default_export),
-                stringResource(R.string.settings_export_summary, stringResource(export.resolution.label()), export.frameRate, stringResource(export.bitrate.label()), stringResource(export.codec.label())),
-            ) { dialog = SettingsDialog.EXPORT }
+            SettingsGroup(stringResource(R.string.settings_new_projects)) {
+                SettingRow(R.drawable.ic_schedule, stringResource(R.string.settings_photo_duration), seconds(values.photoDurationMs)) { dialog = SettingsDialog.PHOTO }
+                SettingRow(R.drawable.ic_aspect_ratio, stringResource(R.string.settings_aspect_ratio), values.aspectRatio.label()) { dialog = SettingsDialog.RATIO }
+            }
+            SettingsGroup(stringResource(R.string.settings_editor)) {
+                SettingRow(
+                    R.drawable.ic_apps, stringResource(R.string.settings_simple_mode), stringResource(R.string.settings_simple_mode_summary),
+                    trailing = { PreCutSwitch(values.simpleMode, viewModel::onSimpleMode) },
+                ) { viewModel.onSimpleMode(!values.simpleMode) }
+                SettingRow(R.drawable.ic_palette, stringResource(R.string.brand_title), stringResource(R.string.brand_summary), chevron = true, onClick = onBrandKit)
+            }
+            SettingsGroup(stringResource(R.string.settings_export)) {
+                val export = values.export
+                SettingRow(
+                    R.drawable.ic_movie, stringResource(R.string.settings_default_export),
+                    stringResource(R.string.settings_export_summary, stringResource(export.resolution.label()), export.frameRate, stringResource(export.bitrate.label()), stringResource(export.codec.label())),
+                    chevron = true,
+                ) { dialog = SettingsDialog.EXPORT }
+            }
             CloudAiSection()
-            Header(R.string.settings_storage)
-            SettingRow(
-                R.drawable.ic_cached, stringResource(R.string.settings_cache),
-                storage.cacheBytes?.let { stringResource(R.string.settings_cache_size, Formatter.formatShortFileSize(context, it)) } ?: stringResource(R.string.settings_cache_measuring),
-                trailing = { AccentTextButton(stringResource(R.string.settings_clear), viewModel::onClearCache, enabled = !storage.clearing && (storage.cacheBytes ?: 0L) > 0L) },
-            )
-            SettingRow(R.drawable.ic_palette, stringResource(R.string.settings_luts), pluralStringResource(R.plurals.settings_luts_count, storage.lutCount, storage.lutCount))
-            Header(R.string.settings_about)
-            SettingRow(R.drawable.ic_info, stringResource(R.string.settings_about_app), stringResource(R.string.settings_version, viewModel.version))
-            WebsiteRows(viewModel.websitePages)
-            SettingRow(R.drawable.ic_description, stringResource(R.string.settings_licences), null, chevron = true, onClick = onLicences)
-            SettingRow(R.drawable.ic_history, stringResource(R.string.settings_replay_intro), null, chevron = true, onClick = onReplayIntro)
-            CrashReportsRow(crashes, viewModel::newestCrashReport, viewModel::onDeleteCrashReports)
+            SettingsGroup(stringResource(R.string.settings_storage)) {
+                SettingRow(
+                    R.drawable.ic_cached, stringResource(R.string.settings_cache),
+                    storage.cacheBytes?.let { stringResource(R.string.settings_cache_size, Formatter.formatShortFileSize(context, it)) } ?: stringResource(R.string.settings_cache_measuring),
+                    trailing = { AccentTextButton(stringResource(R.string.settings_clear), viewModel::onClearCache, enabled = !storage.clearing && (storage.cacheBytes ?: 0L) > 0L) },
+                )
+                SettingRow(R.drawable.ic_palette, stringResource(R.string.settings_luts), pluralStringResource(R.plurals.settings_luts_count, storage.lutCount, storage.lutCount))
+            }
+            SettingsGroup(stringResource(R.string.settings_about)) {
+                SettingRow(R.drawable.ic_info, stringResource(R.string.settings_about_app), stringResource(R.string.settings_version, viewModel.version))
+                WebsiteRows(viewModel.websitePages)
+                SettingRow(R.drawable.ic_description, stringResource(R.string.settings_licences), null, chevron = true, onClick = onLicences)
+                SettingRow(R.drawable.ic_history, stringResource(R.string.settings_replay_intro), null, chevron = true, onClick = onReplayIntro)
+                CrashReportsRow(crashes, viewModel::newestCrashReport, viewModel::onDeleteCrashReports)
+            }
         }
     }
     when (dialog) {
@@ -124,35 +113,6 @@ fun SettingsScreen(
             },
         )
         null -> Unit
-    }
-}
-
-@Composable
-private fun Header(title: Int) {
-    Text(stringResource(title), style = MaterialTheme.typography.labelLarge, color = TextSecondary, modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp))
-}
-
-@Composable
-internal fun SettingRow(
-    icon: Int,
-    title: String,
-    value: String?,
-    chevron: Boolean = false,
-    trailing: (@Composable () -> Unit)? = null,
-    onClick: (() -> Unit)? = null,
-) {
-    Row(
-        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(painterResource(icon), contentDescription = null, tint = TextSecondary)
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
-            value?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = TextSecondary) }
-        }
-        trailing?.invoke()
-        if (chevron) Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = TextSecondary)
     }
 }
 

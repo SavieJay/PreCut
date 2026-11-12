@@ -9,6 +9,7 @@ import com.savie.precut.model.text.CaptionStyle
 import com.savie.precut.model.text.captionAt
 import com.savie.precut.model.text.captionsInOrder
 import com.savie.precut.model.text.sharedCaptionStyle
+import com.savie.precut.model.text.wordAt
 import com.savie.precut.ui.editor.EditorUiState
 import com.savie.precut.ui.editor.EditorViewModel
 
@@ -19,6 +20,10 @@ fun CaptionsPanelFor(state: EditorUiState.Ready, positionMs: () -> Long, viewMod
     val editing by edits.editing.collectAsStateWithLifecycle()
     val captions = remember(state.project) { state.project.captionsInOrder() }
     val current by remember(captions, positionMs) { derivedStateOf { captions.captionAt(positionMs())?.id } }
+    // Changes only when the spoken word does, so playback recomposes the panel once per word.
+    val spokenWord by remember(captions, positionMs) {
+        derivedStateOf { positionMs().let { ms -> captions.captionAt(ms)?.let { line -> line.caption?.wordAt(ms - line.startMs) } } }
+    }
     val actions = remember(viewModel) {
         object : CaptionsPanelActions {
             override fun onRow(id: String) = edits.onRow(id)
@@ -36,5 +41,5 @@ fun CaptionsPanelFor(state: EditorUiState.Ready, positionMs: () -> Long, viewMod
             override fun onDone() = viewModel.onToolClosed()
         }
     }
-    CaptionsPanel(captions, editing, current, captions.sharedCaptionStyle(), actions)
+    CaptionsPanel(captions, editing, current, captions.sharedCaptionStyle(), actions, spokenWord)
 }

@@ -1,6 +1,7 @@
 package com.savie.precut.ui.editor.tools.text
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,11 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,18 +21,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.media.TtsVoice
 import com.savie.precut.ui.components.FilledButton
+import com.savie.precut.ui.components.PreCutIconButton
 import com.savie.precut.ui.components.PreCutSlider
+import com.savie.precut.ui.components.PreCutSpinner
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.editor.tools.ToolPanel
+import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextMuted
 import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.glassRow
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -55,24 +63,28 @@ fun TtsTool(voices: List<TtsVoice>?, selected: String?, busy: Boolean, actions: 
         onDone,
         onBack = actions::onBack,
         actions = {
-            IconButton(onClick = { actions.onPreview(speed, pitchFactor()) }, enabled = selected != null) {
-                Icon(painterResource(R.drawable.ic_play_circle), contentDescription = stringResource(R.string.text_tts_preview))
-            }
+            PreCutIconButton(R.drawable.ic_play_circle, stringResource(R.string.text_tts_preview), { actions.onPreview(speed, pitchFactor()) }, small = true, enabled = selected != null)
         },
     ) {
-        Text(stringResource(R.string.text_tts_voices), style = PreCutType.labelChip, color = TextSecondary)
-        Column(Modifier.heightIn(max = 180.dp).verticalScroll(rememberScrollState())) {
+        Text(stringResource(R.string.text_tts_voices).uppercase(), style = PreCutType.section, color = TextMuted)
+        Column(Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             when {
-                voices == null -> CircularProgressIndicator(Modifier.padding(8.dp))
-                voices.isEmpty() -> Text(stringResource(R.string.text_tts_none), color = TextSecondary)
+                voices == null -> PreCutSpinner(Modifier.padding(8.dp))
+                voices.isEmpty() -> Text(stringResource(R.string.text_tts_none), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                 else -> voices.forEach { voice ->
+                    val on = voice.name == selected
                     Row(
-                        Modifier.fillMaxWidth().clickable(enabled = voice.installed) { actions.onVoice(voice.name) },
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                            .clip(Radius.tile)
+                            .then(if (on) Modifier.background(Accent.copy(alpha = 0.08f)).border(2.dp, Accent, Radius.tile) else Modifier.glassRow(Radius.tile))
+                            .selectable(on, enabled = voice.installed, role = Role.RadioButton) { actions.onVoice(voice.name) }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = voice.name == selected, onClick = { actions.onVoice(voice.name) }, enabled = voice.installed)
-                        Column {
-                            Text(voice.label, color = if (voice.installed) TextPrimary else TextSecondary)
+                        Column(Modifier.weight(1f)) {
+                            Text(voice.label, style = MaterialTheme.typography.bodyLarge, color = if (voice.installed) TextPrimary else TextSecondary)
                             Text(
                                 stringResource(
                                     when {
@@ -82,9 +94,10 @@ fun TtsTool(voices: List<TtsVoice>?, selected: String?, busy: Boolean, actions: 
                                     },
                                 ),
                                 style = PreCutType.labelChip,
-                                color = TextSecondary,
+                                color = TextMuted,
                             )
                         }
+                        if (on) Icon(painterResource(R.drawable.ic_check_circle), contentDescription = null, tint = Accent)
                     }
                 }
             }
@@ -95,13 +108,13 @@ fun TtsTool(voices: List<TtsVoice>?, selected: String?, busy: Boolean, actions: 
         SliderRow(value = (if (pitch > 0) "+" else "") + pitch.roundToInt(), label = stringResource(R.string.text_tts_pitch)) { modifier ->
             PreCutSlider(value = pitch, onValueChange = { pitch = it.roundToInt().toFloat() }, valueRange = -10f..10f, anchor = 0f, onReset = { pitch = 0f }, modifier = modifier)
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            FilledButton(
-                stringResource(if (busy) R.string.text_tts_making else R.string.text_tts_add),
-                onClick = { actions.onAdd(speed, pitchFactor()) },
-                enabled = selected != null && !busy,
-                icon = R.drawable.ic_record_voice_over,
-            )
-        }
+        FilledButton(
+            stringResource(if (busy) R.string.text_tts_making else R.string.text_tts_add),
+            onClick = { actions.onAdd(speed, pitchFactor()) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = selected != null && !busy,
+            icon = R.drawable.ic_record_voice_over,
+            large = true,
+        )
     }
 }

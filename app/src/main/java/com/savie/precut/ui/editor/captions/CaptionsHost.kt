@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -15,10 +14,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
 import com.savie.precut.model.text.CaptionStyle
 import com.savie.precut.ui.cloud.UploadConsentDialog
+import com.savie.precut.ui.components.FilledButton
 import com.savie.precut.ui.components.formatDurationMs
 import com.savie.precut.ui.editor.CaptionFailure
 import com.savie.precut.ui.editor.CaptionsUi
 import com.savie.precut.ui.editor.EditorCaptions
+import com.savie.precut.ui.theme.GlassSolid
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextPrimary
+import com.savie.precut.ui.theme.TextSecondary
 
 /** Captions' sheet and dialogs, each shown for its step of [captions]. */
 @Composable
@@ -55,12 +60,14 @@ fun CaptionsHost(captions: EditorCaptions) {
 private fun ResultDialog(title: String, lines: List<String>, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        containerColor = GlassSolid,
+        shape = Radius.sheet,
+        title = { Text(title, style = PreCutType.panelTitle, color = TextPrimary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                lines.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                lines.forEach { Text(it, style = MaterialTheme.typography.bodyMedium, color = TextSecondary) }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) } },
+        confirmButton = { FilledButton(stringResource(R.string.action_done), onDismiss) },
     )
 }

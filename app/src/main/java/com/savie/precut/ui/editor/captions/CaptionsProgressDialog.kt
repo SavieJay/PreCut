@@ -10,15 +10,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -26,12 +24,17 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.savie.precut.R
 import com.savie.precut.ui.components.AccentTextButton
+import com.savie.precut.ui.components.AiTag
+import com.savie.precut.ui.components.PreCutProgressBar
+import com.savie.precut.ui.components.shimmer
 import com.savie.precut.ui.editor.CaptionsUi
-import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.AccentContainer
-import com.savie.precut.ui.theme.Ink2
-import com.savie.precut.ui.theme.Ink3
+import com.savie.precut.ui.theme.AiAccent
+import com.savie.precut.ui.theme.AiContainer
+import com.savie.precut.ui.theme.GlassLevel
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.glass
 import com.savie.precut.ui.theme.tabular
 
 /**
@@ -42,20 +45,23 @@ import com.savie.precut.ui.theme.tabular
 fun CaptionsProgressDialog(state: CaptionsUi, onStop: () -> Unit) {
     Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
         Column(
-            Modifier.fillMaxWidth().background(Ink2, RoundedCornerShape(28.dp)).padding(24.dp),
+            Modifier.fillMaxWidth().glass(Radius.sheet, GlassLevel.Raised, solid = true).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Box(Modifier.size(48.dp).background(AccentContainer, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.ic_closed_caption), contentDescription = null, tint = Accent)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(48.dp).background(AiContainer, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(R.drawable.ic_closed_caption), contentDescription = null, tint = AiAccent)
+                }
+                AiTag(stringResource(R.string.rd_media_cloud_tag))
             }
             when (state) {
                 is CaptionsUi.Preparing -> {
-                    Text(stringResource(R.string.captions_preparing, state.percent), style = MaterialTheme.typography.titleLarge.tabular())
+                    Text(stringResource(R.string.captions_preparing, state.percent), style = MaterialTheme.typography.titleLarge.tabular(), color = TextPrimary)
                     Progress(state.percent / 100f)
                     Buttons(stringResource(R.string.action_cancel), enabled = true, onStop)
                 }
                 is CaptionsUi.Sending -> {
-                    Text(stringResource(R.string.captions_sending), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.captions_sending), style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                     val part = if (state.parts > 1) stringResource(R.string.captions_sending_part, state.part + 1, state.parts) else null
                     Text(
                         listOfNotNull(part, stringResource(R.string.captions_sending_body)).joinToString("\n"),
@@ -75,22 +81,13 @@ fun CaptionsProgressDialog(state: CaptionsUi, onStop: () -> Unit) {
     }
 }
 
-/** Determinate with [fraction], otherwise running. */
+/** Determinate with [fraction], otherwise a lime sweep: AI progress is lime. */
 @Composable
 private fun Progress(fraction: Float?) {
-    val modifier = Modifier.fillMaxWidth().height(6.dp)
     if (fraction != null) {
-        LinearProgressIndicator(
-            progress = { fraction },
-            modifier = modifier,
-            color = Accent,
-            trackColor = Ink3,
-            strokeCap = StrokeCap.Round,
-            gapSize = 0.dp,
-            drawStopIndicator = {},
-        )
+        PreCutProgressBar(fraction, Modifier.fillMaxWidth(), ai = true)
     } else {
-        LinearProgressIndicator(modifier = modifier, color = Accent, trackColor = Ink3, strokeCap = StrokeCap.Round, gapSize = 0.dp)
+        Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(AiAccent.copy(alpha = 0.16f)).shimmer(ai = true))
     }
 }
 

@@ -44,11 +44,17 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.ui.components.formatPreciseMs
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.ClipSelection
+import com.savie.precut.ui.theme.OnAccent
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
+import com.savie.precut.ui.theme.TrackLabel
 
-private val BarShape = RoundedCornerShape(4.dp)
+private val BarShape = RoundedCornerShape(8.dp)
+
+/** The selected bar's ring and handles are white (RD-U02, RD-X02 `.br.on`, `.bh`). */
+private val BarSelection = Color.White
 
 /** Pending drags of a [TimelineBar], in ms: body move and start/end handle deltas. */
 data class BarDrag(val moveMs: Long = 0L, val startMs: Long = 0L, val endMs: Long = 0L)
@@ -69,7 +75,7 @@ fun TimelineBar(
     /** The lane's 14 dp glyph, so lanes never rely on colour alone. */
     @DrawableRes glyph: Int? = null,
     /** White on the dark lane colours, Ink0 on the light ones (DESIGN.md "Timeline lanes"). */
-    labelColor: Color = Color.White,
+    labelColor: Color = TrackLabel,
     /** Picked in multi-select: Accent outline and a check. */
     multiSelected: Boolean = false,
     /** Start/end handles; off for multi-select highlights. */
@@ -127,8 +133,8 @@ fun TimelineBar(
             .background(color)
             .then(
                 when {
-                    multiSelected -> Modifier.border(2.dp, Accent, BarShape)
-                    selected || moving -> Modifier.border(2.dp, ClipSelection, BarShape)
+                    multiSelected -> Modifier.border(3.dp, Accent, BarShape)
+                    selected || moving -> Modifier.border(3.dp, BarSelection, BarShape)
                     else -> Modifier
                 },
             )
@@ -164,30 +170,30 @@ fun TimelineBar(
             barStartPx = start * pxPerMs,
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(horizontal = if (showHandles) 14.dp else 6.dp),
+                .padding(horizontal = if (showHandles) 20.dp else 8.dp),
         )
         if (multiSelected) {
             Box(
                 Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 4.dp)
-                    .size(16.dp)
+                    .size(18.dp)
                     .background(Accent, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = OnAccent, modifier = Modifier.size(14.dp))
             }
         }
         if (showHandles) {
             TrimHandle(
                 TrimSide.START,
                 onDrag = { startDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterStart),
-                width = 10.dp, gripHeight = 10.dp, shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp),
+                width = 14.dp, gripHeight = 12.dp, shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp), color = BarSelection,
             )
             TrimHandle(
                 TrimSide.END,
                 onDrag = { endDragPx += it }, onDragEnd = ::commit, modifier = Modifier.align(Alignment.CenterEnd),
-                width = 10.dp, gripHeight = 10.dp, shape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp),
+                width = 14.dp, gripHeight = 12.dp, shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp), color = BarSelection,
             )
         }
     }
@@ -210,9 +216,9 @@ private fun BarLabel(text: String, @DrawableRes glyph: Int?, color: Color, barSt
             }
         },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        glyph?.let { Icon(painterResource(it), contentDescription = null, tint = color, modifier = Modifier.size(14.dp)) }
-        Text(text, style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        glyph?.let { Icon(painterResource(it), contentDescription = null, tint = color, modifier = Modifier.size(15.dp)) }
+        Text(text, style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold), color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

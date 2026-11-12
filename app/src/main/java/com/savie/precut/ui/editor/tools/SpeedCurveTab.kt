@@ -16,10 +16,15 @@ import com.savie.precut.model.speed.SpeedPreset
 import com.savie.precut.model.speed.SpeedSteps
 import com.savie.precut.ui.components.PresetTile
 import com.savie.precut.ui.components.formatSeconds
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.sp
 
 /**
- * The Speed panel's Curve tab (T-03): preset tiles, the curve graph once a curve is set, and the
+ * The Speed panel's Curve tab (RD-T03): preset tiles, the curve graph once a curve is set, and the
  * length change for a source of [sourceLengthMs].
  */
 @Composable
@@ -36,12 +41,15 @@ fun SpeedCurveTab(curve: SpeedCurve?, sourceLengthMs: Long, onCurve: (SpeedCurve
     if (curve == null) return
     SpeedCurveGraph(curve, onChange = onCurve)
     val curvedMs = SpeedSteps.of(curve, sourceLengthMs * 1_000).timelineLengthUs() / 1_000
-    Text(
-        stringResource(R.string.speed_length, formatSeconds(sourceLengthMs), formatSeconds(curvedMs)) + "   " + stringResource(R.string.speed_curve_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = TextSecondary,
-        maxLines = 1,
-    )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.speed_curve_hint), style = MaterialTheme.typography.bodySmall, color = TextMuted, maxLines = 1, modifier = Modifier.weight(1f))
+        Text(
+            stringResource(R.string.speed_length, formatSeconds(sourceLengthMs), formatSeconds(curvedMs)),
+            style = PreCutType.timecode.copy(fontSize = 14.sp, lineHeight = 20.sp),
+            color = TextPrimary,
+            maxLines = 1,
+        )
+    }
 }
 
 private val SpeedPreset.tile: Pair<Int, Int>

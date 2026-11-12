@@ -4,10 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,11 +29,17 @@ import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.text.TextSpan
 import com.savie.precut.model.withSpanStyle
 import com.savie.precut.ui.components.AccentTextButton
+import com.savie.precut.ui.components.PreCutChip
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.editor.tools.ColorSwatchRow
 import com.savie.precut.ui.editor.tools.ToolPanel
+import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.RowFill
+import com.savie.precut.ui.theme.RowLine
+import com.savie.precut.ui.theme.TextMuted
 import com.savie.precut.ui.theme.TextSecondary
 import kotlin.math.roundToInt
 
@@ -57,16 +63,24 @@ fun RichTextTool(overlay: TextOverlay, recentColors: List<Int>, onChange: (TextO
             value = field,
             onValueChange = { field = it.copy(text = overlay.text) },
             readOnly = true,
-            shape = RoundedCornerShape(8.dp),
+            textStyle = MaterialTheme.typography.titleMedium,
+            shape = Radius.dock,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = RowLine,
+                focusedContainerColor = RowFill,
+                unfocusedContainerColor = RowFill,
+                cursorColor = Accent,
+            ),
             maxLines = 3,
             modifier = Modifier.fillMaxWidth(),
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(painterResource(R.drawable.ic_text_select_start), contentDescription = null, tint = TextSecondary)
+            Icon(painterResource(R.drawable.ic_text_select_start), contentDescription = null, tint = TextMuted)
             Text(
                 if (picked) stringResource(R.string.text_rich_styling, overlay.text.substring(start, end)) else stringResource(R.string.text_rich_hint),
                 style = PreCutType.labelChip,
-                color = TextSecondary,
+                color = TextMuted,
                 modifier = Modifier.weight(1f).padding(start = 8.dp),
             )
             AccentTextButton(stringResource(R.string.text_rich_clear), onClick = {
@@ -95,11 +109,5 @@ fun RichTextTool(overlay: TextOverlay, recentColors: List<Int>, onChange: (TextO
 
 @Composable
 private fun StyleChip(icon: Int, label: Int, on: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
-    FilterChip(
-        selected = on,
-        onClick = { onChange(!on) },
-        enabled = enabled,
-        label = { Text(stringResource(label)) },
-        leadingIcon = { Icon(painterResource(icon), contentDescription = null) },
-    )
+    PreCutChip(stringResource(label), selected = on, onClick = { onChange(!on) }, icon = icon, enabled = enabled)
 }

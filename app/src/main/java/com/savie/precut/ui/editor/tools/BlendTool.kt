@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.frame.BlendMode
 import com.savie.precut.ui.components.PreCutChip
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
 
 /** Blend (CapCut's overlay Blend): how the overlay mixes with what's under it; a pick applies at once. */
 @Composable
@@ -25,7 +25,7 @@ fun BlendTool(mode: BlendMode, onPicked: (BlendMode) -> Unit, onDone: () -> Unit
                 PreCutChip(stringResource(option.label), selected = option == mode, onClick = { onPicked(option) })
             }
         }
-        Text(stringResource(R.string.blend_hint), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        Text(stringResource(R.string.blend_hint), style = MaterialTheme.typography.bodySmall, color = TextMuted)
     }
 }
 

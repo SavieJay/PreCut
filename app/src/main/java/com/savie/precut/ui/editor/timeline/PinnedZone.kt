@@ -16,18 +16,18 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.ui.theme.Ink0
 
 /**
- * A 64 dp zone pinned at one end of the main strip, fading to Ink0 so clips slide underneath,
- * holding a button 8 dp from the edge (DESIGN.md "Pinned").
+ * A zone pinned at one end of the main strip, fading to Base 0 so clips slide underneath: at the
+ * end, 72 dp holding the "+" 12 dp from the edge (RD-E03 `.pinr`); at the start, the gutter's width.
  */
 @Composable
 fun PinnedZone(start: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    val fade = if (start) listOf(Ink0, Ink0, Color.Transparent) else listOf(Color.Transparent, Ink0, Ink0)
+    val fade = if (start) listOf(Ink0, Ink0, Color.Transparent) else listOf(Color.Transparent, Ink0, Ink0, Ink0)
     Box(
         modifier
-            .width(64.dp)
+            .width(if (start) GutterWidth else 72.dp)
             .height(ClipHeight)
             .background(Brush.horizontalGradient(fade))
-            .padding(horizontal = 8.dp),
+            .padding(start = if (start) 8.dp else 0.dp, end = if (start) 0.dp else 12.dp),
         contentAlignment = if (start) Alignment.CenterStart else Alignment.CenterEnd,
     ) {
         content()

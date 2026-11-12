@@ -44,11 +44,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.Ink3
 import com.savie.precut.ui.theme.PreCutType
 import com.savie.precut.ui.theme.RulerTick
-import com.savie.precut.ui.theme.TextPrimary
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
 import com.savie.precut.ui.theme.tabular
 import kotlin.math.abs
 
@@ -56,7 +54,7 @@ import kotlin.math.abs
 data class SliderTick(val value: Float, val label: String? = null)
 
 /**
- * The design's slider: 4 dp Ink3 track with a fill and a white knob.
+ * The 2026 slider (RD-TOK): a 6 dp track (white 12%) with a pink fill and a 24 dp white knob.
  * - [anchor] (a value) draws a zero mark there and fills from it (bipolar sliders, speed from 1x).
  * - [trackBrush] paints a gradient track instead of the fill (HSL).
  * - [ticks] draws marks and labels under the track; [snapTo] values attract the knob within 4 dp,
@@ -78,7 +76,7 @@ fun PreCutSlider(
     enabled: Boolean = true,
     /** Accent in panels; white over video (full screen). */
     fillColor: Color = Accent,
-    knobSize: Dp = 20.dp,
+    knobSize: Dp = 24.dp,
     trackBrush: Brush? = null,
     ticks: List<SliderTick> = emptyList(),
     snapTo: List<Float> = emptyList(),
@@ -94,7 +92,7 @@ fun PreCutSlider(
     val span = (valueRange.endInclusive - valueRange.start).takeIf { it > 0f } ?: 1f
     fun fractionOf(v: Float) = ((v - valueRange.start) / span).coerceIn(0f, 1f)
     val measurer = rememberTextMeasurer()
-    val tickStyle = MaterialTheme.typography.labelSmall.tabular().copy(color = TextSecondary)
+    val tickStyle = MaterialTheme.typography.labelSmall.tabular().copy(color = TextMuted)
     Slider(
         value = value,
         onValueChange = { raw ->
@@ -115,33 +113,33 @@ fun PreCutSlider(
                 Box(
                     Modifier
                         .size(knobSize)
-                        .shadow(3.dp, CircleShape)
+                        .shadow(4.dp, CircleShape)
                         .background(Color.White, CircleShape)
                         .pointerInput(Unit) { detectTapGestures(onDoubleTap = { currentOnReset?.invoke() }) },
                 )
                 if (bubble != null && (dragged || pressed)) {
                     Text(
                         bubble(value),
-                        style = MaterialTheme.typography.labelMedium.tabular(),
+                        style = PreCutType.timecode.copy(fontSize = PreCutType.timecode.fontSize * (12f / 13f), lineHeight = PreCutType.timecode.fontSize * (24f / 13f)),
                         color = Ink0,
                         modifier = Modifier
                             .wrapContentSize(unbounded = true)
-                            .offset(y = (-28).dp)
-                            .background(TextPrimary, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                            .offset(y = (-34).dp)
+                            .background(Color.White, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 9.dp),
                     )
                 }
             }
         },
         track = {
             Canvas(Modifier.fillMaxWidth().height(if (ticks.any { it.label != null }) 30.dp else 14.dp)) {
-                val trackHeight = if (trackBrush != null) 6.dp.toPx() else 4.dp.toPx()
+                val trackHeight = 6.dp.toPx()
                 val top = 7.dp.toPx() - trackHeight / 2
                 val radius = CornerRadius(trackHeight / 2)
                 if (trackBrush != null) {
                     drawRoundRect(trackBrush, Offset(0f, top), Size(size.width, trackHeight), radius)
                 } else {
-                    drawRoundRect(Ink3, Offset(0f, top), Size(size.width, trackHeight), radius)
+                    drawRoundRect(TrackColor, Offset(0f, top), Size(size.width, trackHeight), radius)
                     val from = anchor?.let(::fractionOf) ?: 0f
                     val to = fractionOf(value)
                     val left = size.width * minOf(from, to)
@@ -150,7 +148,7 @@ fun PreCutSlider(
                 }
                 ticks.forEach { tick ->
                     val x = size.width * fractionOf(tick.value)
-                    drawRect(RulerTick, Offset(x - 0.5.dp.toPx(), top - 4.dp.toPx()), Size(1.dp.toPx(), trackHeight + 8.dp.toPx()))
+                    drawRoundRect(RulerTick, Offset(x - 1.dp.toPx(), top - 5.dp.toPx()), Size(2.dp.toPx(), trackHeight + 10.dp.toPx()), CornerRadius(1.dp.toPx()))
                     tick.label?.let { label ->
                         val text = measurer.measure(label, tickStyle)
                         val textX = (x - text.size.width / 2f).coerceIn(0f, size.width - text.size.width)
@@ -161,11 +159,14 @@ fun PreCutSlider(
                     val markWidth = 2.dp.toPx()
                     val x = size.width * fractionOf(it)
                     drawRoundRect(
-                        if (trackBrush != null) Ink0 else TextSecondary,
-                        Offset(x - markWidth / 2, 0f), Size(markWidth, 14.dp.toPx()), CornerRadius(markWidth / 2),
+                        if (trackBrush != null) Ink0 else TextMuted,
+                        Offset(x - markWidth / 2, top + trackHeight / 2 - 9.dp.toPx()), Size(markWidth, 18.dp.toPx()), CornerRadius(markWidth / 2),
                     )
                 }
             }
         },
     )
 }
+
+/** The slider track behind the fill: white 12%. */
+private val TrackColor = Color.White.copy(alpha = 0.12f)

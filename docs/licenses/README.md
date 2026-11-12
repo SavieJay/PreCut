@@ -2,7 +2,7 @@
 
 | Asset | Licence | Source |
 |---|---|---|
-| Roboto Flex (`app/src/main/res/font/roboto_flex.ttf`) | SIL Open Font License 1.1 (`RobotoFlex-OFL.txt`) | google/fonts `ofl/robotoflex`, cut to the weight axis 400–700 with fontTools' instancer |
+| Roboto Flex (`app/src/main/res/font/roboto_flex.ttf`) | SIL Open Font License 1.1 (`RobotoFlex-OFL.txt`) | google/fonts `ofl/robotoflex`, cut to the weight axis 400–800 (default 400, other axes pinned) with fontTools' instancer |
 | Material Symbols Rounded (`app/src/main/res/drawable/ic_*.xml`, except the Phase 19 icons below) | Apache License 2.0 | google/material-design-icons `symbols/web/*/materialsymbolsrounded`, converted to vector drawables |
 | Transition and effect icons added in Phase 19 (`ic_tr_slide_*`, `ic_tr_push_*`, `ic_tr_circle`, `ic_tr_clock`, `ic_tr_blinds`, `ic_tr_ink`, `ic_tr_blur_dissolve`, `ic_tr_stretch`, `ic_fx_*`) | PreCut's own | Drawn for PreCut as simple line shapes; no third-party paths |
 | Text fonts: Bebas Neue, Playfair Display, Pacifico, Space Mono, Caveat, Anton, Lobster (`app/src/main/res/font/*.ttf`) | SIL Open Font License 1.1 (`<family>-OFL.txt`) | google/fonts `ofl/<family>` (Playfair Display and Caveat are the variable fonts) |

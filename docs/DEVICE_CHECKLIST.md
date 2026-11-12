@@ -337,6 +337,20 @@ Template links need the `shared_templates` migration and the function deployed; 
 | A failed export | No rating card | |
 | Settings → About → Privacy policy, Terms of use, Help and support | Each opens the website's page in the browser | |
 
+## 4t. Afterglow restyle (Phase 29)
+Compare each screen side by side with its frame on the canvas's "Redesign 2026" page (RD-…). Check on the Android 10 phone and, if you can, an Android 12+ phone.
+1. **Icon and splash (RD-A01, A02):** the launcher icon shows the logo smaller on near-black with a soft pink glow; on Android 12+ the splash shows the same. Long-press the icon on Android 13+ with themed icons on: the single-colour version still appears.
+2. **Colours everywhere:** every main button is a pink pill with a **dark** label; there's only one pink action per screen. Delete confirmations use a red pill. Lime appears only on AI things (captions, AI Edit, remove background, reframe…), never on effects or normal buttons.
+3. **App and Projects (RD-H01–H09):** pink-glow background; glass project cards; the card menu, rename and delete dialogs; importing; Settings in grouped glass cards.
+4. **Onboarding (RD-O01–O06):** Settings → Replay intro; each page and the three editor tips.
+5. **Editor (RD-E01–E10):** the top bar (back, title with "Saved · ratio · length", undo/redo, small pink Export); the preview's rounded corners; the white round play button; the floating glass dock above the bottom edge; track icons in the left gutter; a selected clip has a pink outline with pink trim handles; the playhead's white time bubble.
+6. **Tool panels (RD-T…, X…, U…, P…, S…):** every tool opens as a floating glass panel with an 18 sp title and a round check (Done) at the top right; chips are 40 dp pills (pink when picked); tiles show a pink ring and a check when picked; sliders have a 24 dp white knob, and a white value bubble while dragging.
+7. **Timeline colours:** video pink, music aqua, voiceover light blue, text amber, overlay periwinkle, stickers orange, effects lavender, looks pink-lilac, all with dark labels you can read.
+8. **Export (RD-EX01–EX05b):** settings in segmented groups with one pink Export; the exporting, done and failed screens.
+9. **Nothing glassy over the video:** chips and dialogs drawn over the preview are solid, not see-through.
+10. **Small screen (RD-E03b, T06c):** on a 360 dp wide phone (or Display size set to largest), nothing is cut off in the editor or the Filters panel.
+11. **Reduce motion:** Settings → Accessibility → Remove animations on: buttons no longer shrink when pressed, and panels appear without sliding.
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,6 +26,7 @@ import com.savie.precut.R
 import com.savie.precut.media.ThumbnailLoader
 import com.savie.precut.media.WaveformLoader
 import com.savie.precut.ui.components.CaptureMenu
+import com.savie.precut.ui.components.PreCutSpinner
 import com.savie.precut.ui.editor.timeline.Timeline
 import com.savie.precut.ui.editor.timeline.TimelineActions
 import com.savie.precut.ui.editor.timeline.TimelineSelection
@@ -78,21 +78,21 @@ fun TimelineSection(
     }
 }
 
-/** The 40 dp white "+" (8 dp corners); opens the gallery/camera menu. New media goes in at the playhead. */
+/** The 48 dp white "+" (16 dp corners, RD `.addm`); opens the gallery/camera menu. New media goes in at the playhead. */
 @Composable
 private fun AddMediaButton(importing: Boolean, onAddMedia: () -> Unit, onCamera: (video: Boolean) -> Unit) {
     var menu by remember { mutableStateOf(false) }
     Box {
         Box(
             Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .size(48.dp)
+                .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
                 .clickable(enabled = !importing, role = Role.Button, onClickLabel = stringResource(R.string.timeline_add_media)) { menu = true },
             contentAlignment = Alignment.Center,
         ) {
             if (importing) {
-                CircularProgressIndicator(Modifier.size(18.dp), color = Ink0, strokeWidth = 2.dp)
+                PreCutSpinner(size = 22.dp)
             } else {
                 Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.timeline_add_media), tint = Ink0)
             }

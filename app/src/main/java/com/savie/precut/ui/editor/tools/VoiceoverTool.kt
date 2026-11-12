@@ -1,29 +1,37 @@
 package com.savie.precut.ui.editor.tools
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.savie.precut.R
 import com.savie.precut.ui.components.formatPreciseMs
 import com.savie.precut.ui.editor.RecordingState
 import com.savie.precut.ui.theme.Accent
+import com.savie.precut.ui.theme.ErrorRed
+import com.savie.precut.ui.theme.OnAccent
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
 import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
 import com.savie.precut.ui.theme.tabular
@@ -47,16 +55,24 @@ fun VoiceoverTool(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                formatPreciseMs(recording?.elapsedMs ?: 0L),
-                style = MaterialTheme.typography.headlineSmall.tabular(),
-                color = if (recording != null) TextPrimary else TextSecondary,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (recording != null) Box(Modifier.size(10.dp).background(ErrorRed, CircleShape))
+                Text(
+                    formatPreciseMs(recording?.elapsedMs ?: 0L),
+                    style = PreCutType.timecode.copy(fontSize = 22.sp, lineHeight = 28.sp),
+                    color = if (recording != null) TextPrimary else TextSecondary,
+                )
+            }
             Box(
                 Modifier
-                    .size(80.dp)
+                    .padding(18.dp)
+                    .size(88.dp)
+                    .drawBehind {
+                        drawCircle(Accent.copy(alpha = 0.10f), radius = size.minDimension / 2 + 18.dp.toPx())
+                        drawCircle(Accent.copy(alpha = 0.25f), radius = size.minDimension / 2 + 8.dp.toPx())
+                    }
                     .clip(CircleShape)
-                    .border(4.dp, TextPrimary, CircleShape)
+                    .background(Accent)
                     .clickable(
                         role = Role.Button,
                         onClickLabel = stringResource(if (recording == null) R.string.voiceover_start else R.string.voiceover_stop),
@@ -64,14 +80,14 @@ fun VoiceoverTool(
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    Modifier
-                        .size(if (recording == null) 60.dp else 28.dp)
-                        .background(Accent, if (recording == null) CircleShape else RoundedCornerShape(6.dp)),
-                )
+                if (recording == null) {
+                    Icon(painterResource(R.drawable.ic_mic), contentDescription = null, tint = OnAccent, modifier = Modifier.size(36.dp))
+                } else {
+                    Box(Modifier.size(30.dp).background(OnAccent, RoundedCornerShape(8.dp)))
+                }
             }
             if (recording == null) {
-                Text(stringResource(R.string.voiceover_hint, formatPreciseMs(playheadMs)), style = MaterialTheme.typography.bodySmall.tabular(), color = TextSecondary)
+                Text(stringResource(R.string.voiceover_hint, formatPreciseMs(playheadMs)), style = MaterialTheme.typography.bodySmall.tabular(), color = TextMuted)
             }
         }
     }

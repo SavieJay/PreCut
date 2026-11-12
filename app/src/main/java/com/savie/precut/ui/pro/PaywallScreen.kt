@@ -14,11 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,10 +24,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.savie.precut.R
@@ -38,19 +39,29 @@ import com.savie.precut.model.pro.ProFeature
 import com.savie.precut.ui.cloud.aiFailureMessage
 import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.components.FilledButton
+import com.savie.precut.ui.components.PreCutIconButton
+import com.savie.precut.ui.components.PreCutSpinner
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.AccentContainer
-import com.savie.precut.ui.theme.Ink0
+import com.savie.precut.ui.theme.AiAccent
+import com.savie.precut.ui.theme.ErrorRed
+import com.savie.precut.ui.theme.OnAccent
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
+import com.savie.precut.ui.theme.afterglowBackground
+import com.savie.precut.ui.theme.glass
 import com.savie.precut.ui.theme.TextSecondary
 
 /** The benefits listed on the paywall, in order. */
 private val BENEFITS = listOf(
-    R.drawable.ic_auto_awesome to R.string.pro_benefit_ai_edit,
-    R.drawable.ic_splitscreen to R.string.pro_benefit_shorts,
-    R.drawable.ic_text_fields to R.string.pro_benefit_transcript,
-    R.drawable.ic_aspect_ratio to R.string.pro_benefit_formats,
-    R.drawable.ic_closed_caption to R.string.pro_benefit_more_cloud,
+    Triple(R.drawable.ic_auto_awesome, R.string.pro_benefit_ai_edit, true),
+    Triple(R.drawable.ic_splitscreen, R.string.pro_benefit_shorts, true),
+    Triple(R.drawable.ic_text_fields, R.string.pro_benefit_transcript, true),
+    Triple(R.drawable.ic_aspect_ratio, R.string.pro_benefit_formats, false),
+    Triple(R.drawable.ic_closed_caption, R.string.pro_benefit_more_cloud, true),
 )
+
+private val HeroFill = Brush.linearGradient(listOf(Accent, Color(0xFFFF8FA3)))
 
 /** The paywall (Phase 25, B1): never shown on its own, only from a tap on Pro or a Pro tool. */
 @Composable
@@ -59,25 +70,27 @@ fun PaywallScreen(onClose: () -> Unit, viewModel: PaywallViewModel = hiltViewMod
     val activity = LocalActivity.current
     // Pro confirmed by the server: done.
     LaunchedEffect(state.isPro) { if (state.isPro) onClose() }
-    Column(Modifier.fillMaxSize().background(Ink0).systemBarsPadding()) {
-        IconButton(onClick = onClose) { Icon(painterResource(R.drawable.ic_close), stringResource(R.string.action_close)) }
+    Column(Modifier.fillMaxSize().afterglowBackground().systemBarsPadding()) {
+        PreCutIconButton(R.drawable.ic_close, stringResource(R.string.action_close), onClose, Modifier.padding(start = 4.dp))
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Box(Modifier.size(64.dp).background(AccentContainer, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.ic_diamond), contentDescription = null, tint = Accent, modifier = Modifier.size(32.dp))
+            Box(Modifier.padding(start = 4.dp).size(64.dp).background(HeroFill, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) {
+                Icon(painterResource(R.drawable.ic_diamond), contentDescription = null, tint = OnAccent, modifier = Modifier.size(32.dp))
             }
-            Text(stringResource(headline(state.feature)), style = MaterialTheme.typography.headlineSmall)
-            BENEFITS.forEach { (icon, text) -> BenefitRow(icon, text) }
+            Text(stringResource(headline(state.feature)), style = MaterialTheme.typography.headlineMedium, color = TextPrimary, modifier = Modifier.padding(horizontal = 4.dp))
+            Column(Modifier.fillMaxWidth().glass(Radius.card).padding(horizontal = 18.dp, vertical = 8.dp)) {
+                BENEFITS.forEach { (icon, text, ai) -> BenefitRow(icon, text, ai) }
+            }
             PlanCards(state, viewModel::onSelect)
-            Text(stringResource(R.string.pro_free_forever), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            Text(stringResource(R.string.pro_free_forever), style = MaterialTheme.typography.bodySmall, color = TextMuted, modifier = Modifier.padding(horizontal = 4.dp))
         }
-        Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            state.failure?.let { Text(aiFailureMessage(it), style = MaterialTheme.typography.bodySmall, color = Accent, textAlign = TextAlign.Center) }
-            if (state.playFailed) Text(stringResource(R.string.pro_play_failed), style = MaterialTheme.typography.bodySmall, color = Accent, textAlign = TextAlign.Center)
+        Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            state.failure?.let { Text(aiFailureMessage(it), style = MaterialTheme.typography.bodySmall, color = ErrorRed, textAlign = TextAlign.Center) }
+            if (state.playFailed) Text(stringResource(R.string.pro_play_failed), style = MaterialTheme.typography.bodySmall, color = ErrorRed, textAlign = TextAlign.Center)
             if (state.working) {
-                CircularProgressIndicator(Modifier.size(32.dp), color = Accent)
+                PreCutSpinner()
             } else {
                 val trial = state.offers?.let { if (state.selected == ProCatalog.YEARLY) it.yearly else it.monthly }?.freeTrialDays ?: 0
                 FilledButton(
@@ -89,7 +102,7 @@ fun PaywallScreen(onClose: () -> Unit, viewModel: PaywallViewModel = hiltViewMod
                 )
             }
             AccentTextButton(stringResource(R.string.pro_restore), viewModel::onRestore, color = TextSecondary, enabled = !state.working)
-            Text(stringResource(R.string.pro_fine_print), style = MaterialTheme.typography.bodySmall, color = TextSecondary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.pro_fine_print), style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp), color = TextMuted, textAlign = TextAlign.Center)
         }
     }
 }
@@ -108,9 +121,10 @@ private fun headline(feature: ProFeature?): Int = when (feature) {
 }
 
 @Composable
-private fun BenefitRow(@DrawableRes icon: Int, @StringRes text: Int) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Icon(painterResource(icon), contentDescription = null, tint = Accent, modifier = Modifier.size(22.dp))
-        Text(stringResource(text), style = MaterialTheme.typography.bodyLarge)
+private fun BenefitRow(@DrawableRes icon: Int, @StringRes text: Int, ai: Boolean) {
+    // Lime marks the AI benefits only.
+    Row(Modifier.padding(vertical = 9.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(painterResource(icon), contentDescription = null, tint = if (ai) AiAccent else TextSecondary, modifier = Modifier.size(20.dp))
+        Text(stringResource(text), style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
     }
 }

@@ -9,7 +9,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -20,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.savie.precut.ui.theme.Ink0
+import com.savie.precut.ui.theme.afterglowBackground
 
 /**
  * First-run onboarding (Phase 24, designs O-01 to O-05): Welcome, What will you create?, Your
@@ -36,10 +35,10 @@ fun OnboardingScreen(onDone: (openPaywall: Boolean) -> Unit, viewModel: Onboardi
     val notifications = rememberLauncherForActivityResult(RequestPermission()) { viewModel.onNotificationsAnswered() }
     // A moment on first run while it checks for existing projects: just the app's background.
     if (state.checking || state.done) {
-        Box(Modifier.fillMaxSize().background(Ink0))
+        Box(Modifier.fillMaxSize().afterglowBackground())
         return
     }
-    Box(Modifier.fillMaxSize().background(Ink0)) {
+    Box(Modifier.fillMaxSize().afterglowBackground()) {
         AnimatedContent(state.page, Modifier.fillMaxSize(), transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "page") { page ->
             when (page) {
                 OnboardingPage.WELCOME -> WelcomePage(onStart = viewModel::onNext, onHaveProjects = viewModel::onSkip)

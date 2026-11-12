@@ -9,10 +9,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.savie.precut.R
-import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
 import kotlin.math.roundToInt
 
 /** Motion blur (CapCut Pro): strength 0–100%, applied on release, with Reset and Apply to all. */
@@ -23,7 +22,7 @@ fun MotionBlurTool(strength: Float, onChanged: (Float) -> Unit, onApplyAll: () -
         stringResource(R.string.tool_motion_blur),
         onDone,
         actions = {
-            AccentTextButton(stringResource(R.string.action_reset), onClick = { onChanged(0f) }, enabled = strength > 0f, color = TextSecondary)
+            ResetIconButton({ onChanged(0f) }, enabled = strength > 0f, description = stringResource(R.string.action_reset))
             ApplyToAllButton(onApplyAll)
         },
     ) {
@@ -32,10 +31,11 @@ fun MotionBlurTool(strength: Float, onChanged: (Float) -> Unit, onApplyAll: () -
                 value = value,
                 onValueChange = { value = (it * 100).roundToInt() / 100f },
                 onValueChangeFinished = { onChanged(value) },
+                bubble = { "${(it * 100).roundToInt()}%" },
                 onReset = { onChanged(0f) },
                 modifier = sliderModifier,
             )
         }
-        Text(stringResource(R.string.motion_blur_hint), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        Text(stringResource(R.string.motion_blur_hint), style = MaterialTheme.typography.bodySmall, color = TextMuted)
     }
 }

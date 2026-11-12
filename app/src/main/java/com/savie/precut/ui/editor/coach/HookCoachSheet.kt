@@ -20,7 +20,10 @@ import com.savie.precut.R
 import com.savie.precut.model.coach.HookTip
 import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.editor.HookCoachUi
-import com.savie.precut.ui.theme.Ink1
+import com.savie.precut.ui.theme.GlassSolid
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
 
 /** Hook coach (E5 in spirit): two to four concrete tips, each with Apply. */
@@ -31,19 +34,20 @@ fun HookCoachSheet(ui: HookCoachUi, onApply: (HookTip, String) -> Unit, onDismis
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Ink1,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        // Solid, not glass: the sheet rises over the editor's video preview.
+        containerColor = GlassSolid,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
     ) {
-        Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.hook_title), style = MaterialTheme.typography.titleMedium)
+        Column(Modifier.padding(start = 20.dp, end = 12.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.hook_title), style = PreCutType.panelTitle, color = TextPrimary)
             if (ui.tips.isEmpty()) {
                 Text(stringResource(R.string.hook_all_good), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
             }
             ui.tips.forEach { tip ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(stringResource(tip.headline()), style = MaterialTheme.typography.titleSmall)
-                        Text(stringResource(tip.why()), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text(stringResource(tip.headline()), style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                        Text(stringResource(tip.why()), style = MaterialTheme.typography.bodySmall, color = TextMuted)
                     }
                     val applied = tip in ui.applied
                     AccentTextButton(stringResource(if (applied) R.string.hook_applied else R.string.hook_apply), { onApply(tip, title) }, enabled = !applied)

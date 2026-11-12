@@ -1,5 +1,13 @@
 package com.savie.precut.ui.editor
 
+import com.savie.precut.ui.components.PreCutSnackbar
+import com.savie.precut.ui.components.PreCutSpinner
+import com.savie.precut.ui.components.formatDurationMs
+import com.savie.precut.ui.editor.tools.label
+import com.savie.precut.model.totalDurationMs
+import com.savie.precut.ui.theme.ErrorRed
+import com.savie.precut.ui.theme.TextMuted
+import androidx.compose.ui.res.pluralStringResource
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -14,7 +22,6 @@ import androidx.activity.result.contract.ActivityResultContracts.RequestPermissi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -362,12 +369,14 @@ fun EditorScreen(
                             canRedo = ready?.canRedo == true,
                             renaming = renaming && ready != null,
                             actions = topBarActions,
+                            subtitle = ready?.let { editorSubtitle(it) },
+                            subtitleColor = if (ready?.missingIds?.isNotEmpty() == true) ErrorRed else TextMuted,
                         )
                     }
                 },
                 snackbarHost = {
-                    // Above the toolbar, which reaches down behind the navigation bar.
-                    SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding().padding(bottom = 72.dp))
+                    // Above the floating dock (76 dp, 12 dp from the bottom).
+                    SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding().padding(bottom = 88.dp)) { PreCutSnackbar(it) }
                 },
                 // The top bar pads for the status bar and the bottom panel for the navigation bar.
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -377,7 +386,7 @@ fun EditorScreen(
                     .padding(innerPadding)
                 when (val state = uiState) {
                     EditorUiState.Loading -> Box(modifier, contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        PreCutSpinner()
                     }
                     EditorUiState.NotFound -> Box(modifier, contentAlignment = Alignment.Center) {
                         Text(stringResource(R.string.editor_not_found))
@@ -457,6 +466,15 @@ fun EditorScreen(
         }
     }
 }
+
+/** "9:16 · 0:18" under the project name, or how many files are missing (E-06). */
+@Composable
+private fun editorSubtitle(state: EditorUiState.Ready): String =
+    if (state.missingIds.isNotEmpty()) {
+        pluralStringResource(R.plurals.rd_editor_missing_subtitle, state.missingIds.size, state.missingIds.size)
+    } else {
+        stringResource(R.string.rd_editor_subtitle, state.project.aspectRatio.label(), formatDurationMs(state.project.totalDurationMs()))
+    }
 
 /** SubRip subtitles' MIME type. */
 private const val SRT_MIME_TYPE = "application/x-subrip"

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,14 +21,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.ui.components.FilledButton
-import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.Ink3
+import com.savie.precut.ui.components.PreCutProgressBar
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
+import com.savie.precut.ui.theme.afterglowBackground
 import com.savie.precut.ui.theme.TextSecondary
 import kotlin.math.roundToInt
 
@@ -64,14 +64,14 @@ fun ForceUpdateScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Ink0)
+            .afterglowBackground()
             // Swallows touches meant for the screens underneath.
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {}),
     ) {
         Icon(
             painterResource(R.drawable.ic_logo),
             contentDescription = stringResource(R.string.app_name),
-            tint = Accent,
+            tint = TextPrimary,
             modifier = Modifier.align(Alignment.TopCenter).systemBarsPadding().padding(top = 24.dp).size(36.dp),
         )
         Column(
@@ -80,7 +80,7 @@ fun ForceUpdateScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             UpdateIllustration(Modifier.padding(bottom = 8.dp))
-            Text(stringResource(R.string.update_required_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.update_required_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary, textAlign = TextAlign.Center)
             Text(
                 message ?: stringResource(R.string.update_required_body),
                 style = MaterialTheme.typography.bodyLarge,
@@ -89,17 +89,12 @@ fun ForceUpdateScreen(
             )
             Text(
                 if (latest != null) stringResource(R.string.update_versions, installed, latest) else stringResource(R.string.update_version_installed, installed),
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                color = TextSecondary,
+                style = PreCutType.timecode,
+                color = TextMuted,
             )
             when (progress) {
                 is UpdateProgress.Downloading -> Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LinearProgressIndicator(
-                        progress = { progress.fraction },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Accent,
-                        trackColor = Ink3,
-                    )
+                    PreCutProgressBar(progress.fraction)
                     Text(
                         stringResource(R.string.update_downloading, (progress.fraction * 100).roundToInt()),
                         style = MaterialTheme.typography.bodyMedium,

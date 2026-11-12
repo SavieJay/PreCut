@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts.RequestMultiple
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,9 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -26,10 +28,11 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -37,13 +40,18 @@ import androidx.core.content.ContextCompat
 import coil3.compose.AsyncImage
 import com.savie.precut.R
 import com.savie.precut.model.broll.GalleryItem
+import com.savie.precut.ui.components.AiTag
 import com.savie.precut.ui.components.FilledButton
+import com.savie.precut.ui.components.PreCutProgressBar
 import com.savie.precut.ui.editor.BrollUi
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.Ink1
-import com.savie.precut.ui.theme.Ink3
-import com.savie.precut.ui.theme.Outline
+import com.savie.precut.ui.theme.GlassSolid
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.RowFill
+import com.savie.precut.ui.theme.RowLine
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
 
 /** What the B-roll sheet can do. */
@@ -74,11 +82,14 @@ fun BrollSheet(ui: BrollUi, actions: BrollActions) {
     ModalBottomSheet(
         onDismissRequest = actions::onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Ink1,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        containerColor = GlassSolid,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
     ) {
         Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(stringResource(R.string.broll_title), style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.broll_title), style = PreCutType.panelTitle, color = TextPrimary)
+                AiTag(stringResource(R.string.rd_media_ai_tag))
+            }
             when (ui) {
                 BrollUi.NeedsAccess -> {
                     Text(stringResource(R.string.broll_access_why), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
@@ -90,11 +101,7 @@ fun BrollSheet(ui: BrollUi, actions: BrollActions) {
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
                     )
-                    LinearProgressIndicator(
-                        progress = { if (ui.total == 0) 0f else ui.done.toFloat() / ui.total },
-                        modifier = Modifier.fillMaxWidth().height(6.dp),
-                        color = Accent, trackColor = Ink3, strokeCap = StrokeCap.Round, gapSize = 0.dp, drawStopIndicator = {},
-                    )
+                    PreCutProgressBar(if (ui.total == 0) 0f else ui.done.toFloat() / ui.total, Modifier.fillMaxWidth(), ai = true)
                 }
                 is BrollUi.Ready -> ReadyContent(ui, actions)
             }
@@ -109,25 +116,26 @@ private fun ReadyContent(ui: BrollUi.Ready, actions: BrollActions) {
         onValueChange = actions::onQuery,
         placeholder = { Text(stringResource(R.string.broll_hint)) },
         singleLine = true,
-        shape = RoundedCornerShape(8.dp),
+        leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null, tint = TextSecondary) },
+        shape = CircleShape,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Accent, unfocusedBorderColor = Outline,
-            focusedContainerColor = Ink0, unfocusedContainerColor = Ink0, cursorColor = Accent,
+            focusedBorderColor = Accent, unfocusedBorderColor = RowLine,
+            focusedContainerColor = RowFill, unfocusedContainerColor = RowFill, cursorColor = Accent,
         ),
         modifier = Modifier.fillMaxWidth(),
     )
     when {
         ui.items.isEmpty() -> Text(stringResource(R.string.broll_empty), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         ui.query.isNotBlank() && ui.results.isEmpty() -> Text(stringResource(R.string.broll_no_match), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-        else -> Text(pluralStringResource(R.plurals.broll_looked_at, ui.items.size, ui.items.size), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        else -> Text(pluralStringResource(R.plurals.broll_looked_at, ui.items.size, ui.items.size), style = MaterialTheme.typography.bodySmall, color = TextMuted)
     }
-    LazyVerticalGrid(GridCells.Fixed(3), Modifier.height(320.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    LazyVerticalGrid(GridCells.Fixed(3), Modifier.height(320.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(ui.results, key = { it.id }) { item ->
             AsyncImage(
                 model = item.uri,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.aspectRatio(1f).clip(RoundedCornerShape(8.dp)).clickable { actions.onPick(item) },
+                modifier = Modifier.aspectRatio(1f).clip(Radius.clip).clickable { actions.onPick(item) },
             )
         }
     }

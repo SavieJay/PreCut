@@ -3,9 +3,7 @@ package com.savie.precut.ui.editor.tools.text
 import android.graphics.Bitmap
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,10 +21,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.OutputSize
@@ -37,7 +35,8 @@ import com.savie.precut.model.text.TextTemplates
 import com.savie.precut.ui.components.PreCutChip
 import com.savie.precut.ui.components.TileGrid
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink2
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.glassRow
 
 /**
  * Templates (X-04e): one-tap looks in groups, each tile drawn by the real renderer on its sample
@@ -57,16 +56,15 @@ fun TextTemplatesTab(overlay: TextOverlay, render: (TextOverlay, OutputSize) -> 
         val sample = remember(template) {
             render(template.applyTo(TextOverlay("t", template.sample, 0L, 1L)), TILE_FRAME)?.asImageBitmap()
         }
-        val shape = RoundedCornerShape(8.dp)
+        val shape = Radius.tile
+        val on = template.matches(overlay)
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(4.dp)
-                .height(56.dp)
-                .clip(shape)
-                .background(Ink2)
-                .border(if (template.matches(overlay)) 2.dp else 0.dp, Accent, shape)
-                .clickable { onChange(template.applyTo(overlay)) }
+                .height(64.dp)
+                .glassRow(shape)
+                .then(if (on) Modifier.border(3.dp, Accent, shape) else Modifier)
+                .selectable(on, role = Role.RadioButton) { onChange(template.applyTo(overlay)) }
                 .padding(6.dp),
             contentAlignment = Alignment.Center,
         ) {

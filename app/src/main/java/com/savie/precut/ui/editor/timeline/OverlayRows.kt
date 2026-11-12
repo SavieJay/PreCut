@@ -122,4 +122,4 @@ private fun OverlayBarView(
 /** Height of the overlay rows above the main strip. */
 internal fun overlayRowsHeight(rows: Int): Dp = (OverlayRowHeight + StripGap) * rows
 
-internal val OverlayRowHeight = 40.dp
+internal val OverlayRowHeight = 48.dp

@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -34,8 +33,11 @@ import com.savie.precut.R
 import com.savie.precut.model.sticker.EmojiCatalog
 import com.savie.precut.model.sticker.EmojiCategory
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.Outline
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.RowFill
+import com.savie.precut.ui.theme.RowLine
+import com.savie.precut.ui.theme.TextMuted
 import com.savie.precut.ui.theme.TextSecondary
 
 /** Search, Recent and the categories, 7 to a row (S-01). */
@@ -46,12 +48,12 @@ fun EmojiTab(recent: List<String>, onEmoji: (String) -> Unit) {
         value = query,
         onValueChange = { query = it },
         placeholder = { Text(stringResource(R.string.sticker_search)) },
-        leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
+        leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null, tint = TextSecondary) },
         singleLine = true,
         shape = CircleShape,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Accent, unfocusedBorderColor = Outline,
-            focusedContainerColor = Ink0, unfocusedContainerColor = Ink0, cursorColor = Accent,
+            focusedBorderColor = Accent, unfocusedBorderColor = RowLine,
+            focusedContainerColor = RowFill, unfocusedContainerColor = RowFill, cursorColor = Accent,
         ),
         modifier = Modifier.fillMaxWidth(),
     )
@@ -67,20 +69,20 @@ fun EmojiTab(recent: List<String>, onEmoji: (String) -> Unit) {
     LazyVerticalGrid(GridCells.Fixed(7), Modifier.fillMaxWidth().height(300.dp)) {
         if (query.isNotBlank() && found.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(stringResource(R.string.sticker_no_results, query), color = TextSecondary, modifier = Modifier.padding(vertical = 16.dp))
+                Text(stringResource(R.string.sticker_no_results, query), style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(vertical = 16.dp))
             }
         }
         sections.forEach { (title, emoji) ->
             if (title != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(stringResource(title), style = MaterialTheme.typography.labelLarge, color = TextSecondary, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+                    Text(stringResource(title).uppercase(), style = PreCutType.section, color = TextMuted, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
                 }
             }
             items(emoji, key = { "$title|$it" }) { e ->
                 Box(
                     Modifier
                         .height(48.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(Radius.clip)
                         .clickable(role = Role.Button, onClickLabel = e) { onEmoji(e) },
                     contentAlignment = Alignment.Center,
                 ) { Text(e, fontSize = 30.sp) }

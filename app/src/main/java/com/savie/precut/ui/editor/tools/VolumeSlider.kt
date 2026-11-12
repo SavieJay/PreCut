@@ -13,7 +13,7 @@ import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import kotlin.math.roundToInt
 
-/** 0–200% volume in 5% steps with a mark at 100% (T-04); applied on release, double-tap resets. */
+/** 0–200% volume in 5% steps with a mark at 100% (RD-T04); applied on release, double-tap resets. */
 @Composable
 fun VolumeSlider(volume: Float, enabled: Boolean, onVolumeChanged: (Float) -> Unit, modifier: Modifier = Modifier) {
     var value by remember(volume) { mutableFloatStateOf(volume) }
@@ -25,6 +25,7 @@ fun VolumeSlider(volume: Float, enabled: Boolean, onVolumeChanged: (Float) -> Un
             onValueChangeFinished = { onVolumeChanged(value) },
             valueRange = 0f..MAX_VOLUME,
             anchor = 1f,
+            bubble = { "${(it * 100).roundToInt()}%" },
             onReset = { onVolumeChanged(1f) },
             enabled = enabled,
             snapTo = listOf(1f),

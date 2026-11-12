@@ -5,18 +5,21 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.dp
+import com.savie.precut.ui.theme.Ink0
 
-/** Keyframe diamonds (P-05) along the bottom of a selected bar, [offsetsMs] from its start. */
+/**
+ * Keyframe diamonds (P-05, RD `.kf`) across the middle of a selected bar, [offsetsMs] from its
+ * start: 12 dp white diamonds with a 2 dp Base 0 edge.
+ */
 @Composable
 fun KeyframeMarks(offsetsMs: List<Long>, pxPerMs: Float, modifier: Modifier = Modifier) {
     if (offsetsMs.isEmpty()) return
     Canvas(modifier.fillMaxSize()) {
-        val half = 5.dp.toPx()
-        val y = size.height - half - 3.dp.toPx()
+        val half = 8.dp.toPx() // a 12 dp square turned 45° is about 17 dp across
+        val y = size.height / 2
         offsetsMs.forEach { offset ->
             val x = TimelineGeometry.msToPx(offset, pxPerMs)
             val diamond = Path().apply {
@@ -26,9 +29,8 @@ fun KeyframeMarks(offsetsMs: List<Long>, pxPerMs: Float, modifier: Modifier = Mo
                 lineTo(x - half, y)
                 close()
             }
-            drawPath(diamond, Color.Black.copy(alpha = 0.5f), style = Stroke(3.dp.toPx()))
             drawPath(diamond, Color.White)
-            drawCircle(Color.Black.copy(alpha = 0.35f), 1.5.dp.toPx(), Offset(x, y))
+            drawPath(diamond, Ink0, style = Stroke(2.dp.toPx()))
         }
     }
 }

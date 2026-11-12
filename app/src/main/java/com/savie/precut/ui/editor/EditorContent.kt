@@ -6,14 +6,11 @@ import com.savie.precut.ui.editor.coach.coachTarget
 import com.savie.precut.ui.editor.aiedit.AiEditReviewPanel
 import com.savie.precut.ui.editor.aiedit.rememberReviewActions
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
@@ -22,13 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
-import com.savie.precut.ui.theme.Ink1
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.savie.precut.R
 import com.savie.precut.media.PreviewState
 import com.savie.precut.model.edit.textShownAt
 import com.savie.precut.model.outputSize
@@ -38,7 +31,6 @@ import com.savie.precut.ui.editor.preview.PreviewSurface
 import com.savie.precut.ui.editor.preview.ProxyStatusChip
 import com.savie.precut.ui.editor.preview.TextTransformOverlay
 import com.savie.precut.ui.editor.timeline.TimelineActions
-import com.savie.precut.ui.theme.TextSecondary
 
 /** The loaded editor: missing-media banner, preview, playback bar, timeline and bottom panel. */
 @Composable
@@ -72,17 +64,17 @@ fun EditorContent(
         return
     }
     // imePadding: the text tool's keyboard pushes the panel up and shrinks the preview.
-    Column(modifier.imePadding().alpha(if (dimmed) 0.5f else 1f)) {
+    Column(modifier.imePadding().alpha(if (dimmed) 0.45f else 1f)) {
         if (state.missingIds.isNotEmpty()) {
             MissingMediaBanner(state.missingIds.size, onRemoveAll = viewModel::onRemoveMissing)
         }
         if (state.project.clips.isEmpty()) {
             // The player keeps its last frame after the final clip is deleted; cover it.
-            Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.editor_empty), color = TextSecondary)
+            Box(Modifier.weight(1f).previewFrame(), contentAlignment = Alignment.Center) {
+                EmptyPreview(state.isImporting, onAddMedia, viewModel::onCameraRequested)
             }
         } else {
-            Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black)) {
+            Box(Modifier.weight(1f).previewFrame()) {
                 ProxyStatusChip(viewModel.proxyProgress, Modifier.align(Alignment.TopStart).padding(12.dp))
                 // While full screen shows the video, this surface steps aside: one player can
                 // only render to one surface, and re-attaching on return is reliable.
@@ -128,7 +120,8 @@ fun EditorContent(
         state.reframing?.let { ReframeDialog(it, onCancel = viewModel.reframe::onCancel) }
         state.measuringNoise?.let { NoiseDialog(it, onCancel = viewModel.noise::onCancel) }
         // The panel's surface continues behind the navigation bar.
-        Column(Modifier.background(Ink1).navigationBarsPadding().coachTarget(coach, CoachTarget.TOOLS)) {
+        // The dock and panels float over the plain Base 0 editor, above the navigation bar.
+        Column(Modifier.navigationBarsPadding().coachTarget(coach, CoachTarget.TOOLS)) {
             EditorBottomPanel(state, canSplit, { previewState.value.positionMs }, viewModel)
         }
     }

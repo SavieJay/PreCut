@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -26,7 +25,9 @@ import com.savie.precut.R
 import com.savie.precut.ui.components.FilledButton
 import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.AccentContainer
-import com.savie.precut.ui.theme.Ink1
+import com.savie.precut.ui.theme.GlassSolid
+import com.savie.precut.ui.theme.TextPrimary
+import com.savie.precut.ui.theme.TextSecondary
 
 /** "What's new in [version]", once after an update (Phase 23, C4): the release's bullets from the server. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,20 +36,20 @@ fun WhatsNewSheet(version: String, bullets: List<String>, onDismiss: () -> Unit)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Ink1,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        containerColor = GlassSolid,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
     ) {
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.whats_new_title, version), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.whats_new_title, version), style = MaterialTheme.typography.titleLarge, color = TextPrimary)
             bullets.forEach { bullet ->
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
-                    Box(Modifier.size(32.dp).background(AccentContainer, CircleShape), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(32.dp).background(AccentContainer, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                         Icon(painterResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = Accent, modifier = Modifier.size(18.dp))
                     }
-                    Text(bullet, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(top = 4.dp))
+                    Text(bullet, style = MaterialTheme.typography.bodyLarge, color = TextSecondary, modifier = Modifier.weight(1f).padding(top = 4.dp))
                 }
             }
-            FilledButton(stringResource(R.string.whats_new_done), onDismiss, Modifier.fillMaxWidth().padding(top = 8.dp))
+            FilledButton(stringResource(R.string.whats_new_done), onDismiss, Modifier.fillMaxWidth().padding(top = 8.dp), large = true)
         }
     }
 }

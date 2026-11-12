@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -15,17 +13,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.frame.ClipMask
 import com.savie.precut.model.frame.MaskShape
 import com.savie.precut.ui.components.AccentTextButton
+import com.savie.precut.ui.components.IconButtonStyle
+import com.savie.precut.ui.components.PreCutIconButton
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.PresetTile
 import com.savie.precut.ui.components.SliderRow
-import com.savie.precut.ui.theme.Accent
 import com.savie.precut.ui.theme.TextSecondary
 import kotlin.math.roundToInt
 
@@ -74,13 +72,13 @@ fun MaskTool(mask: ClipMask?, actions: MaskActions, onDone: () -> Unit) {
                             modifier = sliderModifier,
                         )
                     }
-                    IconToggleButton(checked = mask.inverted, onCheckedChange = { actions.onInvert() }) {
-                        Icon(
-                            painterResource(R.drawable.ic_invert),
-                            contentDescription = stringResource(R.string.mask_invert),
-                            tint = if (mask.inverted) Accent else TextSecondary,
-                        )
-                    }
+                    PreCutIconButton(
+                        R.drawable.ic_invert,
+                        stringResource(R.string.mask_invert),
+                        actions::onInvert,
+                        style = if (mask.inverted) IconButtonStyle.Pink else IconButtonStyle.Glass,
+                        small = true,
+                    )
                 }
                 if (mask.shape == MaskShape.RECTANGLE) {
                     var corners by remember(mask.cornerRadius) { mutableFloatStateOf(mask.cornerRadius) }

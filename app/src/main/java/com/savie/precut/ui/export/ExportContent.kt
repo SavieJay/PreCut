@@ -1,11 +1,10 @@
 package com.savie.precut.ui.export
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +13,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,29 +22,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.savie.precut.export.ExportKind
+import androidx.compose.ui.unit.sp
 import com.savie.precut.R
 import com.savie.precut.model.export.ExportResolution
-import com.savie.precut.ui.components.OutlinedPreCutButton
-import com.savie.precut.ui.components.formatDurationMs
+import com.savie.precut.ui.components.PreCutIconButton
+import com.savie.precut.ui.components.PreCutProgressRing
+import com.savie.precut.ui.components.PreCutSpinner
 import com.savie.precut.ui.components.projectDisplayName
-import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.Ink3
-import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.PreCutTheme
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
-import com.savie.precut.ui.theme.tabular
+import com.savie.precut.ui.theme.afterglowBackground
+import com.savie.precut.ui.theme.glassRow
 
 /** What the export screens can do. */
 interface ExportActions {
@@ -64,12 +60,12 @@ interface ExportActions {
 /** What the failure screens need to explain themselves: the resolution tried, the lower one, the cache size. */
 data class ExportRecovery(val resolution: ExportResolution, val lower: ExportResolution, val cacheBytes: Long)
 
-/** EX-02 progress (ring around the cover), EX-04 done (cover, Open, Share) and failures. */
+/** EX-02 progress (RD-EX02: a big pink ring around the cover), EX-04 done and EX-05 failures. */
 @Composable
 fun ExportContent(state: ExportUiState, info: ExportInfo?, actions: ExportActions, recovery: ExportRecovery? = null) {
     // No Scaffold here, so the light text and icon colour is provided explicitly (else Compose's black).
     CompositionLocalProvider(LocalContentColor provides TextPrimary) {
-        Column(Modifier.fillMaxSize().background(Ink0).statusBarsPadding().navigationBarsPadding()) {
+        Column(Modifier.fillMaxSize().afterglowBackground().statusBarsPadding().navigationBarsPadding()) {
             when (state) {
                 ExportUiState.Idle, is ExportUiState.Exporting, ExportUiState.Saving -> Progress(state, info, actions)
                 is ExportUiState.Done -> Done(state, info, actions)
@@ -82,57 +78,50 @@ fun ExportContent(state: ExportUiState, info: ExportInfo?, actions: ExportAction
 @Composable
 private fun ColumnScope.Progress(state: ExportUiState, info: ExportInfo?, actions: ExportActions) {
     val percent = (state as? ExportUiState.Exporting)?.percent
-    Column(
-        Modifier.weight(1f).fillMaxWidth().padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically),
-    ) {
-        Box(Modifier.size(240.dp), contentAlignment = Alignment.Center) {
-            if (percent == null) {
-                CircularProgressIndicator(Modifier.size(240.dp), color = Accent, trackColor = Ink3, strokeWidth = 9.dp)
-            } else {
-                Canvas(Modifier.size(240.dp)) {
-                    val stroke = 9.dp.toPx()
-                    val inset = stroke / 2
-                    val arc = Size(size.width - stroke, size.height - stroke)
-                    drawArc(Ink3, 0f, 360f, false, Offset(inset, inset), arc, style = Stroke(stroke))
-                    drawArc(Accent, -90f, 360f * percent / 100f, false, Offset(inset, inset), arc, style = Stroke(stroke, cap = StrokeCap.Round))
-                }
-            }
-            Cover(info?.coverPath, Modifier.size(116.dp, 184.dp))
-            Box(Modifier.size(116.dp, 184.dp).clip(RoundedCornerShape(12.dp)).background(Ink0.copy(alpha = 0.55f)), contentAlignment = Alignment.Center) {
-                Text(
-                    if (state == ExportUiState.Saving) "100%" else percent?.let { stringResource(R.string.export_percent, it) }.orEmpty(),
-                    style = MaterialTheme.typography.displaySmall.tabular(),
-                )
-            }
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val saving = state == ExportUiState.Saving
+    Row(Modifier.fillMaxWidth().height(56.dp).padding(start = 4.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (!saving) PreCutIconButton(R.drawable.ic_close, stringResource(R.string.action_cancel), actions::onCancel) else Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f).padding(horizontal = 4.dp)) {
             Text(
                 when {
-                    state == ExportUiState.Saving -> stringResource(R.string.export_saving)
+                    saving -> stringResource(R.string.export_saving)
                     info != null -> stringResource(R.string.export_exporting_named, projectDisplayName(info.name, info.createdAt))
                     else -> stringResource(R.string.export_in_progress)
                 },
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
             )
-            info?.let {
-                val quality = when (it.kind) {
-                    ExportKind.AUDIO -> formatDurationMs(it.durationMs)
-                    ExportKind.GIF -> stringResource(R.string.export_quality_gif, it.settings.gif.size.shortSidePx, it.settings.gif.frameRate, formatDurationMs(it.durationMs))
-                    ExportKind.VIDEO -> stringResource(R.string.export_quality, stringResource(it.settings.resolution.label()), it.settings.frameRate, formatDurationMs(it.durationMs))
-                }
-                Text(quality, style = MaterialTheme.typography.bodyMedium.tabular(), color = TextSecondary)
-            }
-            Text(stringResource(R.string.export_keep_open), style = MaterialTheme.typography.bodyMedium, color = TextSecondary, textAlign = TextAlign.Center)
+            info?.let { Text(qualityOf(it), style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp), color = TextMuted, maxLines = 1) }
         }
     }
-    if (state != ExportUiState.Saving) {
-        OutlinedPreCutButton(stringResource(R.string.action_cancel), actions::onCancel, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 56.dp))
-    } else {
-        Spacer(Modifier.height(96.dp))
+    Column(
+        Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically),
+    ) {
+        Box(Modifier.size(300.dp), contentAlignment = Alignment.Center) {
+            if (percent == null && !saving) {
+                PreCutSpinner(size = 300.dp)
+            } else {
+                PreCutProgressRing(if (saving) 1f else (percent ?: 0) / 100f, size = 300.dp, stroke = 10.dp)
+            }
+            Cover(info?.coverPath, Modifier.size(118.dp, 210.dp), radius = 18)
+        }
+        Text(
+            if (saving) "100%" else percent?.let { stringResource(R.string.export_percent, it) }.orEmpty(),
+            style = PreCutType.timecode.copy(fontSize = 44.sp, lineHeight = 48.sp),
+            color = TextPrimary,
+        )
+        Row(
+            Modifier.fillMaxWidth().glassRow(Radius.dock).padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(painterResource(R.drawable.ic_notifications), contentDescription = null, tint = TextSecondary)
+            Text(stringResource(R.string.export_keep_open), style = MaterialTheme.typography.bodySmall, color = TextSecondary, textAlign = TextAlign.Start)
+        }
     }
+    Spacer(Modifier.height(40.dp))
 }
 
 @Preview

@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,18 +17,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.frame.ChromaKey
 import com.savie.precut.ui.components.AccentTextButton
+import com.savie.precut.ui.components.IconButtonStyle
+import com.savie.precut.ui.components.PreCutIconButton
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.components.formatHexColor
-import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.AccentContainer
-import com.savie.precut.ui.theme.Ink2
 import com.savie.precut.ui.theme.PreCutType
 import com.savie.precut.ui.theme.TextSecondary
 import kotlin.math.roundToInt
@@ -56,15 +52,14 @@ fun ChromaTool(chroma: ChromaKey?, picking: Boolean, actions: ChromaActions, onD
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                IconToggleButton(
-                    checked = picking,
-                    onCheckedChange = actions::onPicking,
-                    modifier = Modifier.size(48.dp).background(if (picking) AccentContainer else Ink2, CircleShape),
-                ) {
-                    Icon(painterResource(R.drawable.ic_colorize), contentDescription = stringResource(R.string.chroma_pick), tint = if (picking) Accent else TextSecondary)
-                }
+                PreCutIconButton(
+                    R.drawable.ic_colorize,
+                    stringResource(R.string.chroma_pick),
+                    { actions.onPicking(!picking) },
+                    style = if (picking) IconButtonStyle.Pink else IconButtonStyle.Glass,
+                )
                 chroma?.let {
-                    Box(Modifier.size(24.dp).background(Color(it.colorArgb), CircleShape).border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape))
+                    Box(Modifier.size(32.dp).background(Color(it.colorArgb), CircleShape).border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape))
                 }
                 Text(
                     chroma?.let { stringResource(R.string.chroma_picked, formatHexColor(it.colorArgb)) } ?: stringResource(R.string.chroma_hint),

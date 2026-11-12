@@ -34,6 +34,7 @@ import com.savie.precut.model.frame.ClipCanvas
 import com.savie.precut.ui.components.ColorDot
 import com.savie.precut.ui.components.PillTab
 import com.savie.precut.ui.components.PillTabs
+import com.savie.precut.ui.components.TileFrame
 import com.savie.precut.ui.components.formatHexColor
 
 /** The design's canvas swatches (T-13b): black, white, cream, pink, yellow, teal, blue. */
@@ -51,7 +52,7 @@ interface CanvasActions {
     fun onPickImage()
 }
 
-/** Canvas (T-13): Colour, Blur or Image behind the clip, with "Apply to all". */
+/** Canvas (RD-T13): Colour, Blur or Image behind the clip, with "Apply to all". */
 @Composable
 fun CanvasTool(canvas: ClipCanvas, frameKey: ThumbnailKey?, loader: ThumbnailLoader, actions: CanvasActions, onDone: () -> Unit) {
     var tab by rememberSaveable { mutableIntStateOf(canvas.kind.ordinal) }

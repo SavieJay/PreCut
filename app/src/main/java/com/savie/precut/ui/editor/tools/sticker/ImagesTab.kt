@@ -1,7 +1,6 @@
 package com.savie.precut.ui.editor.tools.sticker
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,14 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -34,11 +31,11 @@ import coil3.compose.AsyncImage
 import com.savie.precut.R
 import com.savie.precut.media.sticker.LibraryImage
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink2
-import com.savie.precut.ui.theme.Outline
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.glassRow
 
-private val TileShape = RoundedCornerShape(8.dp)
+private val TileShape = Radius.tile
 
 /** Import, then the pictures in My images, 4 to a row; long-press removes one (S-01c). */
 @OptIn(ExperimentalFoundationApi::class)
@@ -55,8 +52,8 @@ fun ImagesTab(images: List<LibraryImage>, actions: StickerSheetActions) {
             Column(
                 Modifier
                     .aspectRatio(1f)
-                    .clip(TileShape)
-                    .border(1.dp, Outline, TileShape)
+                    .glassRow(TileShape)
+                    .border(1.dp, Accent.copy(alpha = 0.5f), TileShape)
                     .combinedClickable(role = Role.Button, onClick = actions::onImport),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
@@ -69,8 +66,7 @@ fun ImagesTab(images: List<LibraryImage>, actions: StickerSheetActions) {
             Box(
                 Modifier
                     .aspectRatio(1f)
-                    .clip(TileShape)
-                    .background(Ink2)
+                    .glassRow(TileShape)
                     .combinedClickable(
                         role = Role.Button,
                         onClick = { actions.onImage(image) },
@@ -92,7 +88,7 @@ fun ImagesTab(images: List<LibraryImage>, actions: StickerSheetActions) {
     Text(
         stringResource(if (images.isEmpty()) R.string.sticker_images_empty else R.string.sticker_images_note),
         style = MaterialTheme.typography.bodySmall,
-        color = TextSecondary,
+        color = TextMuted,
         modifier = Modifier.padding(top = 8.dp),
     )
 }

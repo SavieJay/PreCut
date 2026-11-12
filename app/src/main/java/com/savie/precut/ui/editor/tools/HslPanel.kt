@@ -3,7 +3,6 @@ package com.savie.precut.ui.editor.tools
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,18 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import com.savie.precut.R
 import com.savie.precut.model.look.HslBand
 import com.savie.precut.model.look.HslColor
-import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.components.ColorDot
 import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.SliderRow
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextMuted
 import kotlin.math.roundToInt
 
-/** T-08: pick one of 8 colours, then shift its hue, saturation and lightness on gradient sliders. */
+/** RD-T08: pick one of 8 colours, then shift its hue, saturation and lightness on gradient sliders. */
 @Composable
 fun HslPanel(
     bands: List<HslBand>,
@@ -44,12 +42,7 @@ fun HslPanel(
         modifier,
         onBack = onBack,
         actions = {
-            AccentTextButton(
-                stringResource(R.string.adjust_reset),
-                { HslColor.entries.forEach { onBand(it, HslBand()) } },
-                enabled = bands.any { !it.isIdentity },
-                color = TextSecondary,
-            )
+            ResetIconButton({ HslColor.entries.forEach { onBand(it, HslBand()) } }, enabled = bands.any { !it.isIdentity })
         },
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -57,7 +50,7 @@ fun HslPanel(
                 ColorDot(Color.hsv(c.hueDegrees, 0.72f, 0.92f), selected = c == color, description = stringResource(c.labelRes()), onClick = { color = c })
             }
         }
-        Text(stringResource(color.labelRes()), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold))
+        Text(stringResource(color.labelRes()).uppercase(), style = PreCutType.section, color = TextMuted)
         BandSlider(stringResource(R.string.hsl_hue), band.hue, color, Brush.horizontalGradient(listOf(-30f, 0f, 30f).map { Color.hsv((color.hueDegrees + it + 360f) % 360f, 0.72f, 0.92f) })) {
             onBand(color, band.copy(hue = it))
         }
@@ -73,7 +66,7 @@ fun HslPanel(
 @Composable
 private fun BandSlider(label: String, applied: Float, color: HslColor, brush: Brush, onChanged: (Float) -> Unit) {
     var value by remember(color, applied) { mutableFloatStateOf(applied) }
-    SliderRow(value = value.roundToInt().toString().replace('-', '−'), label = label) { modifier ->
+    SliderRow(value = value.roundToInt().let { if (it > 0) "+$it" else it.toString().replace('-', '−') }, label = label) { modifier ->
         PreCutSlider(
             value = value,
             onValueChange = { value = it.roundToInt().toFloat() },

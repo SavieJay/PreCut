@@ -1,30 +1,23 @@
 package com.savie.precut.ui.editor.captions
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.model.text.CaptionStyle
-import com.savie.precut.ui.components.PreCutChip
-import com.savie.precut.ui.components.TonalButton
+import com.savie.precut.ui.components.AiChip
+import com.savie.precut.ui.components.PreCutIconButton
 import com.savie.precut.ui.editor.tools.ToolPanel
+import com.savie.precut.ui.theme.AiAccent
 
 /** What the Captions panel can do. */
 interface CaptionsPanelActions {
@@ -59,6 +52,8 @@ fun CaptionsPanel(
     /** The style every caption has, if they share one. */
     style: CaptionStyle?,
     actions: CaptionsPanelActions,
+    /** The word of [currentId] being spoken, shown lime. */
+    spokenWord: Int? = null,
 ) {
     val list = rememberLazyListState()
     LaunchedEffect(editingId ?: currentId) {
@@ -69,23 +64,13 @@ fun CaptionsPanel(
         stringResource(R.string.tool_captions),
         actions::onDone,
         actions = {
-            IconButton(onClick = actions::onTranslate) {
-                Icon(painterResource(R.drawable.ic_record_voice_over), contentDescription = stringResource(R.string.translate_title), modifier = Modifier.size(20.dp))
-            }
-            IconButton(onClick = actions::onSaveSrt) {
-                Icon(painterResource(R.drawable.ic_download), contentDescription = stringResource(R.string.captions_save_srt), modifier = Modifier.size(20.dp))
-            }
-            IconButton(onClick = actions::onShareSrt) {
-                Icon(painterResource(R.drawable.ic_share), contentDescription = stringResource(R.string.captions_share_srt), modifier = Modifier.size(20.dp))
-            }
+            PreCutIconButton(R.drawable.ic_record_voice_over, stringResource(R.string.translate_title), actions::onTranslate, tint = AiAccent)
+            PreCutIconButton(R.drawable.ic_download, stringResource(R.string.captions_save_srt), actions::onSaveSrt)
+            PreCutIconButton(R.drawable.ic_share, stringResource(R.string.captions_share_srt), actions::onShareSrt)
         },
     ) {
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CaptionStyle.entries.forEach { preset ->
-                PreCutChip(stringResource(preset.label()), selected = style == preset, onClick = { actions.onRestyle(preset) })
-            }
-        }
-        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 300.dp), state = list, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        CaptionStyleTiles(style, actions::onRestyle)
+        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 300.dp), state = list, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             itemsIndexed(captions, key = { _, caption -> caption.id }) { index, caption ->
                 CaptionRow(
                     caption = caption,
@@ -93,9 +78,10 @@ fun CaptionsPanel(
                     editing = caption.id == editingId,
                     canMerge = index < captions.lastIndex,
                     actions = actions,
+                    spokenWord = spokenWord,
                 )
             }
         }
-        TonalButton(stringResource(R.string.captions_generate_again), actions::onGenerateAgain, Modifier.fillMaxWidth().height(44.dp), icon = R.drawable.ic_closed_caption)
+        AiChip(stringResource(R.string.captions_generate_again), actions::onGenerateAgain, icon = R.drawable.ic_closed_caption)
     }
 }

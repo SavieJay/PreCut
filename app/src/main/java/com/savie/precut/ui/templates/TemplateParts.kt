@@ -68,7 +68,7 @@ fun TemplatePreview(stored: StoredTemplate?, missing: Boolean) {
         stored?.thumbnailUri != null -> AsyncImage(model = stored.thumbnailUri, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
         stored != null -> {
             val size = stored.template.project.outputSize()
-            TemplateStoryboard(stored.template, fontSize = 32.sp, modifier = Modifier.aspectRatio(size.width.toFloat() / size.height).clip(RoundedCornerShape(12.dp)))
+            TemplateStoryboard(stored.template, fontSize = 32.sp, modifier = Modifier.aspectRatio(size.width.toFloat() / size.height).clip(RoundedCornerShape(24.dp)))
         }
     }
 }

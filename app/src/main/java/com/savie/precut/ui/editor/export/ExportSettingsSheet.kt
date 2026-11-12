@@ -2,17 +2,17 @@ package com.savie.precut.ui.editor.export
 
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -20,27 +20,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.savie.precut.R
 import com.savie.precut.model.OutputSize
-import com.savie.precut.model.export.EXPORT_FRAME_RATES
-import com.savie.precut.model.export.ExportBitrate
 import com.savie.precut.model.export.ExportCapabilities
-import com.savie.precut.model.export.ExportCodec
-import com.savie.precut.model.export.ExportResolution
 import com.savie.precut.model.export.ExportSettings
 import com.savie.precut.model.export.estimatedBytes
 import com.savie.precut.ui.components.FilledButton
-import com.savie.precut.ui.components.PreCutChip
-import com.savie.precut.ui.components.SwitchRow
+import com.savie.precut.ui.components.PreCutSpinner
 import com.savie.precut.ui.components.TonalButton
 import com.savie.precut.ui.components.formatDurationMs
-import com.savie.precut.ui.export.label
-import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink1
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.GlassSolid
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.TextPrimary
 
 /** What the export sheet can do. */
 interface ExportSheetActions {
@@ -53,8 +46,10 @@ interface ExportSheetActions {
 }
 
 /**
- * EX-01: resolution, frame rate, bitrate, codec and HDR, the estimated size, then Export video,
- * Audio only, GIF (its own options, [GifExportDialog]) and Save frame. Choices the phone can't encode are disabled.
+ * EX-01 (RD-EX01): the title, the live size estimate, segmented resolution / frame rate / bitrate /
+ * codec groups, HDR and end card switches, then Audio only, GIF ([GifExportDialog]) and Save frame
+ * as quiet pills above the one pink Export video pill. Choices the phone can't encode
+ * are greyed with the reason beside the group's label.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,89 +68,54 @@ fun ExportSettingsSheet(
     ModalBottomSheet(
         onDismissRequest = actions::onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Ink1,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        containerColor = GlassSolid,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
     ) {
-        Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(stringResource(if (defaultsOnly) R.string.settings_default_export else R.string.export_title), style = MaterialTheme.typography.titleMedium)
-            Section(R.string.export_settings_resolution) {
-                ExportResolution.entries.forEach { res ->
-                    PreCutChip(
-                        stringResource(res.label()), selected = settings.resolution == res,
-                        onClick = { actions.onSettings(settings.copy(resolution = res)) },
-                        enabled = capabilities.supports(res, settings.frameRate, settings.codec),
-                    )
-                }
-            }
-            ExportResolution.entries.lastOrNull { !capabilities.supports(it, settings.frameRate, settings.codec) }?.let { unsupported ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(painterResource(R.drawable.ic_info), contentDescription = null, tint = TextSecondary, modifier = Modifier.size(16.dp))
-                    Text(stringResource(R.string.export_unsupported, stringResource(unsupported.label())), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                }
-            }
-            Section(R.string.export_settings_frame_rate) {
-                EXPORT_FRAME_RATES.forEach { fps ->
-                    PreCutChip(
-                        fps.toString(), selected = settings.frameRate == fps,
-                        onClick = { actions.onSettings(settings.copy(frameRate = fps)) },
-                        enabled = capabilities.supports(settings.resolution, fps, settings.codec),
-                    )
-                }
-            }
-            Section(R.string.export_settings_bitrate) {
-                ExportBitrate.entries.forEach { rate ->
-                    PreCutChip(stringResource(rate.label()), selected = settings.bitrate == rate, onClick = { actions.onSettings(settings.copy(bitrate = rate)) })
-                }
-            }
-            Section(R.string.export_settings_codec) {
-                ExportCodec.entries.forEach { codec ->
-                    PreCutChip(
-                        stringResource(codec.label()), selected = settings.codec == codec,
-                        onClick = { actions.onSettings(settings.copy(codec = codec)) }, enabled = capabilities.supports(codec),
-                    )
-                }
-            }
-            if (capabilities.hdr) {
-                SwitchRow(label = stringResource(R.string.export_hdr), checked = settings.keepHdr, onCheckedChange = { actions.onSettings(settings.copy(keepHdr = it)) })
-                Text(stringResource(R.string.export_hdr_note), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-            }
-            // Off unless chosen (Phase 28): PreCut never marks a video on its own.
-            SwitchRow(
-                label = stringResource(R.string.export_end_card),
-                description = stringResource(R.string.export_end_card_note),
-                checked = settings.endCard,
-                onCheckedChange = { actions.onSettings(settings.copy(endCard = it)) },
-            )
-            if (defaultsOnly) return@Column
+        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                stringResource(
-                    R.string.export_estimated,
-                    Formatter.formatShortFileSize(context, settings.estimatedBytes(outputSize, durationMs)),
-                    formatDurationMs(durationMs),
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                stringResource(if (defaultsOnly) R.string.settings_default_export else R.string.export_title),
+                style = PreCutType.panelTitle,
+                color = TextPrimary,
+                modifier = Modifier.weight(1f),
             )
-            FilledButton(stringResource(R.string.export_video), actions::onExportVideo, Modifier.fillMaxWidth(), icon = R.drawable.ic_movie, large = true)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TonalButton(stringResource(R.string.export_audio_only), actions::onAudioOnly, Modifier.weight(1f).height(44.dp), icon = R.drawable.ic_music_note)
-                TonalButton(stringResource(R.string.export_gif), actions::onGif, Modifier.weight(1f).height(44.dp), icon = R.drawable.ic_gif)
+        }
+        Column(
+            Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (!defaultsOnly) {
+                SizeEstimateCard(
+                    size = Formatter.formatShortFileSize(context, settings.estimatedBytes(outputSize, durationMs)),
+                    duration = formatDurationMs(durationMs),
+                )
             }
-            if (savingFrame) {
-                Row(Modifier.fillMaxWidth().height(44.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(24.dp), color = Accent, strokeWidth = 3.dp)
-                }
-            } else {
-                TonalButton(stringResource(R.string.export_save_frame), actions::onSaveFrame, Modifier.fillMaxWidth().height(44.dp), icon = R.drawable.ic_image)
-            }
+            ExportSettingGroups(settings, capabilities, actions::onSettings)
+        }
+        if (!defaultsOnly) {
+            OtherExports(savingFrame, actions)
+            FilledButton(
+                stringResource(R.string.export_video),
+                actions::onExportVideo,
+                Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
+                icon = R.drawable.ic_share,
+                large = true,
+            )
+        } else {
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
 
+/** Audio only, GIF and Save frame: quiet pills beside the one pink Export video. */
 @Composable
-private fun Section(title: Int, chips: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(title), style = MaterialTheme.typography.labelLarge, color = TextSecondary)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { chips() }
+private fun OtherExports(savingFrame: Boolean, actions: ExportSheetActions) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TonalButton(stringResource(R.string.export_audio_only), actions::onAudioOnly, Modifier.weight(1f).height(44.dp), icon = R.drawable.ic_music_note)
+        TonalButton(stringResource(R.string.export_gif), actions::onGif, Modifier.weight(1f).height(44.dp), icon = R.drawable.ic_gif)
+        if (savingFrame) {
+            Box(Modifier.weight(1f).height(44.dp), contentAlignment = Alignment.Center) { PreCutSpinner(size = 24.dp) }
+        } else {
+            TonalButton(stringResource(R.string.export_save_frame), actions::onSaveFrame, Modifier.weight(1f).height(44.dp), icon = R.drawable.ic_add_photo_alternate)
+        }
     }
 }

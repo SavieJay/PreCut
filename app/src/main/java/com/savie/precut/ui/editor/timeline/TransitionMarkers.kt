@@ -36,10 +36,11 @@ import com.savie.precut.ui.theme.Ink0
 import com.savie.precut.ui.theme.TransitionMarker
 import kotlin.math.roundToInt
 
-private val MarkerSize = 24.dp
+private val MarkerSize = 28.dp
 
 /**
- * A marker on each junction between clips (T-16): a diamond in an Ink0 square, or the transition's
+ * A marker on each junction between clips (T-16, RD `.trn`): a white diamond in a 28 dp Base 0
+ * square with a 2 dp white ring, or the transition's
  * icon once one is set; the selected one is Accent with a band over the transition's length.
  * Markers beside the selected clip step aside for its trim handles.
  */
@@ -77,7 +78,7 @@ fun TransitionMarkers(project: Project, selection: TimelineSelection, pxPerMs: F
                     },
             )
         }
-        val shape = RoundedCornerShape(6.dp)
+        val shape = RoundedCornerShape(9.dp)
         val contentColor = if (selected) Color.White else TransitionMarker
         Box(
             Modifier
@@ -85,14 +86,14 @@ fun TransitionMarkers(project: Project, selection: TimelineSelection, pxPerMs: F
                 .size(MarkerSize)
                 .zIndex(3f)
                 .background(if (selected) Accent else Ink0, shape)
-                .border(1.5.dp, if (selected) Color.White else TransitionMarker, shape)
+                .border(2.dp, if (selected) Color.White else TransitionMarker, shape)
                 .clickable(role = Role.Button, onClickLabel = stringResource(R.string.transition_marker)) { onSelect(clip.id) },
             contentAlignment = Alignment.Center,
         ) {
             if (transition != null) {
-                Icon(painterResource(transition.type.tile.first), stringResource(R.string.transition_marker), tint = contentColor, modifier = Modifier.size(14.dp))
+                Icon(painterResource(transition.type.tile.first), stringResource(R.string.transition_marker), tint = contentColor, modifier = Modifier.size(16.dp))
             } else {
-                Box(Modifier.size(7.dp).rotate(45f).background(contentColor))
+                Box(Modifier.size(8.dp).rotate(45f).background(contentColor))
             }
         }
     }

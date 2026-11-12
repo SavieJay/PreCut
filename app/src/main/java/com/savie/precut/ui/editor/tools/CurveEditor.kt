@@ -1,12 +1,9 @@
 package com.savie.precut.ui.editor.tools
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -15,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -27,9 +23,6 @@ import androidx.compose.ui.unit.dp
 import com.savie.precut.model.look.ColorMath
 import com.savie.precut.model.look.CurveChannel
 import com.savie.precut.model.look.CurvePoint
-import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.Ink3
 import com.savie.precut.ui.theme.RulerTick
 import com.savie.precut.ui.theme.TextPrimary
 import kotlin.math.hypot
@@ -44,18 +37,11 @@ fun CurveEditor(points: List<CurvePoint>, channel: CurveChannel, onPoints: (List
     var live by remember(points) { mutableStateOf(points.sortedBy { it.x }) }
     var dragging by remember { mutableIntStateOf(-1) }
     val currentOnPoints by rememberUpdatedState(onPoints)
-    val stroke = when (channel) {
-        CurveChannel.RGB -> TextPrimary
-        CurveChannel.RED -> Color(0xFFFF6B6B)
-        CurveChannel.GREEN -> Color(0xFF51CF66)
-        CurveChannel.BLUE -> Color(0xFF4DABF7)
-    }
+    val stroke = channel.strokeColor()
     Canvas(
         modifier
-            .size(264.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Ink0)
-            .border(1.dp, Ink3, RoundedCornerShape(8.dp))
+            .size(256.dp)
+            .graphBox()
             .pointerInput(channel, points) {
                 val slop = 28.dp.toPx()
                 detectTapGestures(
@@ -92,11 +78,6 @@ fun CurveEditor(points: List<CurvePoint>, channel: CurveChannel, onPoints: (List
                 }
             },
     ) {
-        for (k in 1..3) {
-            val f = k / 4f
-            drawLine(Ink3, Offset(size.width * f, 0f), Offset(size.width * f, size.height))
-            drawLine(Ink3, Offset(0f, size.height * f), Offset(size.width, size.height * f))
-        }
         drawLine(RulerTick, Offset(0f, size.height), Offset(size.width, 0f), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())))
         val table = ColorMath.curveTable(live, 64)
         val path = Path()
@@ -104,14 +85,9 @@ fun CurveEditor(points: List<CurvePoint>, channel: CurveChannel, onPoints: (List
             val point = Offset(size.width * i / (table.size - 1f), size.height * (1f - y))
             if (i == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
         }
-        drawPath(path, stroke, style = Stroke(2.5.dp.toPx()))
-        // 18 dp points: white with a 3 dp Ink0 edge; the dragged one Accent with a white edge.
-        live.forEachIndexed { i, p ->
-            val center = Offset(p.x * size.width, (1f - p.y) * size.height)
-            val active = i == dragging
-            drawCircle(if (active) Color.White else Ink0, 9.dp.toPx(), center)
-            drawCircle(if (active) Accent else Color.White, 6.dp.toPx(), center)
-        }
+        drawPath(path, stroke, style = Stroke(3.dp.toPx()))
+        // RD-T09: 20 dp points, white with a 3 dp dark edge; the dragged one pink.
+        live.forEachIndexed { i, p -> drawGraphPoint(Offset(p.x * size.width, (1f - p.y) * size.height), active = i == dragging) }
     }
 }
 
@@ -121,3 +97,11 @@ private fun nearest(points: List<CurvePoint>, at: Offset, size: IntSize, slop: F
         .map { it to hypot(points[it].x * size.width - at.x, (1f - points[it].y) * size.height - at.y) }
         .filter { it.second <= slop }
         .minByOrNull { it.second }?.first
+
+/** The curve's colour per channel (content colours: white master, red, green, blue). */
+internal fun CurveChannel.strokeColor(): Color = when (this) {
+    CurveChannel.RGB -> TextPrimary
+    CurveChannel.RED -> Color(0xFFFF6B6B)
+    CurveChannel.GREEN -> Color(0xFF51CF66)
+    CurveChannel.BLUE -> Color(0xFF4DABF7)
+}

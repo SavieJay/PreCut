@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 29C, group B (editor base and timeline): copy added by the 2026 redesign. -->
+<resources>
+    <!-- Under the project name in the editor's top bar: aspect ratio · length, e.g. "9:16 · 0:18". -->
+    <string name="rd_editor_subtitle">%1$s · %2$s</string>
+    <plurals name="rd_editor_missing_subtitle">
+        <item quantity="one">%1$d file missing</item>
+        <item quantity="other">%1$d files missing</item>
+    </plurals>
+    <!-- E-01: the empty project's preview. -->
+    <string name="rd_editor_empty_title">Add your first clip</string>
+    <string name="rd_editor_empty_body">Videos and photos from your phone</string>
+    <!-- The lime tag beside AI Edit's title. -->
+    <string name="rd_editor_ai_tag">AI</string>
+</resources>

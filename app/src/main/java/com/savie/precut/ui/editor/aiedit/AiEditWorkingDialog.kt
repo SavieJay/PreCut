@@ -6,19 +6,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -28,11 +25,14 @@ import androidx.compose.ui.window.DialogProperties
 import com.savie.precut.R
 import com.savie.precut.model.ai.edit.EditProgress
 import com.savie.precut.ui.components.AccentTextButton
-import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.AccentContainer
-import com.savie.precut.ui.theme.Ink2
-import com.savie.precut.ui.theme.Ink3
+import com.savie.precut.ui.components.PreCutProgressBar
+import com.savie.precut.ui.components.shimmer
+import com.savie.precut.ui.theme.AiAccent
+import com.savie.precut.ui.theme.AiContainer
+import com.savie.precut.ui.theme.GlassLevel
+import com.savie.precut.ui.theme.Radius
 import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.glass
 
 /** What Claude is doing, from the last tool it used. */
 private fun activity(tool: String?): Int = when (tool) {
@@ -55,13 +55,19 @@ private fun activity(tool: String?): Int = when (tool) {
  */
 @Composable
 fun AiEditWorkingDialog(progress: EditProgress, understanding: Int?, onStop: () -> Unit) {
-    Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
+    Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false, usePlatformDefaultWidth = false)) {
         Column(
-            Modifier.fillMaxWidth().background(Ink2, RoundedCornerShape(28.dp)).padding(24.dp),
+            Modifier
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 480.dp)
+                .fillMaxWidth()
+                .glass(Radius.sheet, GlassLevel.Raised, solid = true)
+                .padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Box(Modifier.size(48.dp).background(AccentContainer, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = Accent)
+            // AI at work: lime (RD-AI4).
+            Box(Modifier.size(48.dp).background(AiContainer, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(painterResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = AiAccent)
             }
             Text(
                 if (understanding != null) stringResource(R.string.ai_edit_understanding, understanding) else stringResource(activity(progress.lastTool)),
@@ -79,15 +85,10 @@ fun AiEditWorkingDialog(progress: EditProgress, understanding: Int?, onStop: () 
             } else {
                 Text(stringResource(R.string.ai_edit_understanding_body), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
             }
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().height(6.dp),
-                color = Accent,
-                trackColor = Ink3,
-                strokeCap = StrokeCap.Round,
-                gapSize = 0.dp,
-            )
+            // Indeterminate: a lime bar with the AI shimmer sweeping across it.
+            PreCutProgressBar(1f, Modifier.shimmer(ai = true), ai = true)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                AccentTextButton(stringResource(R.string.ai_edit_stop), onClick = onStop)
+                AccentTextButton(stringResource(R.string.ai_edit_stop), onClick = onStop, color = TextSecondary)
             }
         }
     }

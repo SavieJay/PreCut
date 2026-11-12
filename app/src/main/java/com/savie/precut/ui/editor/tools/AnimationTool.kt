@@ -26,14 +26,16 @@ import com.savie.precut.ui.components.PreCutSlider
 import com.savie.precut.ui.components.PresetTile
 import com.savie.precut.ui.components.SliderRow
 import com.savie.precut.ui.components.TileGrid
-import com.savie.precut.ui.theme.TextSecondary
+import com.savie.precut.ui.theme.TextMuted
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
 import kotlin.math.roundToInt
 
 /** A clip's three animation slots, as the Animation panel edits them. */
 data class ClipAnimations(val animationIn: ClipAnimation?, val animationOut: ClipAnimation?, val combo: ComboAnimation?)
 
 /**
- * Animation (T-17, T-17b): In, Out and Combo tabs of tiles, then the duration (In/Out, up to
+ * Animation (RD-T17, RD-T17b): In, Out and Combo tabs of tiles, then the duration (In/Out, up to
  * [clipLengthMs]) or the loop speed (Combo). A combo replaces In/Out, and picking In/Out clears it.
  */
 @Composable
@@ -44,6 +46,8 @@ fun AnimationTool(clipId: String, current: ClipAnimations, clipLengthMs: Long, o
             listOf(R.string.animation_in, R.string.animation_out, R.string.animation_combo).map { PillTab(stringResource(it)) },
             selected = tab,
             onSelect = { tab = it },
+            modifier = Modifier.fillMaxWidth(),
+            fillWidth = true,
         )
         val maxMs = clipLengthMs.coerceIn(MIN_ANIMATION_MS, MAX_ANIMATION_MS)
         when (tab) {
@@ -76,7 +80,7 @@ fun AnimationTool(clipId: String, current: ClipAnimations, clipLengthMs: Long, o
 @Composable
 private fun ComboTab(current: ClipAnimations, onChange: (Int, ClipAnimations) -> Unit) {
     val combo = current.combo
-    TileGrid(listOf<ComboType?>(null) + ComboType.entries, columns = 4) { type ->
+    TileGrid(listOf<ComboType?>(null) + ComboType.entries, columns = 5) { type ->
         if (type == null) {
             PresetTile(stringResource(R.string.motion_none), R.drawable.ic_block, selected = combo == null, onClick = {
                 onChange(TAB_COMBO, ClipAnimations(null, null, null))
@@ -100,7 +104,7 @@ private fun ComboTab(current: ClipAnimations, onChange: (Int, ClipAnimations) ->
             modifier = modifier,
         )
     }
-    Text(stringResource(R.string.combo_note), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+    Text(stringResource(R.string.combo_note), style = MaterialTheme.typography.bodySmall, color = TextMuted)
 }
 
 const val TAB_IN = 0

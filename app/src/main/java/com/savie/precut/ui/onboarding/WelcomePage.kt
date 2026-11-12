@@ -1,6 +1,7 @@
 package com.savie.precut.ui.onboarding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -32,16 +33,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.savie.precut.R
 import com.savie.precut.ui.components.AccentTextButton
 import com.savie.precut.ui.components.FilledButton
+import com.savie.precut.ui.theme.BadgeInk
 import com.savie.precut.ui.theme.Ink0
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.glass
 import com.savie.precut.ui.theme.Playhead
 import com.savie.precut.ui.theme.TextSecondary
-import com.savie.precut.ui.theme.tabular
+import com.savie.precut.ui.theme.TextPrimary
+
+private val TileEdge = Color.White.copy(alpha = 0.08f)
 
 /** A clip on the welcome wall: its stand-in footage and, on some, a length badge. */
 private class WallClip(val scene: ClipScene, val length: String? = null)
@@ -69,19 +75,24 @@ internal fun WelcomePage(onStart: () -> Unit, onHaveProjects: () -> Unit) {
             ),
         )
         WallPlayhead(Modifier.offset(x = maxWidth * 0.36f, y = maxHeight * 0.105f).height(maxHeight * 0.46f))
-        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().navigationBarsPadding().padding(start = 24.dp, end = 24.dp, bottom = 8.dp)) {
+        // RD-O01: the words sit on a glass card (32 dp corners) at the foot of the wall.
+        Column(
+            Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(8.dp)
+                .glass(Radius.sheet)
+                .padding(start = 20.dp, end = 20.dp, top = 26.dp, bottom = 10.dp),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(painterResource(R.drawable.ic_logo), contentDescription = null, tint = Color(0xFFE4E4E8), modifier = Modifier.size(36.dp))
-                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold))
+                Icon(painterResource(R.drawable.ic_logo), contentDescription = null, tint = TextPrimary, modifier = Modifier.size(32.dp))
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, color = TextPrimary)
             }
-            Text(
-                stringResource(R.string.onboarding_welcome_title),
-                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.6).sp),
-                modifier = Modifier.padding(top = 20.dp),
-            )
-            Text(stringResource(R.string.onboarding_welcome_body), style = MaterialTheme.typography.bodyLarge, color = TextSecondary, modifier = Modifier.padding(top = 12.dp))
-            FilledButton(stringResource(R.string.onboarding_get_started), onStart, Modifier.fillMaxWidth().padding(top = 32.dp), large = true)
-            AccentTextButton(stringResource(R.string.onboarding_have_projects), onHaveProjects, Modifier.fillMaxWidth().padding(top = 8.dp), color = TextSecondary)
+            Text(stringResource(R.string.onboarding_welcome_title), style = MaterialTheme.typography.displaySmall, color = TextPrimary, modifier = Modifier.padding(top = 14.dp))
+            Text(stringResource(R.string.onboarding_welcome_body), style = MaterialTheme.typography.bodyLarge, color = TextSecondary, modifier = Modifier.padding(top = 14.dp))
+            FilledButton(stringResource(R.string.onboarding_get_started), onStart, Modifier.fillMaxWidth().padding(top = 22.dp), large = true)
+            AccentTextButton(stringResource(R.string.onboarding_have_projects), onHaveProjects, Modifier.fillMaxWidth().padding(top = 6.dp), color = TextSecondary)
         }
     }
 }
@@ -105,12 +116,14 @@ private fun ClipWall(modifier: Modifier = Modifier) {
 
 @Composable
 private fun WallTile(clip: WallClip) {
-    Box(Modifier.fillMaxWidth().aspectRatio(9f / 16f).clip(RoundedCornerShape(12.dp)).background(clip.scene.brush)) {
+    val shape = RoundedCornerShape(20.dp)
+    Box(Modifier.fillMaxWidth().aspectRatio(9f / 16f).clip(shape).background(clip.scene.brush).border(1.dp, TileEdge, shape)) {
         clip.length?.let { length ->
             Text(
                 length,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold).tabular(),
-                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).background(Ink0.copy(alpha = 0.82f), RoundedCornerShape(4.dp)).padding(horizontal = 5.dp),
+                style = PreCutType.timecode.copy(fontSize = 11.sp, lineHeight = 20.sp),
+                color = TextPrimary,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).background(BadgeInk, RoundedCornerShape(10.dp)).padding(horizontal = 7.dp),
             )
         }
     }

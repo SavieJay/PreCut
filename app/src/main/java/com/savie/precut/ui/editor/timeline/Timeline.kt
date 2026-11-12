@@ -129,18 +129,20 @@ fun Timeline(
                     .padding(start = halfWidth, end = halfWidth, top = TopPadding, bottom = BottomPadding),
             ) {
                 CompositionLocalProvider(LocalEdgeAutoScroller provides autoScroller) {
-                    CompositionLocalProvider(LocalTimelineViewport provides TimelineViewport(scrollState, widthPx / 2)) {
+                    // Labels stay readable just right of the track gutter.
+                    val gutterPx = with(density) { GutterWidth.toPx() }
+                    CompositionLocalProvider(LocalTimelineViewport provides TimelineViewport(scrollState, widthPx / 2 - gutterPx)) {
                         TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, positionMs, actions, compact)
                     }
                 }
             }
-            // Mute and "+" stay pinned at the strip's ends; clips slide under 64 dp fades.
+            // The track gutter (with the clip-sound switch) and "+" stay pinned; clips slide under their fades.
             val stripTop = stripTop(project, compact)
-            PinnedZone(start = true, Modifier.align(Alignment.TopStart).padding(top = stripTop)) {
+            TrackGutter(gutterLanes(project, compact), Modifier.align(Alignment.TopStart)) {
                 MuteOriginalButton(muted = project.originalAudioMuted, onClick = actions::onToggleOriginalAudio)
             }
             PinnedZone(start = false, Modifier.align(Alignment.TopEnd).padding(top = stripTop)) { addButton() }
-            Playhead(Modifier.align(Alignment.TopCenter))
+            Playhead(Modifier.align(Alignment.TopCenter), positionMs)
             reorder?.let { state ->
                 ReorderOverlay(project.clips, state, reorderLayout, loader, Modifier.matchParentSize())
             }

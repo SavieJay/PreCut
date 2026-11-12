@@ -1,60 +1,78 @@
 package com.savie.precut.ui.editor.captions
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.savie.precut.R
 import com.savie.precut.model.TextOverlay
 import com.savie.precut.ui.components.formatPreciseMs
 import com.savie.precut.ui.editor.tools.ToolButton
 import com.savie.precut.ui.editor.tools.rememberTypedText
 import com.savie.precut.ui.theme.Accent
-import com.savie.precut.ui.theme.Ink0
-import com.savie.precut.ui.theme.Ink2
-import com.savie.precut.ui.theme.Outline
+import com.savie.precut.ui.theme.PreCutType
+import com.savie.precut.ui.theme.Radius
+import com.savie.precut.ui.theme.RowFill
+import com.savie.precut.ui.theme.RowLine
+import com.savie.precut.ui.theme.TextMuted
+import com.savie.precut.ui.theme.TextPrimary
 import com.savie.precut.ui.theme.TextSecondary
-import com.savie.precut.ui.theme.tabular
+import com.savie.precut.ui.theme.glassRow
 
 /** How far one tap of a nudge button moves a caption's start or end. */
 private const val NUDGE_MS = 100L
 
-/** One caption in the panel: its start time and words; when open, its editor. */
+/**
+ * One caption in the panel (RD-CAP2 `.cr`): its start time and words; the line under the playhead
+ * is tinted pink with the word being spoken ([spokenWord]) in lime; when open, its editor.
+ */
 @Composable
-fun CaptionRow(caption: TextOverlay, current: Boolean, editing: Boolean, canMerge: Boolean, actions: CaptionsPanelActions) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(if (editing || current) Ink2 else Color.Transparent)) {
+fun CaptionRow(caption: TextOverlay, current: Boolean, editing: Boolean, canMerge: Boolean, actions: CaptionsPanelActions, spokenWord: Int? = null) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(CaptionRowShape)
+            .then(
+                when {
+                    current -> Modifier.background(Accent.copy(alpha = 0.10f)).border(1.5.dp, Accent.copy(alpha = 0.6f), CaptionRowShape)
+                    editing -> Modifier.glassRow(CaptionRowShape)
+                    else -> Modifier
+                },
+            ),
+    ) {
         Row(
-            Modifier.fillMaxWidth().clickable { actions.onRow(caption.id) }.padding(horizontal = 8.dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().clickable { actions.onRow(caption.id) }.padding(start = 12.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 formatPreciseMs(caption.startMs),
-                style = MaterialTheme.typography.labelMedium.tabular(),
-                color = if (current) Accent else TextSecondary,
-                modifier = Modifier.width(52.dp).padding(top = 2.dp),
+                style = PreCutType.timecode.copy(fontSize = 12.sp, lineHeight = 22.sp),
+                color = if (current) Accent else TextMuted,
+                modifier = Modifier.width(52.dp),
             )
-            Text(caption.text, style = MaterialTheme.typography.bodyMedium, maxLines = if (editing) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                lineText(caption, if (current && !editing) spokenWord else null),
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (current || editing) TextPrimary else TextSecondary,
+                maxLines = if (editing) Int.MAX_VALUE else 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         if (editing) CaptionLineEditor(caption, canMerge, actions)
     }
@@ -74,12 +92,12 @@ private fun CaptionLineEditor(caption: TextOverlay, canMerge: Boolean, actions: 
             placeholder = { Text(stringResource(R.string.captions_line_placeholder)) },
             textStyle = MaterialTheme.typography.bodyLarge,
             maxLines = 3,
-            shape = RoundedCornerShape(8.dp),
+            shape = Radius.tile,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Accent,
-                unfocusedBorderColor = Outline,
-                focusedContainerColor = Ink0,
-                unfocusedContainerColor = Ink0,
+                unfocusedBorderColor = RowLine,
+                focusedContainerColor = RowFill,
+                unfocusedContainerColor = RowFill,
                 cursorColor = Accent,
             ),
             modifier = Modifier.fillMaxWidth(),
@@ -93,23 +111,6 @@ private fun CaptionLineEditor(caption: TextOverlay, canMerge: Boolean, actions: 
             ToolButton(R.drawable.ic_merge, R.string.captions_merge, canMerge) { actions.onMerge(caption.id) }
             ToolButton(R.drawable.ic_refresh, R.string.captions_regenerate, true) { actions.onRegenerate(caption.id) }
             ToolButton(R.drawable.ic_delete, R.string.captions_delete, true) { actions.onDelete(caption.id) }
-        }
-    }
-}
-
-/** "Start 0:03.2" between an earlier and a later button. */
-@Composable
-private fun Nudge(label: Int, timeMs: Long, onEarlier: () -> Unit, onLater: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onEarlier) {
-            Icon(painterResource(R.drawable.ic_remove), contentDescription = stringResource(R.string.captions_earlier, stringResource(label)), modifier = Modifier.size(20.dp))
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(stringResource(label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-            Text(formatPreciseMs(timeMs), style = MaterialTheme.typography.labelLarge.tabular())
-        }
-        IconButton(onClick = onLater) {
-            Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.captions_later, stringResource(label)), modifier = Modifier.size(20.dp))
         }
     }
 }
