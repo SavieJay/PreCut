@@ -16,6 +16,11 @@ on:
     branches: [main]
     paths: ["app/**", "gradle/**", "*.gradle.kts", "gradle.properties", ".github/workflows/publish-apk.yml"]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build, test and check only: keep the APK as a run artifact, don't publish"
+        type: boolean
+        default: true
 
 concurrency:
   group: publish-apk
@@ -26,7 +31,8 @@ permissions:
 
 jobs:
   publish:
-    if: vars.PUBLISH_APK != 'false'
+    # A dry run works even while publishing is paused.
+    if: vars.PUBLISH_APK != 'false' || inputs.dry_run
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -82,7 +88,16 @@ jobs:
           cp "$APK" PreCut.apk
           cp "$APK" "PreCut-$(echo "$BADGING" | sed -E "s/.*versionName='([^']+)'.*/\1/").apk"
 
+      - name: Keep the APK (dry run)
+        if: inputs.dry_run
+        uses: actions/upload-artifact@v4
+        with:
+          name: PreCut-${{ steps.apk.outputs.name }}-${{ steps.apk.outputs.code }}
+          path: PreCut.apk
+          retention-days: 14
+
       - name: Publish as the latest release
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: v${{ steps.apk.outputs.name }}
@@ -100,7 +115,7 @@ jobs:
           gh release upload "$TAG" PreCut.apk "PreCut-${{ steps.apk.outputs.name }}.apk" --clobber
 
       - name: Refresh the website
-        if: env.NETLIFY_HOOK != ''
+        if: env.NETLIFY_HOOK != '' && !inputs.dry_run
         run: curl -fsS -X POST -d '{}' "$NETLIFY_HOOK" > /dev/null
 
       - name: Clean up the key
