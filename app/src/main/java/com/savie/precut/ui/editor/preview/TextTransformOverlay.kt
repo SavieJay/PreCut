@@ -86,8 +86,11 @@ fun TextTransformOverlay(
     modifier: Modifier = Modifier,
     /** The text as the export draws it, in a frame of the given size (the box and the drag ghost). */
     render: (TextOverlay, OutputSize) -> Bitmap? = { _, _ -> null },
+    /** A double-tap on the text (RD-X02: opens the typing panel; Phase 29E). */
+    onDoubleTap: (() -> Unit)? = null,
 ) {
     val currentOnTransformed by rememberUpdatedState(onTransformed)
+    val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
     BoxWithConstraints(modifier.fillMaxSize()) {
@@ -129,8 +132,11 @@ fun TextTransformOverlay(
             .fillMaxSize()
             .drawBehind { if (snaps != null) drawGuides(frame, snaps) }
             .pointerInput(overlay.id) {
+                var lastTapUpMs = 0L
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
+                    var fingers = 1
+                    var upMs = down.uptimeMillis
                     val origin = currentStart
                     val onText = hitsText(down.position, currentFrame.toPx(origin.xNorm, origin.yNorm), textSize, origin.rotationDegrees, 24.dp.toPx())
                     var pan = Offset.Zero
@@ -140,6 +146,8 @@ fun TextTransformOverlay(
                     do {
                         val event = awaitPointerEvent()
                         val pressed = event.changes.count { it.pressed }
+                        fingers = maxOf(fingers, pressed)
+                        upMs = event.changes.first().uptimeMillis
                         if (onText || pressed >= 2) {
                             pan += event.calculatePan()
                             zoom *= event.calculateZoom()
@@ -153,6 +161,14 @@ fun TextTransformOverlay(
                             event.changes.forEach { if (it.positionChanged()) it.consume() }
                         }
                     } while (event.changes.any { it.pressed })
+                    // A still, one-finger tap on the text; two of them close together are a double-tap.
+                    val tap = onText && fingers == 1 && pan.getDistance() < viewConfiguration.touchSlop
+                    if (tap && down.uptimeMillis - lastTapUpMs <= viewConfiguration.doubleTapTimeoutMillis) {
+                        lastTapUpMs = 0L
+                        currentOnDoubleTap?.invoke()
+                    } else {
+                        lastTapUpMs = if (tap) upMs else 0L
+                    }
                     latest?.let { currentOnTransformed(it.first) }
                     live = null
                 }

@@ -58,8 +58,8 @@ fun Timeline(
     waveforms: WaveformLoader,
     actions: TimelineActions,
     modifier: Modifier = Modifier,
-    /** Only the ruler and main strip (a tall panel is open). */
-    compact: Boolean = false,
+    /** Which lanes show (a tall panel or a text panel is open). */
+    focus: TimelineFocus = TimelineFocus.All,
     /** The pinned "+" add-media button, shown at the right of the main strip. */
     addButton: @Composable () -> Unit = {},
 ) {
@@ -96,7 +96,7 @@ fun Timeline(
         val gestures = TimelineGestureHandler(
             clips = project.clips,
             hitTest = {
-                val stripTop = with(density) { stripTop(project, compact).toPx() }
+                val stripTop = with(density) { stripTop(project, focus).toPx() }
                 TimelineHitTest(
                     project, selection.clipId, pxPerMs, scrollState.value, widthPx,
                     // Covers each handle and its widened grab area, so a long press there never starts a reorder.
@@ -136,13 +136,13 @@ fun Timeline(
                     // Labels stay readable just right of the track gutter.
                     val gutterPx = with(density) { GutterWidth.toPx() }
                     CompositionLocalProvider(LocalTimelineViewport provides TimelineViewport(scrollState, widthPx / 2 - gutterPx)) {
-                        TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, positionMs, actions, compact)
+                        TimelineLanes(project, selection, pxPerMs, visibleStart..visibleEnd, loader, waveforms, positionMs, actions, focus)
                     }
                 }
             }
             // The track gutter (with the clip-sound switch) and "+" stay pinned; clips slide under their fades.
-            val stripTop = stripTop(project, compact)
-            TrackGutter(gutterLanes(project, compact), Modifier.align(Alignment.TopStart)) {
+            val stripTop = stripTop(project, focus)
+            TrackGutter(gutterLanes(project, focus), Modifier.align(Alignment.TopStart)) {
                 MuteOriginalButton(muted = project.originalAudioMuted, onClick = actions::onToggleOriginalAudio)
             }
             PinnedZone(start = false, Modifier.align(Alignment.TopEnd).padding(top = stripTop)) { addButton() }

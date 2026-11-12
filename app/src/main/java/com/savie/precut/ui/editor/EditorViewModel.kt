@@ -123,6 +123,8 @@ sealed interface EditorUiState {
         /** A filter/adjust layer on the timeline. */
         val selectedLayerId: String? = null,
         val activeTool: EditorTool? = null,
+        /** The style panel's tab when the text toolbar opens it (Phase 29E): 0 Font … 4 Templates. */
+        val textStyleTab: Int = 0,
         /** The Audio sub-toolbar (Music, Extract, Record) is showing. */
         val audioMenuOpen: Boolean = false,
         val isImporting: Boolean = false,
@@ -762,8 +764,9 @@ class EditorViewModel @Inject constructor(
                 selectedLayerId = null,
                 selectedTransitionId = null,
                 audioMenuOpen = false,
-                // A sticker shows its toolbar (S-01b); a text opens its panel.
-                activeTool = if (textId != null && it.project.textOverlays.none { t -> t.id == textId && t.sticker != null }) EditorTool.TEXT else null,
+                // A sticker or a text shows its toolbar (S-01b, RD-X02), so the whole timeline stays
+                // and the bar can be dragged; the text toolbar's Edit opens the typing panel.
+                activeTool = null,
             )
         }
     }
@@ -828,15 +831,28 @@ class EditorViewModel @Inject constructor(
         val peeking = (_uiState.value as? EditorUiState.Ready)?.peekOriginal == true
         updateReady {
             val back = if (it.activeTool == EditorTool.HSL || it.activeTool == EditorTool.CURVES) EditorTool.ADJUST else null
-            // A sticker's panels return to its toolbar.
+            // A sticker's or a text's panels return to its toolbar (if the text wasn't blank and dropped).
             val keepSticker = it.activeTool == EditorTool.STICKER_ANIMATION || it.activeTool == EditorTool.STICKER_OPACITY
+            val keepText = it.activeTool in TEXT_PANEL_TOOLS && it.project.textOverlays.any { t -> t.id == it.selectedTextId }
             it.copy(
                 activeTool = back,
-                selectedTextId = if (keepSticker) it.selectedTextId else null,
+                selectedTextId = if (keepSticker || keepText) it.selectedTextId else null,
                 selectedTransitionId = null, peekOriginal = false, chromaPicking = false,
             )
         }
         if (peeking) host.refreshPreview()
+    }
+
+    /** The text toolbar's Edit (Phase 29E): the typing panel for the selected text (not a new one). */
+    fun onTextEdit() {
+        if ((_uiState.value as? EditorUiState.Ready)?.selectedTextId == null) return
+        updateReady { it.copy(activeTool = EditorTool.TEXT) }
+    }
+
+    /** The text toolbar's Font, Style, Effects and Animation: the style panel on [tab]. */
+    fun onTextStyleTab(tab: Int) {
+        updateReady { it.copy(textStyleTab = tab) }
+        textStyle.open(EditorTool.TEXT_STYLE)
     }
 
     fun onAudioMenu(open: Boolean) = updateReady {

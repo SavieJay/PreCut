@@ -15,6 +15,9 @@ import com.savie.precut.ui.editor.tools.text.TtsTool
 /** The panels opened from the Text panel's Style, Rich text and Text to speech buttons. */
 val TEXT_STYLE_TOOLS = setOf(EditorTool.TEXT_STYLE, EditorTool.TEXT_RICH, EditorTool.TEXT_TTS)
 
+/** Every panel of a selected text: typing, style, rich text, speech (Phase 29E). */
+val TEXT_PANEL_TOOLS = TEXT_STYLE_TOOLS + EditorTool.TEXT
+
 @Composable
 fun TextStylePanels(state: EditorUiState.Ready, text: TextOverlay, tool: EditorTool, viewModel: EditorViewModel) {
     val controller = viewModel.textStyle
@@ -39,6 +42,7 @@ fun TextStylePanels(state: EditorUiState.Ready, text: TextOverlay, tool: EditorT
                 } else {
                     null
                 },
+                initialTab = state.textStyleTab,
             )
         }
         EditorTool.TEXT_RICH -> RichTextTool(text, recentColors, controller::onChange, controller::onBack, onDone = close)

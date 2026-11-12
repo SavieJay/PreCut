@@ -1,5 +1,9 @@
 package com.savie.precut.ui.editor
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.BoxWithConstraints
+import com.savie.precut.model.sticker.isSticker
 import com.savie.precut.ui.editor.coach.CoachTarget
 import com.savie.precut.ui.editor.coach.LocalCoachTargets
 import com.savie.precut.ui.editor.coach.coachTarget
@@ -64,7 +68,11 @@ fun EditorContent(
         return
     }
     // imePadding: the text tool's keyboard pushes the panel up and shrinks the preview.
-    Column(modifier.imePadding().alpha(if (dimmed) 0.45f else 1f)) {
+    // Phase 29E: a text panel is capped at 45% of the space (above the keyboard when it's up), so the
+    // preview, with the text on it, never disappears; the panel scrolls instead.
+    BoxWithConstraints(modifier.imePadding()) {
+    val panelCap = if (state.activeTool in TEXT_PANEL_TOOLS) maxHeight * 0.45f else Dp.Unspecified
+    Column(Modifier.fillMaxSize().alpha(if (dimmed) 0.45f else 1f)) {
         if (state.missingIds.isNotEmpty()) {
             MissingMediaBanner(state.missingIds.size, onRemoveAll = viewModel::onRemoveMissing)
         }
@@ -88,6 +96,7 @@ fun EditorContent(
                             onTransformed = { viewModel.text.onTransformed(text.id, it) },
                             onDelete = viewModel.text::onDelete,
                             render = viewModel::renderText,
+                            onDoubleTap = if (text.isSticker) null else viewModel::onTextEdit,
                         )
                 }
                 ClipFrameOverlay(state, previewState, viewModel)
@@ -121,9 +130,10 @@ fun EditorContent(
         state.measuringNoise?.let { NoiseDialog(it, onCancel = viewModel.noise::onCancel) }
         // The panel's surface continues behind the navigation bar.
         // The dock and panels float over the plain Base 0 editor, above the navigation bar.
-        Column(Modifier.navigationBarsPadding().coachTarget(coach, CoachTarget.TOOLS)) {
+        Column(Modifier.navigationBarsPadding().heightIn(max = panelCap).coachTarget(coach, CoachTarget.TOOLS)) {
             EditorBottomPanel(state, canSplit, { previewState.value.positionMs }, viewModel)
         }
+    }
     }
 }
 

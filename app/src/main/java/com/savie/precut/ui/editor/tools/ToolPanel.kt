@@ -63,8 +63,9 @@ fun ToolPanel(
             actions()
             DonePill(onClick = onDone)
         }
+        // weight(fill = false): the body can shrink when the editor caps the panel's height (Phase 29E).
         Column(
-            Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            Modifier.weight(1f, fill = false).padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,
         )

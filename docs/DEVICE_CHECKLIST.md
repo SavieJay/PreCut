@@ -358,6 +358,14 @@ Compare each screen side by side with its frame on the canvas's "Redesign 2026" 
 4. **AI tools sheet:** the lime **AI** item at the start of the dock opens the sheet: seven lime cards with Cloud or On-device tags and PRO on Pro tools (free users). Tap each: it opens the same tool as its own dock button (consent and paywall included).
 5. **Remix with AI:** on Home, a project's ⋮ menu has lime **Remix with AI** at the top: it opens that project with the AI Edit prompt showing.
 
+## 4v. Editing a text keeps it visible (Phase 29E)
+1. Add a text, type something, tap ✓. Tap its amber bar on the timeline: the bar **stays**, turns selected, and the dock shows the text tools (Edit, Font, Style, Effects, Animation, Rich text, Speech, Captions, Follow, Split, Duplicate, Delete). Drag the bar and pull its ends: it moves and trims.
+2. From that dock tap **Font**, then close and tap **Style**, **Effects**, **Animation**: each opens the style panel on that tab. Above the panel you still see the video strip **and the text's bar** (you can drag it), and the preview still shows the text (you can drag it there too).
+3. Tap **Edit**: the typing panel opens with the keyboard. The preview is still visible above it, smaller.
+4. On the preview, **double-tap the text**: the typing panel opens.
+5. On a small phone or with Display size at largest: the text panels scroll instead of pushing the preview off screen.
+6. ✓ on any text panel returns to the text tools, not the main dock.
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

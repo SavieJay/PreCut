@@ -1,5 +1,11 @@
 package com.savie.precut.ui.editor.tools.text
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,8 +41,10 @@ fun TextStyleTool(
     onDone: () -> Unit,
     /** Above the tabs: what a caption's changes apply to (Phase 21B); null for other texts. */
     scope: (@Composable () -> Unit)? = null,
+    /** The tab to open on (the text toolbar's Font, Style, Effects, Animation; Phase 29E). */
+    initialTab: Int = 0,
 ) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var tab by rememberSaveable(initialTab) { mutableIntStateOf(initialTab) }
     ToolPanel(
         stringResource(R.string.text_style_title),
         onDone,
@@ -50,12 +58,15 @@ fun TextStyleTool(
             selected = tab,
             onSelect = { tab = it },
         )
-        when (tab) {
-            0 -> TextFontTab(overlay, importedFonts, actions::onChange, actions::onImportFont)
-            1 -> TextStyleTab(overlay, actions::onChange)
-            2 -> TextEffectsTab(overlay, recentColors, actions::onChange)
-            3 -> TextAnimationTab(overlay, actions::onChange)
-            else -> TextTemplatesTab(overlay, render, actions::onChange)
+        // Scrolls when the panel is capped so the preview keeps its room (Phase 29E).
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            when (tab) {
+                0 -> TextFontTab(overlay, importedFonts, actions::onChange, actions::onImportFont)
+                1 -> TextStyleTab(overlay, actions::onChange)
+                2 -> TextEffectsTab(overlay, recentColors, actions::onChange)
+                3 -> TextAnimationTab(overlay, actions::onChange)
+                else -> TextTemplatesTab(overlay, render, actions::onChange)
+            }
         }
     }
 }

@@ -1419,4 +1419,7 @@
     <string name="ai_tools_shorts">The best moments as short videos</string>
     <string name="ai_tools_broll">Fitting clips from your gallery</string>
     <string name="project_remix_ai">Remix with AI</string>
+    <!-- Phase 29E: the selected text's toolbar (RD-X02). -->
+    <string name="tool_speech">Speech</string>
+    <string name="tool_rich_text">Rich text</string>
 </resources>

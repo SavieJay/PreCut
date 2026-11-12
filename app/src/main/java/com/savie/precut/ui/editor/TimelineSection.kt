@@ -1,5 +1,6 @@
 package com.savie.precut.ui.editor
 
+import com.savie.precut.ui.editor.timeline.TimelineFocus
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -54,8 +55,13 @@ fun TimelineSection(
 ) {
     // The Speed panel grows with a curve graph.
     val curving = state.activeTool == EditorTool.SPEED && state.project.clipById(state.selectedClipId)?.speedCurve != null
-    val compact = state.activeTool in TALL_TOOLS || curving
-    Box(modifier.fillMaxWidth().height(timelineHeight(state.project, compact))) {
+    val focus = when {
+        // A text's panels keep its bar visible and draggable (Phase 29E).
+        state.activeTool in TEXT_PANEL_TOOLS || state.activeTool == EditorTool.CAPTIONS -> TimelineFocus.StripAndText
+        state.activeTool in TALL_TOOLS || curving -> TimelineFocus.Strip
+        else -> TimelineFocus.All
+    }
+    Box(modifier.fillMaxWidth().height(timelineHeight(state.project, focus))) {
         Timeline(
             project = state.project,
             selection = TimelineSelection(
@@ -72,7 +78,7 @@ fun TimelineSection(
             loader = loader,
             waveforms = waveforms,
             actions = actions,
-            compact = compact,
+            focus = focus,
             addButton = { AddMediaButton(state.isImporting, onAddMedia, onCamera) },
         )
     }

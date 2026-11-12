@@ -1,5 +1,9 @@
 package com.savie.precut.ui.editor.tools
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -90,36 +94,39 @@ fun TextTool(
             ),
             modifier = Modifier.fillMaxWidth(),
         )
-        SliderRow(value = size.roundToInt().toString(), label = stringResource(R.string.text_size)) { sliderModifier ->
-            PreCutSlider(
-                value = size,
-                onValueChange = { size = it },
-                onValueChangeFinished = { actions.onChange(overlay.copy(textSizeSp = size)) },
-                valueRange = MIN_TEXT_SIZE_SP..MAX_TEXT_SIZE_SP,
-                modifier = sliderModifier,
+        // The field stays put; the rest scrolls when the panel is capped (Phase 29E).
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SliderRow(value = size.roundToInt().toString(), label = stringResource(R.string.text_size)) { sliderModifier ->
+                PreCutSlider(
+                    value = size,
+                    onValueChange = { size = it },
+                    onValueChangeFinished = { actions.onChange(overlay.copy(textSizeSp = size)) },
+                    valueRange = MIN_TEXT_SIZE_SP..MAX_TEXT_SIZE_SP,
+                    modifier = sliderModifier,
+                )
+            }
+            SliderRow(value = "${(opacity * 100).roundToInt()}%", label = stringResource(R.string.text_opacity)) { sliderModifier ->
+                PreCutSlider(
+                    value = opacity,
+                    onValueChange = { opacity = it },
+                    onValueChangeFinished = { actions.onChange(overlay.copy(opacity = opacity)) },
+                    valueRange = 0.1f..1f,
+                    onReset = { actions.onChange(overlay.copy(opacity = 1f)) },
+                    modifier = sliderModifier,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
+                ToolButton(R.drawable.ic_style, R.string.text_more_style, onClick = actions::onStyle)
+                ToolButton(R.drawable.ic_format_bold, R.string.text_more_rich, enabled = overlay.text.isNotEmpty(), onClick = actions::onRich)
+                ToolButton(R.drawable.ic_record_voice_over, R.string.text_more_tts, enabled = overlay.text.isNotBlank(), onClick = actions::onTts)
+            }
+            TextColorRow(overlay, recentColors, onChange = actions::onChange)
+            SwitchRow(
+                label = stringResource(R.string.text_background),
+                checked = overlay.backgroundArgb != null,
+                onCheckedChange = { on -> actions.onChange(overlay.copy(backgroundArgb = if (on) backgroundFor(overlay.colorArgb) else null)) },
             )
         }
-        SliderRow(value = "${(opacity * 100).roundToInt()}%", label = stringResource(R.string.text_opacity)) { sliderModifier ->
-            PreCutSlider(
-                value = opacity,
-                onValueChange = { opacity = it },
-                onValueChangeFinished = { actions.onChange(overlay.copy(opacity = opacity)) },
-                valueRange = 0.1f..1f,
-                onReset = { actions.onChange(overlay.copy(opacity = 1f)) },
-                modifier = sliderModifier,
-            )
-        }
-        Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-            ToolButton(R.drawable.ic_style, R.string.text_more_style, onClick = actions::onStyle)
-            ToolButton(R.drawable.ic_format_bold, R.string.text_more_rich, enabled = overlay.text.isNotEmpty(), onClick = actions::onRich)
-            ToolButton(R.drawable.ic_record_voice_over, R.string.text_more_tts, enabled = overlay.text.isNotBlank(), onClick = actions::onTts)
-        }
-        TextColorRow(overlay, recentColors, onChange = actions::onChange)
-        SwitchRow(
-            label = stringResource(R.string.text_background),
-            checked = overlay.backgroundArgb != null,
-            onCheckedChange = { on -> actions.onChange(overlay.copy(backgroundArgb = if (on) backgroundFor(overlay.colorArgb) else null)) },
-        )
     }
 }
 

@@ -111,6 +111,11 @@ fun EditorBottomPanel(state: EditorUiState.Ready, canSplit: Boolean, positionMs:
         KeyframeEasingPanel(state, positionMs, viewModel)
         return
     }
+    // A selected text with no panel open shows its toolbar (RD-X02, Phase 29E).
+    if (text != null && state.activeTool == null) {
+        SelectedTextToolbar(text, positionMs, viewModel)
+        return
+    }
     when {
         state.activeTool == EditorTool.TRANSITION && state.selectedTransitionId != null ->
             TransitionPanel(state, state.selectedTransitionId, viewModel)

@@ -679,6 +679,11 @@ Source: the "Redesign 2026" page of the Claude Design canvas (https://claude.ai/
 - [x] AI tools sheet (RD-AI1, existing tools only): a lime "AI" item first in the dock opens cards for AI Edit, Auto-captions, Remove background, Auto-reframe, Edit by transcript, Long video to shorts and Smart B-roll (ON-DEVICE/CLOUD tag, PRO badge); each card runs the dock button's own action
 - [x] "Remix with AI" (RD-H03) in a project card's menu: opens that project with the AI Edit prompt (`EditorRoute(projectId, aiEdit = true)`)
 
+*29E — Editing a text keeps it visible (approved 2026-11-12, from a phone report)*
+- [x] Tapping a text bar selects it and shows a text toolbar (RD-X02) instead of opening the typing panel; the full timeline stays so the bar can be dragged and trimmed; double-tapping the text on the preview opens the typing panel
+- [x] While a text panel is open the timeline shows the video strip and the text lanes (the user's choice), not the strip alone
+- [x] Text panels are capped at about 45% of the space and scroll, so the preview never disappears
+
 **Acceptance:** every existing screen matches its RD frame on a phone (Android 10 without blur, Android 12+ with it); all unit tests pass; no feature, edit or export result changes.
 
 ## 4. Manual test matrix (use at the end of phases 3–12)

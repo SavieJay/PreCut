@@ -48,29 +48,31 @@ internal val GutterWidth = 44.dp
 internal data class GutterLane(val color: Color, @DrawableRes val icon: Int, val top: Dp, val height: Dp, val video: Boolean = false)
 
 /** The lanes in [TimelineLanes]' order, at the same heights and gaps as [timelineHeight] adds up. */
-internal fun gutterLanes(project: Project, compact: Boolean): List<GutterLane> = buildList {
+internal fun gutterLanes(project: Project, focus: TimelineFocus): List<GutterLane> = buildList {
+    val all = focus == TimelineFocus.All
     var y = TopPadding + RulerHeight + StripGap
-    if (!compact) {
+    if (all) {
         repeat(project.overlayLanes().size) {
             add(GutterLane(OverlayBar, R.drawable.ic_overlay, y, OverlayRowHeight))
             y += OverlayRowHeight + StripGap
         }
     }
     add(GutterLane(Color.Unspecified, R.drawable.ic_movie, y, ClipHeight, video = true))
-    if (compact) return@buildList
+    if (focus == TimelineFocus.Strip) return@buildList
     y += ClipHeight + StripGap
     fun rows(count: Int, color: Color, @DrawableRes icon: Int) = repeat(count) {
         add(GutterLane(color, icon, y, TextLaneHeight))
         y += TextLaneHeight + RowGap
     }
-    rows(project.lookLayerLanes().size, LookLayerBar, R.drawable.ic_filter)
+    if (all) rows(project.lookLayerLanes().size, LookLayerBar, R.drawable.ic_filter)
     rows(project.stickerLanes().size, StickerBar, R.drawable.ic_add_reaction)
-    rows(project.effectLanes().size, EffectBar, R.drawable.ic_flare)
+    if (all) rows(project.effectLanes().size, EffectBar, R.drawable.ic_flare)
     repeat(project.textLanes().size.coerceAtLeast(1)) { index ->
         if (index > 0) y += RowGap
         add(GutterLane(TextLaneBar, R.drawable.ic_title, y, TextLaneHeight))
         y += TextLaneHeight
     }
+    if (!all) return@buildList
     val audio = project.audioLanes().ifEmpty { listOf(emptyList()) }
     audio.forEach { lane ->
         y += RowGap

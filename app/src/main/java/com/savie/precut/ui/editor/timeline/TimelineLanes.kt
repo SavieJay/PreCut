@@ -31,22 +31,33 @@ internal val RulerHeight = 22.dp
 internal val StripGap = 6.dp
 internal val RowGap = 6.dp
 internal val ClipHeight = 68.dp
-/** Distance from the timeline's top to the main strip, below any overlay rows (none when [compact]). */
-internal fun stripTop(project: Project, compact: Boolean): Dp =
-    TopPadding + RulerHeight + StripGap + if (compact) 0.dp else overlayRowsHeight(project.overlayLanes().size)
+/**
+ * Which lanes the timeline shows: all of them, only the ruler and main strip (a tall panel is
+ * open), or the strip with the sticker and text rows (a text panel is open, Phase 29E: the text's
+ * bar stays visible and draggable above its panel).
+ */
+enum class TimelineFocus { All, Strip, StripAndText }
+
+/** Distance from the timeline's top to the main strip, below any overlay rows (shown only for [TimelineFocus.All]). */
+internal fun stripTop(project: Project, focus: TimelineFocus): Dp =
+    TopPadding + RulerHeight + StripGap + if (focus != TimelineFocus.All) 0.dp else overlayRowsHeight(project.overlayLanes().size)
 internal val TextLaneHeight = 30.dp
 internal val AudioRowHeight = 40.dp
 
 /**
- * Height the timeline needs: its look, text and audio rows (at least one text and one audio row),
- * or only the ruler and main strip when [compact] (a tall panel is open).
+ * Height the timeline needs for [focus]: its look, text and audio rows (at least one text and one
+ * audio row), only the ruler and main strip, or the strip with the sticker and text rows.
  */
-fun timelineHeight(project: Project, compact: Boolean = false): Dp {
-    val stripTop = stripTop(project, compact)
-    if (compact) return stripTop + ClipHeight + BottomPadding
-    val layerRows = project.lookLayerLanes().size
+fun timelineHeight(project: Project, focus: TimelineFocus = TimelineFocus.All): Dp {
+    val stripTop = stripTop(project, focus)
+    if (focus == TimelineFocus.Strip) return stripTop + ClipHeight + BottomPadding
     val textRows = project.textLanes().size.coerceAtLeast(1)
     val stickerRows = project.stickerLanes().size
+    if (focus == TimelineFocus.StripAndText) {
+        return stripTop + ClipHeight + StripGap + (TextLaneHeight + RowGap) * stickerRows +
+            TextLaneHeight * textRows + RowGap * (textRows - 1) + BottomPadding
+    }
+    val layerRows = project.lookLayerLanes().size
     val effectRows = project.effectLanes().size
     val audioRows = project.audioLanes().size.coerceAtLeast(1)
     return stripTop + ClipHeight + StripGap +
@@ -81,8 +92,8 @@ fun TimelineLanes(
     waveforms: WaveformLoader,
     playheadMs: () -> Long,
     actions: TimelineActions,
-    /** Only the ruler and main strip (a tall panel is open). */
-    compact: Boolean = false,
+    /** Which lanes show (a tall panel or a text panel is open). */
+    focus: TimelineFocus = TimelineFocus.All,
 ) {
     val density = LocalDensity.current
     val totalMs = project.totalDurationMs()
@@ -103,7 +114,7 @@ fun TimelineLanes(
             .height(RulerHeight),
     )
     Spacer(Modifier.height(StripGap))
-    if (!compact) {
+    if (focus == TimelineFocus.All) {
         OverlayRows(
             lanes = project.overlayLanes(),
             selectedId = selection.clipId,
@@ -133,18 +144,21 @@ fun TimelineLanes(
         )
         TransitionMarkers(project, selection, pxPerMs, actions::onSelectTransition)
     }
-    if (compact) return
+    if (focus == TimelineFocus.Strip) return
     Spacer(Modifier.height(StripGap))
-    LookLayerRows(
-        lanes = project.lookLayerLanes(),
-        selectedLayerId = selection.layerId,
-        pxPerMs = pxPerMs,
-        widthPx = contentWidthPx,
-        rowHeight = TextLaneHeight,
-        rowGap = RowGap,
-        snap = snap,
-        actions = actions,
-    )
+    val all = focus == TimelineFocus.All
+    if (all) {
+        LookLayerRows(
+            lanes = project.lookLayerLanes(),
+            selectedLayerId = selection.layerId,
+            pxPerMs = pxPerMs,
+            widthPx = contentWidthPx,
+            rowHeight = TextLaneHeight,
+            rowGap = RowGap,
+            snap = snap,
+            actions = actions,
+        )
+    }
     TextRows(
         lanes = project.stickerLanes(),
         selectedTextId = selection.textId,
@@ -158,16 +172,18 @@ fun TimelineLanes(
         onTiming = actions::onTextTiming,
         stickers = true,
     )
-    EffectLayerRows(
-        lanes = project.effectLanes(),
-        selectedLayerId = selection.layerId,
-        pxPerMs = pxPerMs,
-        widthPx = contentWidthPx,
-        rowHeight = TextLaneHeight,
-        rowGap = RowGap,
-        snap = snap,
-        actions = actions,
-    )
+    if (all) {
+        EffectLayerRows(
+            lanes = project.effectLanes(),
+            selectedLayerId = selection.layerId,
+            pxPerMs = pxPerMs,
+            widthPx = contentWidthPx,
+            rowHeight = TextLaneHeight,
+            rowGap = RowGap,
+            snap = snap,
+            actions = actions,
+        )
+    }
     TextRows(
         lanes = project.textLanes(),
         selectedTextId = selection.textId,
@@ -180,6 +196,7 @@ fun TimelineLanes(
         onSelect = actions::onSelectText,
         onTiming = actions::onTextTiming,
     )
+    if (!all) return
     AudioRows(
         project = project,
         selectedAudioId = selection.audioId,
