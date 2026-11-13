@@ -55,6 +55,29 @@ Returns `{"transcript": {"language": "en", "durationMs": 2400, "words": [{"text"
 
 `Status` is `{"cloudEnabled": bool, "secondsLeft": int, "secondsPerMonth": int, "resetsAt": "<ISO 8601>", "maxUploadSeconds": int, "editEnabled": bool, "editRunsLeft": int, "editRunsPerMonth": int, "maxEditSteps": int, "pro": Plan}`; `Plan` is `{"pro": bool, "state": "active|grace|on_hold|paused|canceled|expired|pending"|null, "productId", "basePlanId", "expiresAt", "autoRenewing", "trial"}` for the install's newest purchase (Pro while active, in grace, or cancelled before its end). Quotas follow the plan. `cloudEnabled` is false while cloud AI is paused or the month's budget is used up; `editEnabled` likewise for AI edits (`edit_paused`, the edit budget).
 
+## Accounts and cloud projects (Phase 30)
+These routes need `X-PreCut-Api` and the signed-in user's Supabase Auth access token, `Authorization: Bearer <access token>` (`signed_out` without a good one; `not_configured` while accounts aren't set up). The function checks the token against the project's signing keys (`/auth/v1/.well-known/jwks.json`, ES256), its issuer and the `authenticated` audience; anonymous users don't count. The app gets the token from Supabase Auth itself (email code or Google ID token; `docs/ACCOUNTS.md`). A project's JSON names its files as `cloud:<sha256>`; files live in the private `media` bucket at `<user id>/<sha256>`.
+
+**`GET /projects?since=<ISO 8601>&after=<uuid>`** — projects and deletions the server took after that point, oldest first, 50 a page: `{"projects": [CloudProject], "next": {"since", "after"}|null, "more": bool}`. Start without a cursor; follow `next` while `more`; next time start again a minute before the last `next.since` (seeing a project twice is harmless). `CloudProject` is `{"id", "revision", "name", "project": {...}|null, "coverSha256", "durationMs", "editedAt", "updatedAt", "deleted": bool, "media": ["<sha256>"]}`.
+
+**`PUT /projects/<uuid>`** — body `{"baseRevision": int|null, "name", "project": {...}, "media": ["<sha256>"], "coverSha256": string|null, "durationMs", "editedAt"}`. `baseRevision` is the revision the phone last had (null for a project the server never had). Saves and answers `{"revision", "updatedAt"}`, or `conflict` with the server's copy as `project` (null when the server has none), `missing_media` with `missing` (upload those first), `too_large` (over `max_project_bytes`).
+
+**`DELETE /projects/<uuid>?baseRevision=<int>`** — leaves a deletion other phones read; `{"revision"}`, or `conflict` with `project` when it changed since. Deleting a project the server doesn't have is fine.
+
+**`POST /media/grant`** — body `{"sha256", "size", "mime"}`. `{"exists": true}` when the file is already up; otherwise the phone may upload it: `{"exists": false, "upload": {"url", "bucket": "media", "path": "<user id>/<sha256>"}}`, a resumable (TUS) upload with the access token, within a day. `storage_full` (`storageUsed`, `storageLimit`) or `too_large` (`maxUploadBytes`).
+
+**`POST /media/confirm`** — body `{"sha256"}` after an upload: `{}` once the stored object has the granted size; `not_found` while it isn't there; `size_mismatch` (the object is removed; upload it again).
+
+**`GET /media/<sha256>`** — `{"url", "expiresIn": 3600}`: a signed link that downloads the file for an hour; `not_found` when it isn't up.
+
+**`GET /account`** — `{"email", "pro", "storageUsed", "storageLimit", "maxFileBytes", "projects"}`. Pro bought on any install signed in to the account counts for all of them.
+
+**`DELETE /account`** — removes every stored file, then the Auth user, with their projects, files and install links. `{"deleted": true}`.
+
+**`POST /account/link`** — also with `X-Install-Token`: signs this install in to the account (out of any other), so Pro follows the account. `{"linked": true, "status": Status}` (and maybe `installToken`).
+
+**`POST /cleanup`** — the daily clean-up (`.github/workflows/cloud-cleanup.yml`); no `X-PreCut-Api`, `Authorization: Bearer <RELEASE_SECRET>`. Drops grants never uploaded within a day, files no project has used for 30 days, and deletions older than 90 days; removes those files from Storage. `{"removed": int}`.
+
 ## Errors
 Every refusal is `{"error": {"code": "<code>", ...details}}`:
 
@@ -76,7 +99,12 @@ Every refusal is `{"error": {"code": "<code>", ...details}}`:
 | `steps_used` | 429 | `maxEditSteps` | (the run ends; its changes stay for review) |
 | `bad_purchase` | 400 | | Google Play couldn't confirm this purchase |
 | `billing_unavailable` | 503 | | try again shortly |
-| `forbidden` | 403 | | (`/rtdn` with a wrong secret) |
+| `forbidden` | 403 | | (`/rtdn`, `/release` or `/cleanup` with a wrong secret) |
+| `signed_out` | 401 | | sign in again |
+| `conflict` | 409 | `project` | (keeps both copies) |
+| `missing_media` | 409 | `missing` | (uploads those files first) |
+| `size_mismatch` | 409 | | (uploads the file again) |
+| `storage_full` | 507 | `storageUsed`, `storageLimit` | cloud storage full; Pro has more |
 | `paused` | 503 | | cloud AI is paused |
 | `provider_failed` | 502 | | try again |
 | `not_found` | 404 | | (a bug) |
@@ -94,6 +122,10 @@ Edit the single row of `public.cloud_config` in the Supabase dashboard (Table Ed
 - `edit_paused`: false
 - `pro_seconds_per_month`: 18000 (300 caption minutes for Pro installs)
 - `pro_edit_runs_per_month`: 100 (AI edit requests for Pro installs)
+- `free_storage_bytes`: 2147483648 (2 GB of project files per account)
+- `pro_storage_bytes`: 53687091200 (50 GB for Pro accounts)
+- `max_media_bytes`: 4294967296 (4 GB a file; the `media` bucket's and the project's upload limits must allow it)
+- `max_project_bytes`: 2097152 (2 MB of project JSON)
 
 ## Secrets (`supabase/.env.secrets`, from `.env.secrets.example`)
 `ELEVENLABS_API_KEY`, `ELEVENLABS_ZERO_RETENTION`, `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT`), `PRO_PRODUCT_IDS`, `RTDN_SECRET`, `RELEASE_SECRET` (32+ characters; the same value as the GitHub secret `PRECUT_RELEASE_SECRET`), `GOOGLE_SERVICE_ACCOUNT_JSON`, `INSTALL_TOKEN_SECRET`, `PLAY_CERT_SHA256`. Supabase provides `SUPABASE_URL` and the project's secret key itself. `REQUIRE_INTEGRITY=false`, `TRANSCRIBER=fake`, `EDIT_AGENT=fake` and `BILLING=fake` exist for a local stack only; a deployed function refuses to start with them.

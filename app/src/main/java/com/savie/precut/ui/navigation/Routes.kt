@@ -5,6 +5,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object HomeRoute
 
+/** Sign-in (Phase 30): the start screen while signed out. */
+@Serializable
+data object SignInRoute
+
 /** First-run onboarding (Phase 24), and Settings → Replay intro. */
 @Serializable
 data object OnboardingRoute

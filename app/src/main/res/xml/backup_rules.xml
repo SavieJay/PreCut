@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 8–11 backups: everything as before, except this install's cloud identity (Phase 20),
-     so a phone restored from a backup registers as a new install instead of reusing another's. -->
+     so a phone restored from a backup registers as a new install instead of reusing another's, and
+     the signed-in session (Phase 30; its key stays in this phone's Keystore): a restored phone signs in again. -->
 <full-backup-content>
     <exclude domain="sharedpref" path="cloud.xml" />
+    <exclude domain="sharedpref" path="session.xml" />
+    <exclude domain="sharedpref" path="sync.xml" />
 </full-backup-content>

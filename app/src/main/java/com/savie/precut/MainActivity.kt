@@ -4,7 +4,14 @@ import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.lifecycleScope
+import com.savie.precut.auth.AccountRepository
 import com.savie.precut.data.AppSettings
+import com.savie.precut.data.sync.SyncRequests
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import com.savie.precut.model.account.AuthState
 import com.savie.precut.data.InstallReferrerCheck
 import com.savie.precut.data.TemplateLinkInbox
 import com.savie.precut.model.template.TemplateLinks
@@ -53,6 +60,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var installReferrers: InstallReferrerCheck
 
+    @Inject
+    lateinit var accounts: AccountRepository
+
+    @Inject
+    lateinit var sync: SyncRequests
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app is dark-only, so always use light system bar icons.
         enableEdgeToEdge(
@@ -65,6 +78,14 @@ class MainActivity : ComponentActivity() {
             receive(intent)
             // First start after a Play install from a shared template's page: open that template.
             lifecycleScope.launch { installReferrers.runOnce() }
+            // Pro follows the account (Phase 30): tie this install to it, once a launch.
+            if (accounts.state.value is AuthState.SignedIn) accounts.linkInstall()
+        }
+        // Cloud projects (Phase 30C): sync at sign-in and each time the app comes to the front.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                accounts.state.map { it is AuthState.SignedIn }.distinctUntilChanged().collect { signedIn -> if (signedIn) sync.now() }
+            }
         }
         // Read once: finishing onboarding mustn't swap the start screen under the user.
         val showOnboarding = !appSettings.values.value.onboardingDone
@@ -72,7 +93,13 @@ class MainActivity : ComponentActivity() {
             PreCutTheme {
                 CompositionLocalProvider(LocalUpdates provides Updates(updateChecker, playUpdates)) {
                     Box {
-                        AppNavHost(shareInbox, showOnboarding, templateLinks)
+                        AppNavHost(
+                            shareInbox,
+                            showOnboarding,
+                            templateLinks,
+                            auth = accounts.state,
+                            onboardingDone = { appSettings.values.value.onboardingDone },
+                        )
                         // Drawn last, over everything: the forced-update screen and What's new.
                         UpdateHost(updateChecker, playUpdates)
                     }

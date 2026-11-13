@@ -3,10 +3,24 @@ package com.savie.precut.di
 import android.content.Context
 import androidx.room.Room
 import com.savie.precut.BuildConfig
+import com.savie.precut.R
 import com.savie.precut.ai.CloudTranscriber
 import com.savie.precut.ai.Transcriber
 import com.savie.precut.ai.cloud.AndroidNetworkState
 import com.savie.precut.ai.cloud.CloudConfig
+import com.savie.precut.auth.AccessTokens
+import com.savie.precut.auth.AccountRepository
+import com.savie.precut.auth.AuthConfig
+import com.savie.precut.data.sync.CloudProjectSyncApi
+import com.savie.precut.data.sync.PrefsSyncCursors
+import com.savie.precut.data.sync.ProjectSync
+import com.savie.precut.data.sync.ProjectSyncApi
+import com.savie.precut.data.sync.ProjectSyncStore
+import com.savie.precut.data.sync.SyncCursors
+import com.savie.precut.data.sync.SyncRequests
+import com.savie.precut.data.sync.WorkManagerSyncRequests
+import com.savie.precut.auth.KeystoreSessionStore
+import com.savie.precut.auth.SessionStore
 import com.savie.precut.ai.cloud.InstallStore
 import com.savie.precut.ai.cloud.IntegrityTokens
 import com.savie.precut.ai.cloud.NetworkState
@@ -63,6 +77,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.time.Clock
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -73,6 +88,24 @@ import okhttp3.OkHttpClient
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class AppModule {
+    @Binds
+    abstract fun bindSessionStore(impl: KeystoreSessionStore): SessionStore
+
+    @Binds
+    abstract fun bindAccessTokens(impl: AccountRepository): AccessTokens
+
+    @Binds
+    abstract fun bindSyncRequests(impl: WorkManagerSyncRequests): SyncRequests
+
+    @Binds
+    abstract fun bindSyncCursors(impl: PrefsSyncCursors): SyncCursors
+
+    @Binds
+    abstract fun bindProjectSyncStore(impl: RoomProjectRepository): ProjectSyncStore
+
+    @Binds
+    abstract fun bindProjectSyncApi(impl: CloudProjectSyncApi): ProjectSyncApi
+
     @Binds
     abstract fun bindProjectRepository(impl: RoomProjectRepository): ProjectRepository
 
@@ -165,6 +198,29 @@ abstract class AppModule {
         @Provides
         fun provideCloudConfig(): CloudConfig =
             CloudConfig(BuildConfig.CLOUD_URL, BuildConfig.CLOUD_REGION, BuildConfig.PLAY_CLOUD_PROJECT_NUMBER)
+
+        /** Accounts (Phase 30): the project behind the function, and the keys from cloud.properties. */
+        @Provides
+        fun provideAuthConfig(): AuthConfig = AuthConfig.fromCloudUrl(
+            BuildConfig.CLOUD_URL,
+            BuildConfig.SUPABASE_PUBLISHABLE_KEY,
+            BuildConfig.GOOGLE_WEB_CLIENT_ID,
+        )
+
+        /** Cloud project sync (Phase 30C); the phone's copy in a conflict is named "… (this phone)". */
+        @Provides
+        @Singleton
+        fun provideProjectSync(
+            @ApplicationContext context: Context,
+            tokens: AccessTokens,
+            api: ProjectSyncApi,
+            store: ProjectSyncStore,
+            cursors: SyncCursors,
+        ): ProjectSync = ProjectSync(
+            tokens, api, store, cursors,
+            conflictLabel = { context.getString(R.string.sync_conflict_label) },
+            newId = { UUID.randomUUID().toString() },
+        )
 
         /** The website template links point at (Phase 28), from cloud.properties' `webHost`. */
         @Provides

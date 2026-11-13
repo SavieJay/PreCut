@@ -2,6 +2,15 @@ package com.savie.precut.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination.Companion.hasRoute
+import com.savie.precut.model.account.AuthState
+import com.savie.precut.model.account.needsSignIn
+import com.savie.precut.ui.auth.SignInScreen
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -17,16 +26,48 @@ import com.savie.precut.ui.settings.LicencesScreen
 import com.savie.precut.ui.settings.SettingsScreen
 import com.savie.precut.ui.templates.TemplateScreen
 
+/**
+ * [auth] gates every screen behind sign-in (Phase 30): signed out (or signed out by the server)
+ * shows Sign-in only; signing in moves on to onboarding the first time ([onboardingDone]), else
+ * Projects. A build without account keys ([AuthState.NotSetUp]) never asks.
+ */
 @Composable
-fun AppNavHost(shareInbox: ShareInbox, showOnboarding: Boolean, templateLinks: TemplateLinkInbox? = null) {
+fun AppNavHost(
+    shareInbox: ShareInbox,
+    showOnboarding: Boolean,
+    templateLinks: TemplateLinkInbox? = null,
+    auth: StateFlow<AuthState> = MutableStateFlow(AuthState.NotSetUp),
+    onboardingDone: () -> Boolean = { !showOnboarding },
+) {
     val navController = rememberNavController()
-    // Template links (Phase 28): fetched, kept in Templates, then opened.
-    templateLinks?.let { TemplateLinkOpener(it, navController) }
+    val authState by auth.collectAsStateWithLifecycle()
+    val signedOut = authState.needsSignIn
+    // Template links (Phase 28): fetched, kept in Templates, then opened; they wait for sign-in.
+    if (!signedOut) templateLinks?.let { TemplateLinkOpener(it, navController) }
+    // Signing in or out swaps the whole back stack.
+    LaunchedEffect(signedOut) {
+        val onSignIn = navController.currentDestination?.hasRoute<SignInRoute>() == true
+        when {
+            signedOut && !onSignIn -> navController.navigate(SignInRoute) { popUpTo(navController.graph.id) { inclusive = true } }
+            !signedOut && onSignIn -> {
+                val next: Any = if (onboardingDone()) HomeRoute else OnboardingRoute
+                navController.navigate(next) { popUpTo<SignInRoute> { inclusive = true } }
+            }
+        }
+    }
     // Shared media becomes a new project on the Projects screen, wherever the user was.
     LaunchedEffect(shareInbox) {
         shareInbox.arrivals.collect { navController.popBackStack(HomeRoute, inclusive = false) }
     }
-    NavHost(navController = navController, startDestination = if (showOnboarding) OnboardingRoute else HomeRoute) {
+    val start: Any = remember {
+        when {
+            signedOut -> SignInRoute
+            showOnboarding -> OnboardingRoute
+            else -> HomeRoute
+        }
+    }
+    NavHost(navController = navController, startDestination = start) {
+        composable<SignInRoute> { SignInScreen() }
         composable<OnboardingRoute> {
             OnboardingScreen(
                 onDone = { openPaywall ->

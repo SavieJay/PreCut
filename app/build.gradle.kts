@@ -42,6 +42,10 @@ android {
         buildConfigField("String", "CLOUD_URL", "\"${cloud?.getProperty("cloudUrl").orEmpty()}\"")
         buildConfigField("String", "CLOUD_REGION", "\"${cloud?.getProperty("cloudRegion").orEmpty()}\"")
         buildConfigField("long", "PLAY_CLOUD_PROJECT_NUMBER", "${cloud?.getProperty("playCloudProjectNumber")?.toLongOrNull() ?: 0L}L")
+        // Accounts (Phase 30): Supabase Auth's public key and Google's web client ID; without them
+        // sign-in stays off and the app works as before (docs/ACCOUNTS.md).
+        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"${cloud?.getProperty("supabasePublishableKey").orEmpty()}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${cloud?.getProperty("googleWebClientId").orEmpty()}\"")
         // Template links (Phase 28): the website's host, for links and Android App Links.
         val webHost = cloud?.getProperty("webHost")?.takeIf { it.isNotBlank() } ?: "precut.netlify.app"
         buildConfigField("String", "WEB_HOST", "\"$webHost\"")
@@ -119,6 +123,9 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+    implementation(libs.androidx.work.runtime)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -127,6 +134,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.okhttp)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
     implementation(libs.play.integrity)
     implementation(libs.play.app.update)
     implementation(libs.play.billing)

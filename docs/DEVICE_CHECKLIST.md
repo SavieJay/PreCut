@@ -366,6 +366,29 @@ Compare each screen side by side with its frame on the canvas's "Redesign 2026" 
 5. On a small phone or with Display size at largest: the text panels scroll instead of pushing the preview off screen.
 6. ✓ on any text panel returns to the text tools, not the main dock.
 
+## 4w. Signing in (Phase 30B)
+Needs the setup in `docs/ACCOUNTS.md` (sections 2–5) and a build made with the two new `cloud.properties` lines; without them the app never asks to sign in, as before.
+1. A fresh install (or Settings → Apps → PreCut → Clear storage): the first screen is **Sign-in**, not onboarding. Back leaves the app.
+2. Type an email, **Continue with email**: the code screen says where the code went; the email arrives within a minute with a 6-digit code. Type or paste it: it signs in by itself and onboarding starts (Projects, if onboarding was done before).
+3. A wrong code: "That code is wrong or has expired", the field clears. **Send a new code** counts down from 60 s first. **Use another email** goes back.
+4. **Continue with Google**: Google's sheet lists the phone's accounts; picking one signs in. Closing the sheet says nothing and stays on Sign-in.
+5. Airplane mode on the Sign-in screen: "You're offline". Signed in, airplane mode, force-stop and reopen: the app opens straight to Projects (no sign-in needed offline).
+6. Share a video to PreCut while signed out: it waits; after signing in it becomes a project on Projects. The same for a template link.
+7. Settings → **Account**: "Signed in as …", cloud storage "0 B of 2.00 GB used" (online), the **Upload over mobile data** switch.
+8. **Sign out** → confirm: back to Sign-in, the email filled in. Sign in again: projects on the phone are still there.
+9. **Delete account**: the button stays off until DELETE is typed; then Sign-in. In the Supabase dashboard (Authentication → Users) the user is gone.
+10. Buy Pro on phone A while signed in, sign in to the same account on phone B: phone B is Pro (Settings → PreCut Pro) without Restore.
+
+## 4x. Projects sync to the account (Phase 30C)
+Two phones (or one phone and Clear storage in between), signed in to the same account. Videos and photos don't travel yet (Phase 30D): on the second phone a synced project opens with its media missing.
+1. Projects made before this version: after signing in, each card shows a clock (waiting), then within a minute a cloud (in your account).
+2. Make a project on phone A and edit it; about 20 seconds after the last edit its card shows the cloud. Open PreCut on phone B: the project appears (name, length, texts) without doing anything.
+3. Rename it on B; reopen PreCut on A (or wait for it to come to the front): the new name is there.
+4. Airplane mode on A, edit the project, close PreCut: the card shows the clock. Airplane mode off: within a minute or two the cloud comes back and B has the edit.
+5. Edit the same project on A and B while both are offline, then bring both online: one keeps the project, the other also gets "Name (this phone)" with its own edit. Nothing is lost.
+6. Delete a project on A: it disappears from B too. Delete one on B while A edits it offline: A's edit brings it back on both.
+7. Sign out, sign in with another account: the first account's projects are hidden (not deleted); signing back in shows them again.
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

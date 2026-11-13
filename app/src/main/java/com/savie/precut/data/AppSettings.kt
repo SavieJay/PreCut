@@ -45,6 +45,8 @@ data class SettingsValues(
     val brandKit: BrandKit = BrandKit(),
     /** Google Play's install referrer was read (once, on the first start; Phase 28). */
     val installReferrerChecked: Boolean = false,
+    /** Cloud projects (Phase 30): videos and photos upload on mobile data too, not only Wi-Fi. */
+    val syncOnMobileData: Boolean = false,
 )
 
 interface AppSettings {

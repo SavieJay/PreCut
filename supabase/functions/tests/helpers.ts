@@ -6,6 +6,20 @@ import {
 import { utf8 } from "../_shared/encoding.ts";
 import type { Deps } from "../_shared/handler.ts";
 import type {
+  Account,
+  AccountStore,
+  ConfirmResult,
+  DeleteResult,
+  GrantResult,
+  MediaStorage,
+  ProjectChanges,
+  ProjectSave,
+  SaveResult,
+  User,
+  UserAdmin,
+  UserVerifier,
+} from "../_shared/accounts.ts";
+import type {
   IntegrityResult,
   IntegrityVerifier,
 } from "../_shared/integrity.ts";
@@ -383,8 +397,111 @@ export interface TestDeps extends Deps {
   editAgent: FailingEditAgent;
   billing: FakePlayBilling;
   translator: FakeTranslator;
+  users: FakeUsers;
+  accounts: ScriptedAccounts;
+  media: FakeMediaStorage;
+  userAdmin: FakeUserAdmin;
   logs: Record<string, unknown>[];
   now: { value: Date };
+}
+
+/** Signed-in users by access token (the route tests' stand-in for JWKS checks). */
+export class FakeUsers implements UserVerifier {
+  tokens = new Map<string, User>([
+    [ANA_TOKEN, { id: ANA, email: "ana@example.com" }],
+  ]);
+  verify(token: string): Promise<User | null> {
+    return Promise.resolve(this.tokens.get(token) ?? null);
+  }
+}
+
+export const ANA = "11111111-1111-4111-8111-111111111111";
+export const ANA_TOKEN = "ana-access-token";
+
+/**
+ * Answers each account call with what a test set in [replies] (the SQL itself is tested in
+ * PGlite), and records the calls.
+ */
+export class ScriptedAccounts implements AccountStore {
+  calls: { name: string; args: unknown[] }[] = [];
+  replies: Record<string, unknown> = {
+    changes: { projects: [], next: null, more: false },
+    save: { ok: true, revision: 1, updatedAt: "2026-11-13T10:00:00Z" },
+    delete: { ok: true, revision: 2 },
+    grant: { ok: true, exists: false },
+    confirm: { ok: true },
+    ready: true,
+    account: {
+      pro: false,
+      storageUsed: 0,
+      storageLimit: 2147483648,
+      maxFileBytes: 4294967296,
+      projects: 0,
+    },
+    linkInstall: true,
+    files: [],
+    cleanup: [],
+  };
+  // deno-lint-ignore no-explicit-any
+  private reply(name: string, args: unknown[]): Promise<any> {
+    this.calls.push({ name, args });
+    return Promise.resolve(this.replies[name]);
+  }
+  changes(
+    ...args: [string, string | null, string | null, number]
+  ): Promise<ProjectChanges> {
+    return this.reply("changes", args);
+  }
+  save(...args: [string, string, ProjectSave]): Promise<SaveResult> {
+    return this.reply("save", args);
+  }
+  delete(...args: [string, string, number | null]): Promise<DeleteResult> {
+    return this.reply("delete", args);
+  }
+  grant(...args: [string, string, number, string]): Promise<GrantResult> {
+    return this.reply("grant", args);
+  }
+  confirm(...args: [string, string]): Promise<ConfirmResult> {
+    return this.reply("confirm", args);
+  }
+  ready(...args: [string, string]): Promise<boolean> {
+    return this.reply("ready", args);
+  }
+  account(...args: [string]): Promise<Account> {
+    return this.reply("account", args);
+  }
+  linkInstall(...args: [string, string]): Promise<boolean> {
+    return this.reply("linkInstall", args);
+  }
+  files(...args: [string]): Promise<string[]> {
+    return this.reply("files", args);
+  }
+  cleanup(): Promise<{ userId: string; sha256: string }[]> {
+    return this.reply("cleanup", []);
+  }
+}
+
+export class FakeMediaStorage implements MediaStorage {
+  readonly uploadUrl =
+    "https://ref.storage.supabase.co/storage/v1/upload/resumable";
+  removed: string[] = [];
+  signedUrl(path: string, seconds: number): Promise<string | null> {
+    return Promise.resolve(
+      `https://ref.supabase.co/storage/v1/object/sign/media/${path}?t=${seconds}`,
+    );
+  }
+  remove(paths: string[]): Promise<void> {
+    this.removed.push(...paths);
+    return Promise.resolve();
+  }
+}
+
+export class FakeUserAdmin implements UserAdmin {
+  deleted: string[] = [];
+  deleteUser(id: string): Promise<void> {
+    this.deleted.push(id);
+    return Promise.resolve();
+  }
 }
 
 export function testDeps(): TestDeps {
@@ -400,6 +517,10 @@ export function testDeps(): TestDeps {
     proProducts: ["precut_pro"],
     rtdnSecret: RTDN_SECRET,
     releaseSecret: RELEASE_SECRET,
+    users: new FakeUsers(),
+    accounts: new ScriptedAccounts(),
+    media: new FakeMediaStorage(),
+    userAdmin: new FakeUserAdmin(),
     installTokenSecret: SECRET,
     maxUploadBytes: 1024,
     minApiVersion: 1,

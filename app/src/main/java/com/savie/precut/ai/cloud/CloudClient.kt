@@ -9,25 +9,19 @@ import com.savie.precut.model.ai.CloudStatus
 import com.savie.precut.model.ai.Transcript
 import com.savie.precut.model.ai.edit.EditStepReply
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import okhttp3.Call
-import okhttp3.Callback
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * The app's side of the cloud API (docs/CLOUD_API.md). Nothing is sent while cloud AI is off in
@@ -328,18 +322,4 @@ class CloudClient @Inject constructor(
         const val MAX_EDIT_BYTES = 512 * 1024
         val JSON = "application/json".toMediaType()
     }
-}
-
-/** The response, or the call cancelled with the coroutine. */
-private suspend fun Call.await(): Response = suspendCancellableCoroutine { continuation ->
-    continuation.invokeOnCancellation { cancel() }
-    enqueue(object : Callback {
-        override fun onResponse(call: Call, response: Response) {
-            continuation.resume(response) { _, value, _ -> value.close() }
-        }
-
-        override fun onFailure(call: Call, e: IOException) {
-            continuation.resumeWithException(e)
-        }
-    })
 }

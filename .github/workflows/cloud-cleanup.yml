@@ -1,0 +1,30 @@
+# Once a day, the cloud function's clean-up (Phase 30): drops files no project has used for 30 days,
+# uploads granted but never finished, and project deletions older than 90 days, and removes those
+# files from Storage. Uses the same secrets as the publish workflow (PRECUT_RELEASE_SECRET, and the
+# cloud URL from PRECUT_CLOUD_PROPERTIES).
+name: Cloud clean-up
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run the clean-up
+        env:
+          RELEASE_SECRET: ${{ secrets.PRECUT_RELEASE_SECRET }}
+          CLOUD_PROPERTIES: ${{ secrets.PRECUT_CLOUD_PROPERTIES }}
+        run: |
+          CLOUD=$(printf '%s\n' "$CLOUD_PROPERTIES" | grep -E '^cloudUrl=' | cut -d= -f2- | sed 's:/*$::')
+          if [ -z "$RELEASE_SECRET" ] || [ -z "$CLOUD" ]; then
+            echo "::error::PRECUT_RELEASE_SECRET or the cloudUrl in PRECUT_CLOUD_PROPERTIES isn't set."
+            exit 1
+          fi
+          curl -fsS -X POST "$CLOUD/cleanup" -H "Authorization: Bearer $RELEASE_SECRET"
+          echo

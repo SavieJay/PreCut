@@ -39,7 +39,7 @@ creative tool that runs on the phone is free, with no watermark; Pro covers AI f
 workflows, especially those that cost money per use in the cloud.
 
 ### Out of scope, and what moved in (updated 2026-10-21)
-Originally out of scope because they need AI or online content: auto captions, background removal, auto reframe, AutoCut and templates, noise reduction. These are now planned in Phases 17–22, after the user chose to allow cloud AI, with consent before any upload, on 2026-10-21. Blend modes became possible once overlays had PreCut's own renderer (Phase 14). Still out of scope: AI beauty and retouch, upscaling, smooth slow motion (optical flow), stabilization, online stock, sticker and music libraries, cloud project sync.
+Originally out of scope because they need AI or online content: auto captions, background removal, auto reframe, AutoCut and templates, noise reduction. These are now planned in Phases 17–22, after the user chose to allow cloud AI, with consent before any upload, on 2026-10-21. Blend modes became possible once overlays had PreCut's own renderer (Phase 14). Still out of scope: AI beauty and retouch, upscaling, smooth slow motion (optical flow), stabilization, online stock, sticker and music libraries. (Cloud project sync moved in as Phase 30 on 2026-11-13.)
 
 ---
 
@@ -686,6 +686,36 @@ Source: the "Redesign 2026" page of the Claude Design canvas (https://claude.ai/
 
 **Acceptance:** every existing screen matches its RD frame on a phone (Android 10 without blur, Android 12+ with it); all unit tests pass; no feature, edit or export result changes.
 
+### Phase 30 — Accounts and cloud projects (approved 2026-11-13)
+Goal: signing in is required at first launch (Google one tap, or a 6-digit email code; no passwords). Every project and all its media sync to the cloud by themselves, so signing in on any phone brings every project back, complete. Supabase Auth over REST (no SDK), project and quota routes on the `cloud` function, media in Supabase Storage (`media` bucket, `<user id>/<sha256>`, resumable TUS uploads), WorkManager for the sync. Limits per account: 2 GB free, 50 GB Pro (server settings). Needs the Supabase Pro plan (the free plan caps files at 50 MB), a Google OAuth client, and a custom SMTP sender for the codes (`docs/ACCOUNTS.md`).
+
+*30A — Server: accounts, cloud projects, media*
+- [x] Migration `20261113130000_accounts`: `cloud_projects` (revisions, tombstones), `cloud_media` + `cloud_project_media`, storage limits in `cloud_config`, installs linked to users (Pro follows the account), the private `media` bucket and its upload policy (own folder, granted hashes only). Every row points at `auth.users`, so deleting the user deletes them; no separate accounts table was needed (storage used is summed from the files)
+- [x] Routes checked with the user's Supabase token (JWKS): `GET /projects`, `PUT /projects/{id}` (`baseRevision` in the body, 409 on a stale save), `DELETE /projects/{id}`, `POST /media/grant`, `POST /media/confirm`, `GET /media/{sha256}`, `GET /account`, `DELETE /account`, `POST /account/link`
+- [x] Clean-up of media no project uses for 30 days, grants never confirmed, and old tombstones (`POST /cleanup`, daily from `.github/workflows/cloud-cleanup.yml`)
+- [x] Deno route tests and PGlite SQL tests (`accounts_test.ts`, `accounts_sql_test.ts`; 109 tests in all)
+
+*30B — App: sign-in and the account*
+- [x] `AuthClient` (email code, Google `id_token`, refresh, sign out), session encrypted with a Keystore key and kept out of backup, `AccountRepository` state (`model/account`: `AuthState`, `Session`, the error mapping; tests in `AccountTest`, `AccountRepositoryTest`)
+- [x] Sign-in and code screens before Home (and before onboarding); shares and template links wait until signed in. A build without the account keys never asks (`AuthState.NotSetUp`), so published builds keep working until the setup is done
+- [x] Settings → Account: email, storage used, upload over mobile data, sign out, delete account (typed DELETE); purchases carry the account (`obfuscatedAccountId`, the SHA-256 of the user id)
+
+*30C — Project sync*
+- [x] Room v1→v2 (an AutoMigration): owner, server revision, dirty flag, tombstones; projects already on the phone join the account at the first sign-in. Projects shows only the signed-in account's (and no one's); another account's stay on the phone, hidden
+- [x] `SyncPlan` (pure, tested): upload, download, delete or conflict (both kept; an edit beats a deletion); `ProjectSync` pulls then pushes (`ProjectSyncTest`); `SyncWorker` (WorkManager, needs a network, retries) at sign-in, each return to the app, and 20 s after an edit
+- [x] Home shows each project's cloud state (a cloud when saved to the account, a clock while waiting)
+
+*30D — Media sync*
+- [ ] A project's files include imported fonts and custom LUTs; files are hashed, granted, uploaded with TUS (resumable) and confirmed before the project counts as synced
+- [ ] On a new phone, opening a project downloads its media with progress and rewrites its URIs; a matching file already on the phone is reused
+- [ ] Over the limit, uploads pause and Home and Settings say so; nothing on the phone is lost
+
+*30E — Policies, docs, website*
+- [ ] Privacy policy, Data safety (email, user ID, photos and videos, audio, files; account deletion), website privacy and account-deletion pages, "no account" lines removed
+- [ ] `docs/ACCOUNTS.md` (setup and costs), `docs/CLOUD_API.md`, `docs/DEVICE_CHECKLIST.md`
+
+**Acceptance:** a new install can't reach Home without signing in; projects made on one phone open complete on another after signing in with the same account; edits made offline sync when the network returns; deleting the account removes its projects and media from the cloud.
+
 ## 4. Manual test matrix (use at the end of phases 3–12)
 - Portrait and landscape videos mixed in one project
 - Very short (< 1 s) and long (> 10 min) clips
@@ -924,3 +954,4 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-11-02 — Server deployed:** migrations `20261101120000_edit` through `20261102120000_app_config_version_name` applied to the live project (Ireland) and recorded in `supabase_migrations.schema_migrations`, then the `cloud` function deployed (`--use-api`, no Docker). The cloud environment can't reach Postgres directly, so the migrations went through the Management API's query endpoint, each in its own transaction with its history row; `supabase db push --linked` from a normal machine sees them as applied. Checked live: `GET /config` answers with `latestVersionName` (zeros, so nothing blocks), `GET /templates/<id>` answers `not_found` with CORS, a request without an API version gets `upgrade_required`, and the 1.0.0 app's API version still reaches its routes. Not set yet, so those features answer `not_configured`: `ANTHROPIC_API_KEY` (AI edit, translation) and `RTDN_SECRET` (Play's subscription notifications).
 - **2026-11-02 — Install referrer and onboarding for updates:** *Install referrer (Phase 28's last item):* measuring stays with Google Play: the website's Play links carry `utm_source=website`, `utm_medium` and `utm_campaign` = the button, which Play Console's acquisition reports break down by source and campaign; the app sends nothing (its "no analytics" promise stands). The Install Referrer library 2.2 serves the one thing only the app can do: a template page's Play link adds `template=<id>`, and on the first start of a fresh install (no projects yet) `InstallReferrerCheck` reads Play's referrer once and opens that template like a link would. *Onboarding* is for fresh installs, as the plan says: someone updating from 1.0.0 already has projects, so onboarding ends at once for them (a blank frame while the check runs) and the editor tips are marked seen; their settings are untouched.
 - **2026-11-12 — Phase 29, the Afterglow restyle:** the user's "Redesign 2026" canvas page becomes Phase 29, approved with three choices: (1) lime means AI only, so the effects track gets its own colour instead of the design's lime; (2) the app icon changes to RD-A01 (logo on the new base with a pink halo), with a new Play icon and feature graphic; (3) the restyle comes before the Play store screenshots, so the listing shows the final look. The NEW frames for features the app doesn't have wait for their own plans after the Play launch. Glass is new in the app (the design called it existing): blur needs Android 12's RenderEffect, so Android 8–11 get the solid fallback the tokens board defines.
+- **2026-11-13 — Phase 30, accounts and cloud projects:** the user wants sign-in to be a core part of the app, with every project saved to the cloud. Chosen: (1) sign-in required at first launch, projects already on a phone join the account; (2) Google one tap or a 6-digit email code, no passwords; (3) every project with all its media syncs, limited per account (2 GB free, 50 GB Pro, server settings). This reverses "cloud project sync" being out of scope. Kept from Phase 20B: no Supabase SDK in the app (Auth is called over REST with the public publishable key); the function checks the user's token against the project's JWKS (ES256). Media goes straight from the phone to Storage with resumable uploads, after the function grants each file against the quota. Requires the Supabase Pro plan (file size and storage limits).

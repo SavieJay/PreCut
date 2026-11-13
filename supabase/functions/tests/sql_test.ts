@@ -1,64 +1,13 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
-import { PGlite } from "@electric-sql/pglite";
+import type { PGlite } from "@electric-sql/pglite";
+import { call, sqlTest } from "./sql_harness.ts";
 
-/**
- * The quota SQL in supabase/migrations/, run in PGlite (Postgres in-process). Supabase's
- * roles are recreated as the platform has them: service_role bypasses RLS and gets table grants by
- * default; anon and authenticated stand for the public API.
- */
+/** The quota, Pro, edit, template and update SQL, run in PGlite (see sql_harness.ts). */
 
-const MIGRATIONS = new URL("../../migrations/", import.meta.url);
 const A = "3f6c1d2e-8a4b-4c5d-9e0f-1a2b3c4d5e6f";
 const B = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
 const OCT = "2026-10-22T10:00:00Z";
 const NOV = "2026-11-03T08:00:00Z";
-
-async function database(): Promise<PGlite> {
-  const db = await PGlite.create();
-  await db.exec(
-    "create role anon; create role authenticated; create role service_role bypassrls;",
-  );
-  // Every migration, in the order Supabase applies them (by name).
-  const names: string[] = [];
-  for await (const entry of Deno.readDir(MIGRATIONS)) {
-    if (entry.name.endsWith(".sql")) names.push(entry.name);
-  }
-  for (const name of names.sort()) {
-    await db.exec(await Deno.readTextFile(new URL(name, MIGRATIONS)));
-  }
-  await db.exec(`
-    grant usage on schema public to service_role, anon, authenticated;
-    grant all on all tables in schema public to service_role;
-    set role service_role;
-  `);
-  return db;
-}
-
-/**
- * A test with a fresh database, closed afterwards. PGlite's WASM runtime keeps timers of its own
- * across databases, so Deno's timer and resource checks are off for these tests only.
- */
-function sqlTest(name: string, fn: (db: PGlite) => Promise<void>) {
-  Deno.test({
-    name,
-    sanitizeOps: false,
-    sanitizeResources: false,
-    fn: async () => {
-      const db = await database();
-      try {
-        await fn(db);
-      } finally {
-        await db.close();
-      }
-    },
-  });
-}
-
-// deno-lint-ignore no-explicit-any
-async function call(db: PGlite, sql: string, params: unknown[]): Promise<any> {
-  const result = await db.query<{ r: unknown }>(`select ${sql} as r`, params);
-  return result.rows[0].r;
-}
 
 const register = (db: PGlite, id: string, at = OCT) =>
   call(db, "public.cloud_register($1, $2)", [id, at]);

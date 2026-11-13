@@ -15,7 +15,12 @@ data class ProjectSummary(
     val durationMs: Long,
     val createdAt: Long,
     val updatedAt: Long,
+    /** Its cloud state (Phase 30); null when no one is signed in. */
+    val cloud: CloudMark? = null,
 )
+
+/** Whether a project is in the cloud yet. */
+enum class CloudMark { Synced, Pending }
 
 interface ProjectRepository {
     suspend fun save(project: Project)

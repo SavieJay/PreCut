@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Accounts (Phase 30): sign-in, the email code, and Settings → Account. -->
+<resources>
+    <string name="auth_title">Your projects, on every phone</string>
+    <string name="auth_subtitle">Sign in and every project is saved to your account as you edit. Sign in on another phone and they\'re all there.</string>
+    <string name="auth_expired">You were signed out. Sign in again to keep your projects in sync; the ones on this phone are safe.</string>
+    <string name="auth_google">Continue with Google</string>
+    <string name="auth_or">or</string>
+    <string name="auth_email_label">Email</string>
+    <string name="auth_email_hint">you@example.com</string>
+    <string name="auth_email_continue">Continue with email</string>
+    <string name="auth_privacy">PreCut keeps your email and your projects to sync them, nothing else. The privacy policy on PreCut\'s website has the details.</string>
+
+    <string name="auth_code_title">Check your email</string>
+    <string name="auth_code_body">We sent a 6-digit code to %1$s. It works for 10 minutes.</string>
+    <string name="auth_code_label">6-digit code</string>
+    <string name="auth_code_resend">Send a new code</string>
+    <string name="auth_code_resend_in">New code in %1$d s</string>
+    <string name="auth_code_change_email">Use another email</string>
+    <string name="auth_code_verify">Sign in</string>
+
+    <string name="auth_error_offline">You\'re offline. Connect to the internet to sign in.</string>
+    <string name="auth_error_bad_code">That code is wrong or has expired. Check it, or send a new one.</string>
+    <string name="auth_error_too_many">Too many tries. Wait a minute, then try again.</string>
+    <string name="auth_error_bad_email">That email address doesn\'t look right.</string>
+    <string name="auth_error_no_google">There\'s no Google account on this phone. Use your email instead.</string>
+    <string name="auth_error_not_set_up">Signing in isn\'t available yet. Try again later.</string>
+    <string name="auth_error_busy">Couldn\'t sign in. Try again.</string>
+    <string name="auth_error_session_ended">You were signed out. Sign in again.</string>
+
+    <!-- Cloud sync (Phase 30C): when a project changed on two phones, both are kept; the phone's copy is "Trip (this phone)". -->
+    <string name="sync_conflict_label">this phone</string>
+    <string name="sync_synced">Saved to your account</string>
+    <string name="sync_pending">Waiting to upload</string>
+
+    <string name="account_title">Account</string>
+    <string name="account_signed_in_as">Signed in as %1$s</string>
+    <string name="account_signed_in">Signed in</string>
+    <string name="account_storage">Cloud storage</string>
+    <string name="account_storage_used">%1$s of %2$s used</string>
+    <string name="account_storage_unknown">Shown when you\'re online</string>
+    <string name="account_mobile_data">Upload over mobile data</string>
+    <string name="account_mobile_data_body">Off: videos and photos upload on Wi-Fi only. Projects themselves always sync.</string>
+    <string name="account_sign_out">Sign out</string>
+    <string name="account_sign_out_title">Sign out of PreCut?</string>
+    <string name="account_sign_out_body">You\'ll need to sign in again to use PreCut. Projects on this phone stay here.</string>
+    <string name="account_delete">Delete account</string>
+    <string name="account_delete_title">Delete your account?</string>
+    <string name="account_delete_body">This deletes your account and every project and file saved to it in the cloud, for good. Projects on this phone stay here. Type DELETE to confirm.</string>
+    <string name="account_delete_word">DELETE</string>
+    <string name="account_delete_confirm">Delete for good</string>
+    <string name="account_delete_failed">Couldn\'t delete the account. Check your connection and try again.</string>
+</resources>

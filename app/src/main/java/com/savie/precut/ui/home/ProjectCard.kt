@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.savie.precut.R
+import com.savie.precut.data.CloudMark
 import com.savie.precut.data.ProjectSummary
 import com.savie.precut.ui.components.MediaBadge
 import com.savie.precut.ui.components.formatDurationMs
@@ -81,6 +82,14 @@ fun ProjectCard(
                 Box(Modifier.fillMaxWidth().aspectRatio(9f / 16f))
             }
             MediaBadge(formatDurationMs(project.durationMs), Modifier.align(Alignment.BottomEnd).padding(8.dp))
+            // Phase 30C: in the account (a cloud), or waiting to upload (a clock).
+            project.cloud?.let { mark ->
+                MediaBadge(
+                    icon = if (mark == CloudMark.Synced) R.drawable.ic_cloud else R.drawable.ic_schedule,
+                    contentDescription = stringResource(if (mark == CloudMark.Synced) R.string.sync_synced else R.string.sync_pending),
+                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+                )
+            }
             Box(Modifier.align(Alignment.TopEnd)) {
                 MoreButton(onClick = { menuOpen = true }, modifier = Modifier.padding(4.dp))
                 ProjectMenu(menuOpen, onDismiss = { menuOpen = false }, onRename, onDuplicate, onDelete, onRemix)

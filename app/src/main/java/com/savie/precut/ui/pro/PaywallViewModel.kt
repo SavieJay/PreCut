@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.savie.precut.auth.AccountRepository
+import com.savie.precut.model.account.AuthState
+import com.savie.precut.model.account.obfuscatedAccountId
 
 data class PaywallState(
     /** The Pro feature that opened the paywall, for its headline; null from Settings or onboarding. */
@@ -44,6 +47,7 @@ class PaywallViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val billing: PlayBillingGateway,
     private val entitlements: EntitlementRepository,
+    private val accounts: AccountRepository,
 ) : ViewModel() {
     private val route = savedStateHandle.toRoute<PaywallRoute>()
     private val _state = MutableStateFlow(PaywallState(feature = route.feature?.let { name -> ProFeature.entries.firstOrNull { it.name == name } }))
@@ -75,7 +79,7 @@ class PaywallViewModel @Inject constructor(
         val offer = state.offers?.let { if (state.selected == ProCatalog.YEARLY) it.yearly else it.monthly } ?: return
         viewModelScope.launch {
             _state.update { it.copy(failure = null, playFailed = false) }
-            if (!billing.launch(activity, offer)) _state.update { it.copy(playFailed = true) }
+            if (!billing.launch(activity, offer, (accounts.state.value as? AuthState.SignedIn)?.userId?.let(::obfuscatedAccountId))) _state.update { it.copy(playFailed = true) }
         }
     }
 

@@ -53,6 +53,7 @@ fun SettingsScreen(
     Column(Modifier.fillMaxSize().afterglowBackground().statusBarsPadding().navigationBarsPadding()) {
         SettingsTopBar(stringResource(R.string.settings_title), onBack)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+            AccountSection()
             ProSection(onGetPro)
             SettingsGroup(stringResource(R.string.settings_new_projects)) {
                 SettingRow(R.drawable.ic_schedule, stringResource(R.string.settings_photo_duration), seconds(values.photoDurationMs)) { dialog = SettingsDialog.PHOTO }

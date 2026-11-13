@@ -1,3 +1,10 @@
+import { accountRoute, cleanup } from "./account_routes.ts";
+import type {
+  AccountStore,
+  MediaStorage,
+  UserAdmin,
+  UserVerifier,
+} from "./accounts.ts";
 import { type EditAgent, EditAgentError } from "./edit_agent.ts";
 import { type Bytes, hex, isUuid, sha256 } from "./encoding.ts";
 import { signInstallToken, verifyInstallToken } from "./install_token.ts";
@@ -54,8 +61,13 @@ export interface Deps {
   proProducts: readonly string[];
   /** The secret in the Real-time developer notifications push URL; null switches /rtdn off. */
   rtdnSecret: string | null;
-  /** The publish workflow's secret for POST /release; null switches /release off. */
+  /** The publish workflow's secret for POST /release and POST /cleanup; null switches them off. */
   releaseSecret: string | null;
+  /** Checks signed-in users' tokens (Phase 30); null when accounts aren't set up. */
+  users: UserVerifier | null;
+  accounts: AccountStore;
+  media: MediaStorage;
+  userAdmin: UserAdmin;
   installTokenSecret: Bytes;
   maxUploadBytes: number;
   minApiVersion: number;
@@ -80,6 +92,11 @@ export type ErrorCode =
   | "billing_unavailable"
   | "forbidden"
   | "templates_used"
+  | "signed_out"
+  | "conflict"
+  | "missing_media"
+  | "storage_full"
+  | "size_mismatch"
   | "server_error";
 
 const STATUS: Record<ErrorCode, number> = {
@@ -105,6 +122,11 @@ const STATUS: Record<ErrorCode, number> = {
   billing_unavailable: 503,
   forbidden: 403,
   templates_used: 429,
+  signed_out: 401,
+  conflict: 409,
+  missing_media: 409,
+  storage_full: 507,
+  size_mismatch: 409,
   server_error: 500,
 };
 
@@ -168,6 +190,10 @@ function route(request: Request, deps: Deps): Promise<Response> {
   if (`${request.method} ${routePath(request)}` === "POST /release") {
     return publishRelease(request, deps);
   }
+  // The scheduled clean-up isn't an app either.
+  if (`${request.method} ${routePath(request)}` === "POST /cleanup") {
+    return cleanup(request, deps);
+  }
   // Shared templates open from the website too, which sends no API version.
   const opened = routePath(request).match(/^\/templates\/([A-Za-z0-9]{8})$/);
   if (opened && request.method === "GET") return openTemplate(opened[1], deps);
@@ -178,6 +204,13 @@ function route(request: Request, deps: Deps): Promise<Response> {
   if (!(api >= deps.minApiVersion)) {
     return Promise.resolve(errorResponse("upgrade_required"));
   }
+  const account = accountRoute(
+    request.method,
+    routePath(request),
+    request,
+    deps,
+  );
+  if (account) return account;
   switch (`${request.method} ${routePath(request)}`) {
     case "POST /register":
       return register(request, deps);
@@ -466,7 +499,10 @@ async function rtdn(request: Request, deps: Deps): Promise<Response> {
 }
 
 /** Compares secrets in constant time (through their hashes, so lengths don't leak either). */
-async function sameSecret(given: string, expected: string): Promise<boolean> {
+export async function sameSecret(
+  given: string,
+  expected: string,
+): Promise<boolean> {
   const [a, b] = [await sha256(given), await sha256(expected)];
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
@@ -781,7 +817,7 @@ async function forget(request: Request, deps: Deps): Promise<Response> {
 }
 
 /** The install a request's token names, and a fresh token to hand back when it's close to expiring. */
-async function authenticate(
+export async function authenticate(
   request: Request,
   deps: Deps,
 ): Promise<
@@ -855,11 +891,11 @@ export async function drainBody(
 }
 
 /** Enough of the install ID's hash to follow one install through the logs, not to recover the ID. */
-async function shortHash(installId: string): Promise<string> {
+export async function shortHash(installId: string): Promise<string> {
   return hex(await sha256(installId)).slice(0, 10);
 }
 
-function json(status: number, body: unknown): Response {
+export function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },

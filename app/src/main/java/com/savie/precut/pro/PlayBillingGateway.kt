@@ -84,13 +84,17 @@ class PlayBillingGateway @Inject constructor(@ApplicationContext context: Contex
         return pickOffers(offers)
     }
 
-    /** Opens Play's purchase screen for [offer]; the result arrives in [outcomes]. False if Play couldn't. */
-    suspend fun launch(activity: Activity, offer: PlanOffer): Boolean {
+    /**
+     * Opens Play's purchase screen for [offer]; the result arrives in [outcomes]. False if Play
+     * couldn't. [accountId] (an obfuscated account id, Phase 30) ties the purchase to the account.
+     */
+    suspend fun launch(activity: Activity, offer: PlanOffer, accountId: String? = null): Boolean {
         val product = productDetails() ?: return false
         val params = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(
                 listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(product).setOfferToken(offer.offerToken).build()),
             )
+            .apply { if (accountId != null) setObfuscatedAccountId(accountId) }
             .build()
         return client.launchBillingFlow(activity, params).responseCode == BillingClient.BillingResponseCode.OK
     }

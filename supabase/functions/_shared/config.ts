@@ -1,5 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import {
+  JwksUserVerifier,
+  PostgresAccountStore,
+  SupabaseMediaStorage,
+  SupabaseUserAdmin,
+} from "./accounts.ts";
+import {
   AnthropicEditAgent,
   type EditAgent,
   type Effort,
@@ -55,12 +61,15 @@ export function depsFromEnv(
     );
   }
 
+  const client = createClient(url, secretKey(env), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
   return {
-    quota: new PostgresQuotaStore(
-      createClient(url, secretKey(env), {
-        auth: { persistSession: false, autoRefreshToken: false },
-      }),
-    ),
+    quota: new PostgresQuotaStore(client),
+    users: JwksUserVerifier.forProject(url),
+    accounts: new PostgresAccountStore(client),
+    media: new SupabaseMediaStorage(client, url),
+    userAdmin: new SupabaseUserAdmin(client),
     integrity: integrityFrom(env, local, fetchFn),
     transcriber: transcriberFrom(env, local, fetchFn),
     editAgent: editAgentFrom(env, local, fetchFn),
