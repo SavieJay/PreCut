@@ -711,8 +711,8 @@ Goal: signing in is required at first launch (Google one tap, or a 6-digit email
 - [x] Over the limit, uploads pause and Home and Settings say so; nothing on the phone is lost. Waiting for Wi-Fi says so too, and runs again once on Wi-Fi
 
 *30E — Policies, docs, website*
-- [ ] Privacy policy, Data safety (email, user ID, photos and videos, audio, files; account deletion), website privacy and account-deletion pages, "no account" lines removed
-- [ ] `docs/ACCOUNTS.md` (setup and costs), `docs/CLOUD_API.md`, `docs/DEVICE_CHECKLIST.md`
+- [x] Privacy policy, Data safety (email, name with Google, user ID, photos and videos, audio, files; account deletion URL; App access: reviewers sign in with any Google account), website privacy and account-deletion pages, "no account" lines removed: PreWeb PR #11, behind `accounts.live` so the site changes when the app's sign-in goes live
+- [x] `docs/ACCOUNTS.md` (setup and costs), `docs/CLOUD_API.md`, `docs/DEVICE_CHECKLIST.md` (4w–4y)
 
 **Acceptance:** a new install can't reach Home without signing in; projects made on one phone open complete on another after signing in with the same account; edits made offline sync when the network returns; deleting the account removes its projects and media from the cloud.
 

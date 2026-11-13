@@ -1,8 +1,26 @@
 # PreCut privacy policy
 
-**Effective:** 1 November 2026
+**Effective:** 13 November 2026 (from the PreCut version with accounts and cloud projects)
 
-PreCut is a video editor for Android. This policy explains what the app does with your information. In short: PreCut edits on your phone, and nothing leaves it unless you use a cloud AI feature and agree to send what it needs: the sound, to turn speech into words, or a written description of your project and your request, for AI edit. Video and photos never leave your phone.
+PreCut is a video editor for Android. This policy explains what the app does with your information. In short: you sign in with Google or your email, and PreCut saves your projects to your account, with their videos, photos and other files, so they're on every phone you sign in to. Cloud AI features send only what they need, and only after you agree: the sound, to turn speech into words, or a written description of your project and your request, for AI edit.
+
+## Your account
+PreCut needs an account. You sign in with **Google** or with your **email address** and a 6-digit code PreCut emails you; there's no password.
+
+- **What PreCut keeps:** your email address and an account ID. If you sign in with Google, also the name and profile picture address your Google account shares with apps; PreCut doesn't show or use them. Google sign-in runs under Google's terms; PreCut receives only that Google confirmed it's you.
+- **Where:** Supabase Auth, part of PreCut's server, in Ireland (EU). The sign-in code is sent by an email delivery service, which handles your address only to send it.
+- **On your phone:** the signed-in session, encrypted with a key kept in Android's secure key store. It isn't included in phone backups.
+- **PreCut Pro** is linked to your account, so it works on every phone you sign in to.
+
+## Your projects in the cloud
+While you're signed in, PreCut saves each project to your account as you edit it, and brings your projects to any phone you sign in to.
+
+- **What is saved:** the project itself (its clips, order, edits, effects, texts and captions, names) and **every file it uses**: videos, photos, music and sounds, voiceovers, stickers and drawings, fonts and colour looks you imported.
+- **Where:** PreCut's server and file storage on Supabase, in Ireland (EU), encrypted in transit (HTTPS) and at rest. Only your account can read your files; other phones get them through links that work for an hour.
+- **When:** projects sync shortly after you edit. Videos and photos upload on Wi-Fi unless you allow mobile data in **Settings → Account**.
+- **How long:** until you delete the project (a deleted project's record is kept for 90 days so your other phones remove it too; files no project uses are deleted 30 days later) or delete your account (everything at once).
+- **Storage:** each account has a storage limit, shown in Settings → Account. When it's full, new files stay on your phone.
+- PreCut doesn't look at, analyse or share your projects or files. They're kept only to bring them back to you.
 
 ## Cloud AI (optional, and asked every time)
 Some features can use cloud AI: Settings → Cloud AI → Check cloud AI, automatic captions, and AI edit. Before anything is sent, PreCut shows what it is about to send and asks you. If you say no, nothing is sent. You can switch cloud AI off in Settings → Cloud AI.
@@ -37,23 +55,24 @@ To edit, PreCut works with files on your device:
 - **Your gallery, for B-roll (optional).** If you open B-roll, PreCut asks to read your photos and videos (on Android 14 and newer you can allow only some). It looks at the newest few hundred on your phone with an on-device image model to find them by what's in them, and keeps that list of labels in its own storage. Nothing from your gallery is uploaded. You can take the access back in Android's settings at any time.
 - **AI on your phone.** Background removal, auto reframe, noise reduction, follow person, finding moments for shorts and B-roll labels run on your phone with models built into the app. Nothing is sent for them.
 - **Microphone.** PreCut asks for the microphone only when you record a voiceover. The recording is saved in the app's storage as part of your project.
-- **Your projects.** PreCut saves drafts, covers, preview copies and other working files in its own storage on your phone. So do your brand kit (a logo or fonts you add are copied in) and your answers to the welcome questions, which only change what it suggests first.
+- **Your projects.** PreCut saves drafts, covers, preview copies and other working files in its own storage on your phone, and a copy of each project and its files in your account (above). So do your brand kit (a logo or fonts you add are copied in) and your answers to the welcome questions, which only change what it suggests first.
 - **Exports.** Videos, GIFs, audio and photos you export are saved to your phone's gallery or music folders, where other apps can see them like any other media.
 - **Notifications.** PreCut shows a notification while an export runs, so you can follow or cancel it.
 - **Crash reports.** If PreCut closes unexpectedly, it saves a short report (the error, your phone model, Android and app versions, and PreCut's own recent log lines) in its own storage. It stays there unless you share it yourself from Settings → Crash reports.
 
-PreCut has no accounts, no ads and no analytics. When you share an export, Android's share sheet sends it to the app you choose. What happens next is up to that app.
+PreCut has no ads and no analytics. When you share an export, Android's share sheet sends it to the app you choose. What happens next is up to that app.
 
 ## Text to speech
 If you use text to speech, PreCut passes your text to the text-to-speech engine installed on your phone. That engine's own privacy policy applies to the text.
 
 ## Deleting your data
-- Deleting a project removes its files from the app. Settings → Clear preview cache frees working copies.
+- **Settings → Account → Delete account** deletes your account and, at once, every project and file saved to it, your sign-in details and the link to your Pro purchases. You can also ask on PreCut's website (`/delete-data`) or by email (below), and we'll delete it within 30 days. Deleting the account doesn't cancel a Pro subscription (do that in Google Play).
+- Deleting a project removes it from your account and your phones; its files go 30 days later if no other project uses them. Settings → Clear preview cache frees working copies on the phone.
 - **Settings → Cloud AI → Delete my cloud data** deletes the random ID and usage PreCut's server keeps for this phone, its Pro purchase records (unless another phone of yours uses them) and the templates you shared as links.
 - Uninstalling PreCut removes everything it stored on your phone, except media you exported to your gallery. What PreCut's server keeps is then deleted after 13 months without use.
 
 ## Children
-PreCut isn't directed at children. Cloud AI sends only what the person using the app chooses to send.
+PreCut isn't directed at children under 13, and accounts are for people aged 13 and over. Cloud AI sends only what the person using the app chooses to send.
 
 ## Changes
 If this policy changes, the new version will be posted at this address with a new effective date.
