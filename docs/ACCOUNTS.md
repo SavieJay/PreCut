@@ -7,9 +7,13 @@ the `cloud` function (projects, quotas; `docs/CLOUD_API.md`) and Supabase Storag
 else in the app depends on them.
 
 ## 1. Supabase plan and Storage
+**Today (14 November 2026): the free plan.** Migration `20261114090000_free_plan_limits` sets 50 MB a
+file, 100 MB per free account and 300 MB per Pro account (the free plan has 1 GB for everyone).
+Files over 50 MB stay on the phone that has them; their projects still sync. Later, on Pro:
 1. **Upgrade the project to the Pro plan** (Dashboard → Organization → Billing). The free plan
    caps every uploaded file at 50 MB and all storage at 1 GB, which videos outgrow at once.
-2. Storage → Settings: **global file size limit 4 GB** (the `media` bucket asks for 4 GB; a lower
+2. Raise the limits again (`cloud_config`: `max_media_bytes`, `free_storage_bytes`,
+   `pro_storage_bytes`; the `media` bucket's `file_size_limit`), then Storage → Settings: **global file size limit 4 GB** (the `media` bucket asks for 4 GB; a lower
    global limit wins). The bucket itself is created by the migration.
 
 ## 2. Email codes

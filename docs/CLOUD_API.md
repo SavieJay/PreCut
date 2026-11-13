@@ -122,9 +122,9 @@ Edit the single row of `public.cloud_config` in the Supabase dashboard (Table Ed
 - `edit_paused`: false
 - `pro_seconds_per_month`: 18000 (300 caption minutes for Pro installs)
 - `pro_edit_runs_per_month`: 100 (AI edit requests for Pro installs)
-- `free_storage_bytes`: 2147483648 (2 GB of project files per account)
-- `pro_storage_bytes`: 53687091200 (50 GB for Pro accounts)
-- `max_media_bytes`: 4294967296 (4 GB a file; the `media` bucket's and the project's upload limits must allow it)
+- `free_storage_bytes`: 104857600 (100 MB per account on Supabase's free plan; 2 GB planned on Pro)
+- `pro_storage_bytes`: 314572800 (300 MB for Pro accounts on the free plan; 50 GB planned)
+- `max_media_bytes`: 52428800 (50 MB a file, the free plan's limit; 4 GB on Pro, with the `media` bucket's and the project's upload limits raised too)
 - `max_project_bytes`: 2097152 (2 MB of project JSON)
 
 ## Secrets (`supabase/.env.secrets`, from `.env.secrets.example`)
