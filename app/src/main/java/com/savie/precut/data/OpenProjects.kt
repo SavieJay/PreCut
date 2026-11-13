@@ -10,14 +10,20 @@ import javax.inject.Singleton
  */
 @Singleton
 class OpenProjects @Inject constructor() {
-    private val flushes = CopyOnWriteArrayList<() -> Unit>()
+    private class Open(val projectId: String, val flush: () -> Unit)
 
-    /** Adds an open project's [flush]; close the result when the editor closes. */
-    fun register(flush: () -> Unit): AutoCloseable {
-        flushes += flush
-        return AutoCloseable { flushes -= flush }
+    private val open = CopyOnWriteArrayList<Open>()
+
+    /** Adds open project [projectId] and its [flush]; close the result when the editor closes. */
+    fun register(projectId: String, flush: () -> Unit): AutoCloseable {
+        val entry = Open(projectId, flush)
+        open += entry
+        return AutoCloseable { open -= entry }
     }
 
     /** Writes every open project's unsaved edits now. */
-    fun flushAll() = flushes.forEach { it() }
+    fun flushAll() = open.forEach { it.flush() }
+
+    /** Whether an editor has [projectId] open (cloud sync leaves it alone until it closes, Phase 30D). */
+    fun isOpen(projectId: String): Boolean = open.any { it.projectId == projectId }
 }

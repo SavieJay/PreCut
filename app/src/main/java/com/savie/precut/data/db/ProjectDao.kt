@@ -40,6 +40,10 @@ interface ProjectDao {
     )
     suspend fun markSynced(id: String, revision: Int, updatedAt: Long)
 
+    /** [owner]'s projects with no cover yet (their media was still downloading). */
+    @Query("SELECT * FROM projects WHERE ownerId = :owner AND deletedAt IS NULL AND coverPath IS NULL")
+    suspend fun withoutCover(owner: String): List<ProjectEntity>
+
     @Query("UPDATE projects SET serverRevision = :revision WHERE id = :id")
     suspend fun rebase(id: String, revision: Int?)
 

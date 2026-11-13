@@ -32,6 +32,8 @@
     <string name="sync_conflict_label">this phone</string>
     <string name="sync_synced">Saved to your account</string>
     <string name="sync_pending">Waiting to upload</string>
+    <string name="sync_waiting_wifi">Videos and photos upload on Wi-Fi. Allow mobile data in Settings → Account.</string>
+    <string name="sync_storage_full">Your %1$s of cloud storage is full. New videos and photos stay on this phone until you free space or get PreCut Pro.</string>
 
     <string name="account_title">Account</string>
     <string name="account_signed_in_as">Signed in as %1$s</string>

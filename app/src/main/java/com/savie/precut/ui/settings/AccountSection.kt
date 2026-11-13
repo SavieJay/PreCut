@@ -18,6 +18,7 @@ import com.savie.precut.R
 import com.savie.precut.ui.components.FilledButton
 import com.savie.precut.ui.components.PreCutSwitch
 import com.savie.precut.ui.home.GlassDialog
+import com.savie.precut.ui.home.syncNoticeText
 import com.savie.precut.ui.theme.TextSecondary
 
 private enum class AccountDialog { SIGN_OUT, DELETE }
@@ -38,7 +39,7 @@ internal fun AccountSection(viewModel: AccountViewModel = hiltViewModel()) {
         SettingRow(
             R.drawable.ic_cloud,
             stringResource(R.string.account_storage),
-            ui.cloud?.let {
+            ui.notice?.let { syncNoticeText(it) } ?: ui.cloud?.let {
                 stringResource(R.string.account_storage_used, Formatter.formatShortFileSize(context, it.storageUsed), Formatter.formatShortFileSize(context, it.storageLimit))
             } ?: stringResource(R.string.account_storage_unknown),
         )

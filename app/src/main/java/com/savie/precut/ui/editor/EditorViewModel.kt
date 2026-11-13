@@ -11,6 +11,7 @@ import com.savie.precut.ai.CaptionJob
 import com.savie.precut.ai.cloud.CloudClient
 import com.savie.precut.data.AppSettings
 import com.savie.precut.data.OpenProjects
+import com.savie.precut.data.sync.SyncStatus
 import com.savie.precut.data.ProTastes
 import com.savie.precut.export.ExportController
 import com.savie.precut.media.shorts.MomentAnalyzer
@@ -297,6 +298,7 @@ class EditorViewModel @Inject constructor(
     effectFavourites: EffectFavourites,
     private val appSettings: AppSettings,
     private val openProjects: OpenProjects,
+    private val syncStatus: SyncStatus,
     entitlements: EntitlementRepository,
     proTastes: ProTastes,
     exportController: ExportController,
@@ -514,10 +516,12 @@ class EditorViewModel @Inject constructor(
             }
             session = ProjectSession(project, repository, clock, appScope, viewModelScope)
             // The forced-update screen saves open projects first (Phase 23).
-            openRegistration = openProjects.register { session?.flush() }
+            openRegistration = openProjects.register(projectId) { session?.flush() }
             val missing = findMissing(project)
             showInPreview(playable(project, missing), 0L)
             _uiState.value = EditorUiState.Ready(project, missingIds = missing)
+            // Files from the account (Phase 30D) appear as they download.
+            launch { syncStatus.arrived.collect { onFilesArrived() } }
             requestProxies(project)
             brand.onOpened(project)
             // Home's AI Edit: the sheet opens on the new project, once.
@@ -651,6 +655,16 @@ class EditorViewModel @Inject constructor(
             updateReady { it.copy(missingIds = it.missingIds - clipId) }
             applyEdit(EditAction.ReplaceClip(clipId, imported.uri, imported.info))
         }
+    }
+
+    /** Media that was missing may have just downloaded: check again and show what's there now. */
+    private suspend fun onFilesArrived() {
+        val ready = _uiState.value as? EditorUiState.Ready ?: return
+        if (ready.missingIds.isEmpty()) return
+        val missing = findMissing(ready.project)
+        if (missing == ready.missingIds) return
+        updateReady { it.copy(missingIds = missing) }
+        showInPreview(playable(ready.project, missing), previewState.value.positionMs)
     }
 
     private suspend fun findMissing(project: Project): Set<String> =

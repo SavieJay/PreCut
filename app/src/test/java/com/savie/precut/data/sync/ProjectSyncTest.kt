@@ -21,8 +21,16 @@ class ProjectSyncTest {
     private val server = Server()
     private val phone = Phone()
     private val cursors = Cursors()
+    private val media = Media()
+    private val status = SyncStatus()
+    private val open = mutableSetOf<String>()
     private var ids = 0
-    private val sync = ProjectSync(tokens, server, phone, cursors, conflictLabel = { "this phone" }, newId = { "copy-${++ids}" })
+    private val sync = ProjectSync(
+        tokens, server, phone, cursors, media, status,
+        isOpen = { it in open },
+        conflictLabel = { "this phone" },
+        newId = { "copy-${++ids}" },
+    )
 
     private fun project(id: String, name: String, updatedAt: Long = 1_000) =
         Project(id = id, name = name, clips = emptyList(), createdAt = 0, updatedAt = updatedAt)
@@ -140,6 +148,79 @@ class ProjectSyncTest {
         assertNull(phone.rows.getValue("k").owner)
     }
 
+    @Test
+    fun `files go up first, and the project names them by their cloud references`() = runBlocking {
+        phone.put(project("m", "Music"), owner = "user-1")
+        media.ready = { p -> Prepared.Ready(p.copy(name = p.name), mapOf("file:Lobster.ttf" to "f".repeat(64) + ".ttf"), listOf("a".repeat(64))) }
+        sync.run()
+        val sent = server.saves.single().second
+        assertEquals(listOf("a".repeat(64)), sent.media)
+        assertEquals("\"" + "f".repeat(64) + ".ttf\"", (sent.project["cloudFiles"] as JsonObject)["file:Lobster.ttf"].toString())
+        // Another phone reads the font's file back out of the project.
+        phone.rows.remove("m")
+        cursors.saved = null
+        sync.run()
+        assertEquals(mapOf("file:Lobster.ttf" to "f".repeat(64) + ".ttf"), media.localized.single())
+        assertEquals("Music", phone.rows.getValue("m").project?.name)
+    }
+
+    @Test
+    fun `files waiting for Wi-Fi keep the project waiting, and say so`() = runBlocking {
+        phone.put(project("n", "Night"), owner = "user-1")
+        phone.put(project("o", "Ocean"), owner = "user-1")
+        media.ready = { p -> if (p.id == "n") Prepared.Wait(SyncNotice.WaitingForWifi) else Prepared.Ready(p, emptyMap(), emptyList()) }
+        assertEquals(SyncOutcome.WaitingForWifi, sync.run())
+        assertEquals(true, phone.rows.getValue("n").dirty)
+        assertEquals(false, phone.rows.getValue("o").dirty)
+        assertEquals(SyncNotice.WaitingForWifi, status.notice.value)
+        media.ready = { p -> Prepared.Ready(p, emptyMap(), emptyList()) }
+        assertEquals(SyncOutcome.Done, sync.run())
+        assertNull(status.notice.value)
+    }
+
+    @Test
+    fun `files the server lacks after all go up again`() = runBlocking {
+        phone.put(project("q", "Quay"), owner = "user-1")
+        server.missing = listOf("b".repeat(64))
+        sync.run()
+        assertEquals(listOf("b".repeat(64)), media.forgotten)
+        assertEquals(true, phone.rows.getValue("q").dirty)
+    }
+
+    @Test
+    fun `a project open in the editor is left alone, and read again once it closes`() = runBlocking {
+        server.put(project("r", "River"), revision = 1)
+        sync.run()
+        open += "r"
+        server.put(project("r", "River (theirs)"), revision = 2)
+        sync.run()
+        assertEquals("River", phone.rows.getValue("r").project?.name)
+        assertNull(cursors.saved) // read from the start next time
+        open -= "r"
+        sync.run()
+        assertEquals("River (theirs)", phone.rows.getValue("r").project?.name)
+    }
+
+    @Test
+    fun `downloaded files remake covers and reach open editors`() = runBlocking {
+        media.arrive = listOf("file:///cloud/a.mp4")
+        sync.run()
+        assertEquals(1, phone.coverRefreshes)
+    }
+
+    private class Media : ProjectMedia {
+        var ready: (Project) -> Prepared = { Prepared.Ready(it, emptyMap(), emptyList()) }
+        val localized = mutableListOf<Map<String, String>>()
+        val forgotten = mutableListOf<String>()
+        var arrive: List<String> = emptyList()
+        override suspend fun prepare(project: Project) = ready(project)
+        override suspend fun localize(project: Project, extra: Map<String, String>): Project = project.also { if (extra.isNotEmpty()) localized += extra }
+        override suspend fun forget(hashes: List<String>) {
+            forgotten += hashes
+        }
+        override suspend fun downloadMissing(): List<String> = arrive.also { arrive = emptyList() }
+    }
+
     private class Tokens : AccessTokens {
         override var userId: String? = "user-1"
         override suspend fun <T> withToken(call: suspend (String) -> AuthResult<T>): AuthResult<T> = call("token")
@@ -160,6 +241,7 @@ class ProjectSyncTest {
         private val order = mutableListOf<String>()
         var offline = false
         var hideChanges = false
+        var missing: List<String> = emptyList()
 
         fun put(project: Project, revision: Int) {
             projects[project.id] = RemoteProject(project.id, revision, project.name, json(project))
@@ -188,6 +270,7 @@ class ProjectSyncTest {
             if (offline) return AuthResult.Failed(AuthFailure.Offline)
             val current = projects[id]
             if (current?.revision != upload.baseRevision) return AuthResult.Ok(SaveReply.Conflict(current))
+            if (missing.isNotEmpty()) return AuthResult.Ok(SaveReply.MissingMedia(missing))
             saves += id to upload
             val revision = (current?.revision ?: 0) + 1
             projects[id] = RemoteProject(id, revision, upload.name, upload.project)
@@ -203,6 +286,10 @@ class ProjectSyncTest {
         }
 
         private fun json(project: Project) = Json.parseToJsonElement(ProjectSerializer.encode(project)) as JsonObject
+
+        override suspend fun grant(token: String, sha256: String, size: Long, mime: String): AuthResult<GrantReply> = AuthResult.Ok(GrantReply.Exists)
+        override suspend fun confirm(token: String, sha256: String): AuthResult<ConfirmReply> = AuthResult.Ok(ConfirmReply.Ok)
+        override suspend fun downloadUrl(token: String, sha256: String): AuthResult<String?> = AuthResult.Ok(null)
     }
 
     private data class Row(val project: Project?, val owner: String?, val revision: Int?, val dirty: Boolean, val updatedAt: Long)
@@ -210,6 +297,11 @@ class ProjectSyncTest {
     /** The phone's projects, as Room keeps them. */
     private class Phone : ProjectSyncStore {
         val rows = mutableMapOf<String, Row>()
+        var coverRefreshes = 0
+
+        override suspend fun refreshCovers(owner: String) {
+            coverRefreshes++
+        }
 
         fun put(project: Project, owner: String?) {
             rows[project.id] = Row(project, owner, null, true, project.updatedAt)

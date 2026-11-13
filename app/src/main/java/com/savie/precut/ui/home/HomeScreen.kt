@@ -103,7 +103,10 @@ fun HomeScreen(
         onTab = { tab = it },
         templates = { modifier -> TemplatesTab(onOpen = onOpenTemplate, modifier = modifier) },
         onSettings = onOpenSettings,
-        banner = { LocalUpdates.current?.let { HomeUpdateBanner(it.checker, it.play) } },
+        banner = {
+            LocalUpdates.current?.let { HomeUpdateBanner(it.checker, it.play) }
+            SyncNoticeBanner()
+        },
         actions = object : ProjectActions {
             override fun onOpen(projectId: String) = onOpenEditor(projectId)
             override fun onRename(projectId: String, name: String) = viewModel.onRename(projectId, name)

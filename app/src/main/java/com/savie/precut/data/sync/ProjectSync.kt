@@ -17,12 +17,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.time.Instant
 
 /** How a sync ended. */
 sealed interface SyncOutcome {
     data object Done : SyncOutcome
     data object NotSignedIn : SyncOutcome
+    /** Synced, but files wait for Wi-Fi (Settings → Account): run again on Wi-Fi. */
+    data object WaitingForWifi : SyncOutcome
     /** Offline or the server was busy: try again later. */
     data class Retry(val failure: AuthFailure) : SyncOutcome
 }
@@ -44,14 +47,35 @@ class ProjectSync(
     private val api: ProjectSyncApi,
     private val store: ProjectSyncStore,
     private val cursors: SyncCursors,
+    private val media: ProjectMedia,
+    private val status: SyncStatus,
+    /** A project open in an editor is left alone (its next save meets the server's copy instead). */
+    private val isOpen: (String) -> Boolean,
     private val conflictLabel: () -> String,
     private val newId: () -> String,
 ) {
     private val mutex = Mutex()
+    private var notice: SyncNotice? = null
+    private var skippedOpen = false
 
     suspend fun run(): SyncOutcome = mutex.withLock {
         val user = tokens.userId ?: return SyncOutcome.NotSignedIn
+        notice = null
+        skippedOpen = false
         store.claim(user)
+        val outcome = sync(user)
+        status.notice(notice)
+        if (outcome != SyncOutcome.Done) return outcome
+        // Files for projects from other phones (Phase 30D); an open editor shows them as they land.
+        val arrived = media.downloadMissing()
+        if (arrived.isNotEmpty()) {
+            store.refreshCovers(user)
+            status.arrived(arrived)
+        }
+        if (notice == SyncNotice.WaitingForWifi) SyncOutcome.WaitingForWifi else SyncOutcome.Done
+    }
+
+    private suspend fun sync(user: String): SyncOutcome {
         pull(user)?.let { return it }
         // Edits made while sending, and copies a conflict moved on, are sent too; a copy already
         // tried as it is (waiting for files, too large) isn't sent again in this run.
@@ -61,7 +85,7 @@ class ProjectSync(
             if (dirty.isEmpty()) return SyncOutcome.Done
             for (project in dirty) push(user, project)?.let { return it }
         }
-        SyncOutcome.Done
+        return SyncOutcome.Done
     }
 
     /** Every change since the last sync, page by page; null when all were taken. */
@@ -77,13 +101,19 @@ class ProjectSync(
             page.next?.let { cursor = it; last = it }
             if (!page.more || page.next == null) break
         }
-        last?.let { cursors.set(user, overlap(it)) }
+        // A change left for an open project is read again next time (from the start).
+        cursors.set(user, if (skippedOpen) null else last?.let(::overlap) ?: cursors.get(user))
         return null
     }
 
     private suspend fun take(user: String, remote: RemoteProject) {
         val local = store.localCopy(remote.id)
-        when (val plan = planIncoming(local, RemoteCopy(remote.id, remote.revision, remote.deleted))) {
+        val plan = planIncoming(local, RemoteCopy(remote.id, remote.revision, remote.deleted))
+        if (plan != Incoming.Ignore && plan !is Incoming.KeepLocal && isOpen(remote.id)) {
+            skippedOpen = true
+            return
+        }
+        when (plan) {
             Incoming.Ignore -> Unit
             Incoming.Take -> decode(remote)?.let { store.takeRemote(user, it, remote.revision) }
             Incoming.DropLocal -> store.remove(remote.id)
@@ -103,7 +133,12 @@ class ProjectSync(
             is Outgoing.DeleteRemote -> tokens.withToken { api.delete(it, dirty.id, plan.base) }
             is Outgoing.Upload -> {
                 val project = dirty.project ?: return null
-                tokens.withToken { api.save(it, dirty.id, upload(project, plan.base)) }
+                when (val prepared = media.prepare(project)) {
+                    is Prepared.Failed -> return SyncOutcome.Retry(prepared.failure)
+                    // Stays dirty; the others still sync (their files may be up already).
+                    is Prepared.Wait -> return null.also { notice = notice ?: prepared.notice }
+                    is Prepared.Ready -> tokens.withToken { api.save(it, dirty.id, upload(prepared, project, plan.base)) }
+                }
             }
         }
         when (reply) {
@@ -121,25 +156,39 @@ class ProjectSync(
                         store.rebase(dirty.id, null)
                     }
                 }
-                // Files come with Phase 30D; a project too large stays on the phone only.
-                is SaveReply.MissingMedia, SaveReply.TooLarge -> Unit
+                // The server lacks files this phone thought it had: they go up next time.
+                is SaveReply.MissingMedia -> media.forget(answer.missing)
+                // A project too large stays on the phone only.
+                SaveReply.TooLarge -> Unit
             }
         }
         return null
     }
 
-    private fun upload(project: Project, base: Int?) = ProjectUpload(
-        baseRevision = base,
-        name = project.name,
-        project = Json.parseToJsonElement(ProjectSerializer.encode(project)) as JsonObject,
-        media = emptyList(),
-        coverSha256 = null,
-        durationMs = project.totalDurationMs(),
-        editedAt = Instant.ofEpochMilli(project.updatedAt).toString(),
-    )
+    /** The upload: the project in its cloud form, plus [CLOUD_FILES] naming its fonts' and LUTs' files. */
+    private fun upload(prepared: Prepared.Ready, project: Project, base: Int?): ProjectUpload {
+        val json = Json.parseToJsonElement(ProjectSerializer.encode(prepared.project)) as JsonObject
+        val files = JsonObject(prepared.extra.mapValues { JsonPrimitive(it.value) })
+        return ProjectUpload(
+            baseRevision = base,
+            name = project.name,
+            project = if (prepared.extra.isEmpty()) json else JsonObject(json + (CLOUD_FILES to files)),
+            media = prepared.hashes,
+            coverSha256 = null,
+            durationMs = project.totalDurationMs(),
+            editedAt = Instant.ofEpochMilli(project.updatedAt).toString(),
+        )
+    }
 
-    private fun decode(remote: RemoteProject): Project? =
-        remote.project?.let { ProjectSerializer.decode(it.toString()) }?.copy(id = remote.id)
+    /** The server's project as this phone's: its files placed here (and noted for download). */
+    private suspend fun decode(remote: RemoteProject): Project? {
+        val json = remote.project ?: return null
+        val extra = (json[CLOUD_FILES] as? JsonObject)?.mapNotNull { (id, value) ->
+            (value as? JsonPrimitive)?.takeIf { it.isString }?.content?.let { id to it }
+        }?.toMap().orEmpty()
+        val project = ProjectSerializer.decode(JsonObject(json - CLOUD_FILES).toString())?.copy(id = remote.id) ?: return null
+        return media.localize(project, extra)
+    }
 
     private fun overlap(cursor: Cursor): Cursor {
         val since = runCatching { Instant.parse(cursor.since) }.getOrNull() ?: return cursor
@@ -148,6 +197,8 @@ class ProjectSync(
 
     private companion object {
         const val MAX_PUSH_ROUNDS = 3
+        /** In a cloud project's JSON: font and LUT ids → their files (`<sha256>.<ext>`). */
+        const val CLOUD_FILES = "cloudFiles"
         const val NO_ID = "00000000-0000-0000-0000-000000000000"
     }
 }

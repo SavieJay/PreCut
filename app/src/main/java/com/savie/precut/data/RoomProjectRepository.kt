@@ -148,6 +148,13 @@ class RoomProjectRepository @Inject constructor(
 
     override suspend fun rebase(id: String, revision: Int?) = dao.rebase(id, revision)
 
+    override suspend fun refreshCovers(owner: String) = lock.withLock {
+        for (row in dao.withoutCover(owner)) {
+            val project = ProjectSerializer.decode(row.json) ?: continue
+            write(project, row, ownerId = row.ownerId, serverRevision = row.serverRevision, dirty = row.dirty)
+        }
+    }
+
     override suspend fun remove(id: String) = lock.withLock {
         covers.delete(dao.get(id)?.coverPath)
         dao.delete(id)

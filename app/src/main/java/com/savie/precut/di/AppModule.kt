@@ -11,7 +11,11 @@ import com.savie.precut.ai.cloud.CloudConfig
 import com.savie.precut.auth.AccessTokens
 import com.savie.precut.auth.AccountRepository
 import com.savie.precut.auth.AuthConfig
+import com.savie.precut.data.OpenProjects
+import com.savie.precut.data.sync.CloudMedia
 import com.savie.precut.data.sync.CloudProjectSyncApi
+import com.savie.precut.data.sync.ProjectMedia
+import com.savie.precut.data.sync.SyncStatus
 import com.savie.precut.data.sync.PrefsSyncCursors
 import com.savie.precut.data.sync.ProjectSync
 import com.savie.precut.data.sync.ProjectSyncApi
@@ -48,6 +52,7 @@ import com.savie.precut.data.TemplateHistory
 import com.savie.precut.data.TemplateStore
 import com.savie.precut.data.UnusedMediaCleaner
 import com.savie.precut.data.db.AppDatabase
+import com.savie.precut.data.db.MediaFileDao
 import com.savie.precut.data.db.ProjectDao
 import com.savie.precut.export.AndroidExportServiceStarter
 import com.savie.precut.export.ExportServiceStarter
@@ -105,6 +110,9 @@ abstract class AppModule {
 
     @Binds
     abstract fun bindProjectSyncApi(impl: CloudProjectSyncApi): ProjectSyncApi
+
+    @Binds
+    abstract fun bindProjectMedia(impl: CloudMedia): ProjectMedia
 
     @Binds
     abstract fun bindProjectRepository(impl: RoomProjectRepository): ProjectRepository
@@ -194,6 +202,9 @@ abstract class AppModule {
         @Provides
         fun provideProjectDao(database: AppDatabase): ProjectDao = database.projectDao()
 
+        @Provides
+        fun provideMediaFileDao(database: AppDatabase): MediaFileDao = database.mediaFileDao()
+
         /** This build's backend (Phase 20), from the gitignored cloud.properties; empty without it. */
         @Provides
         fun provideCloudConfig(): CloudConfig =
@@ -216,8 +227,12 @@ abstract class AppModule {
             api: ProjectSyncApi,
             store: ProjectSyncStore,
             cursors: SyncCursors,
+            media: ProjectMedia,
+            status: SyncStatus,
+            openProjects: OpenProjects,
         ): ProjectSync = ProjectSync(
-            tokens, api, store, cursors,
+            tokens, api, store, cursors, media, status,
+            isOpen = openProjects::isOpen,
             conflictLabel = { context.getString(R.string.sync_conflict_label) },
             newId = { UUID.randomUUID().toString() },
         )

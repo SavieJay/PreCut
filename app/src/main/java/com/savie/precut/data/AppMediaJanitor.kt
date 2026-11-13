@@ -21,8 +21,8 @@ interface UnusedMediaCleaner {
     suspend fun sweep()
 }
 
-/** App-private media folders: recorded voiceovers, camera captures, copies of picked or shared files, freeze frames, reversed clips, drawings, background-removal mattes. */
-val APP_MEDIA_DIRS = listOf("voiceovers", "captures", "imports", "freezes", "reversed", "drawings", "mattes")
+/** App-private media folders: recorded voiceovers, camera captures, copies of picked or shared files, freeze frames, reversed clips, drawings, background-removal mattes, files downloaded from the account (Phase 30D). */
+val APP_MEDIA_DIRS = listOf("voiceovers", "captures", "imports", "freezes", "reversed", "drawings", "mattes", "cloud")
 
 class AppMediaJanitor @Inject constructor(
     @ApplicationContext private val context: Context,

@@ -34,6 +34,9 @@ interface ProjectSyncStore {
     /** The phone's copy now builds on server [revision] (null: as new); it stays dirty. */
     suspend fun rebase(id: String, revision: Int?)
 
+    /** Remakes covers [owner]'s projects lack (their first clip just downloaded). */
+    suspend fun refreshCovers(owner: String)
+
     /** Gone for good from the phone (deleted on the server, or a deletion the server has). */
     suspend fun remove(id: String)
 }

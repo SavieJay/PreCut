@@ -706,9 +706,9 @@ Goal: signing in is required at first launch (Google one tap, or a 6-digit email
 - [x] Home shows each project's cloud state (a cloud when saved to the account, a clock while waiting)
 
 *30D — Media sync*
-- [ ] A project's files include imported fonts and custom LUTs; files are hashed, granted, uploaded with TUS (resumable) and confirmed before the project counts as synced
-- [ ] On a new phone, opening a project downloads its media with progress and rewrites its URIs; a matching file already on the phone is reused
-- [ ] Over the limit, uploads pause and Home and Settings say so; nothing on the phone is lost
+- [x] A project's files include imported fonts and custom LUTs; files are hashed, granted, uploaded with TUS (resumable, 6 MB chunks) and confirmed before the project counts as synced. Room v3 adds `media_files` (each file's hash, cloud state and upload in progress); the cloud JSON names files `cloud:<sha256>.<ext>`, fonts and LUTs in a `cloudFiles` map
+- [x] On a new phone, sync downloads a project's files to `files/cloud` (checked by SHA-256), places fonts and LUTs back in their folders, remakes covers, and an open editor shows the files as they land; a matching file already on the phone is reused. Changed from the plan: downloads run with the sync (Wi-Fi rule applies), not only when a project opens. A project open in an editor is never overwritten underneath it
+- [x] Over the limit, uploads pause and Home and Settings say so; nothing on the phone is lost. Waiting for Wi-Fi says so too, and runs again once on Wi-Fi
 
 *30E — Policies, docs, website*
 - [ ] Privacy policy, Data safety (email, user ID, photos and videos, audio, files; account deletion), website privacy and account-deletion pages, "no account" lines removed

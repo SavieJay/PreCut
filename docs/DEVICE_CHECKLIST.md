@@ -389,6 +389,16 @@ Two phones (or one phone and Clear storage in between), signed in to the same ac
 6. Delete a project on A: it disappears from B too. Delete one on B while A edits it offline: A's edit brings it back on both.
 7. Sign out, sign in with another account: the first account's projects are hidden (not deleted); signing back in shows them again.
 
+## 4y. Videos and photos sync too (Phase 30D)
+Same two phones as 4x, with the Supabase Pro plan and Storage's 4 GB file limit set (docs/ACCOUNTS.md).
+1. On Wi-Fi, make a project on A with a long video, a photo, music, a voiceover, a sticker, an imported font and a custom LUT. Its card shows the clock while it uploads (a 500 MB video takes a few minutes), then the cloud.
+2. On B the project appears; within a minute or two (on Wi-Fi) its cover appears and opening it plays everything: video, photo, music, voiceover, sticker, the font and the LUT look.
+3. Open the project on B before its files have arrived: the missing-media banner shows, then clears by itself as the files land and the preview fills in.
+4. Turn Wi-Fi off on A (mobile data on), add a new video: Projects says videos upload on Wi-Fi; the card keeps its clock. Settings → Account → Upload over mobile data: it uploads now. Turn the switch off again.
+5. Force-stop PreCut halfway through a large upload, reopen: it continues from where it stopped (the server's offset), not from zero.
+6. With `free_storage_bytes` set low in `cloud_config` (e.g. 100 MB), add a big video: Projects and Settings say storage is full; the project stays on the phone. Set it back.
+7. Settings → Account shows the storage used growing as files upload.
+
 ## 5. Release build (Phase 15)
 1. `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk`. If Android refuses because the debug build is installed, uninstall it first. That deletes the debug build's projects.
 2. Then:

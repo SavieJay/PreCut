@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.savie.precut.auth.AccountRepository
 import com.savie.precut.auth.CloudAccount
 import com.savie.precut.data.AppSettings
+import com.savie.precut.data.sync.SyncNotice
+import com.savie.precut.data.sync.SyncRequests
+import com.savie.precut.data.sync.SyncStatus
 import com.savie.precut.model.account.AuthResult
 import com.savie.precut.model.account.AuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +28,8 @@ data class AccountUi(
     val mobileData: Boolean = false,
     val deleting: Boolean = false,
     val deleteFailed: Boolean = false,
+    /** Files waiting (Wi-Fi, storage full), Phase 30D. */
+    val notice: SyncNotice? = null,
 )
 
 /**
@@ -36,12 +41,15 @@ data class AccountUi(
 class AccountViewModel @Inject constructor(
     private val account: AccountRepository,
     private val settings: AppSettings,
+    syncStatus: SyncStatus,
+    private val sync: SyncRequests,
 ) : ViewModel() {
     private val cloud = MutableStateFlow<CloudAccount?>(null)
     private val deleting = MutableStateFlow(Deleting())
 
-    val ui: StateFlow<AccountUi> = combine(account.state, cloud, settings.values, deleting) { state, cloud, values, deleting ->
+    val ui: StateFlow<AccountUi> = combine(account.state, cloud, settings.values, deleting, syncStatus.notice) { state, cloud, values, deleting, notice ->
         AccountUi(
+            notice = notice,
             shown = state is AuthState.SignedIn,
             email = (state as? AuthState.SignedIn)?.email,
             cloud = cloud,
@@ -59,7 +67,11 @@ class AccountViewModel @Inject constructor(
         }
     }
 
-    fun onMobileData(on: Boolean) = settings.update { it.copy(syncOnMobileData = on) }
+    fun onMobileData(on: Boolean) {
+        settings.update { it.copy(syncOnMobileData = on) }
+        // Files waiting for Wi-Fi can go now.
+        if (on) sync.now()
+    }
 
     fun onSignOut() {
         viewModelScope.launch { account.signOut() }
