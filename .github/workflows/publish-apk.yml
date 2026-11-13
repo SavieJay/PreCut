@@ -6,6 +6,9 @@
 #   PRECUT_KEYSTORE_B64        the upload key, `base64 -w0 keystore/precut-upload.jks`
 #   PRECUT_KEYSTORE_PROPERTIES the contents of keystore.properties (storeFile=keystore/precut-upload.jks …)
 #   PRECUT_CLOUD_PROPERTIES    the contents of cloud.properties
+#   PRECUT_RELEASE_SECRET      the cloud function's RELEASE_SECRET: after publishing, the release is
+#                              announced to the apps (Home's update banner, and "What's new" from
+#                              release/whats-new.json). Never raises the minimum version.
 #   NETLIFY_BUILD_HOOK         optional: the website's build hook, so its size and checksum refresh
 # Without the keystore secrets the job stops before building: unsigned or debug-signed copies would
 # not install over the website's APK. Set the repository variable PUBLISH_APK to "false" to pause.
@@ -113,6 +116,24 @@ jobs:
             gh release create "$TAG" --title "PreCut ${{ steps.apk.outputs.name }}" --notes "$NOTES" --latest
           fi
           gh release upload "$TAG" PreCut.apk "PreCut-${{ steps.apk.outputs.name }}.apk" --clobber
+
+      - name: Tell the apps about it
+        if: ${{ !inputs.dry_run }}
+        env:
+          RELEASE_SECRET: ${{ secrets.PRECUT_RELEASE_SECRET }}
+          CODE: ${{ steps.apk.outputs.code }}
+          NAME: ${{ steps.apk.outputs.name }}
+        run: |
+          if [ -z "$RELEASE_SECRET" ]; then
+            echo "::warning::PRECUT_RELEASE_SECRET isn't set, so the apps weren't told about this release."
+            exit 0
+          fi
+          CLOUD=$(grep -E '^cloudUrl=' cloud.properties | cut -d= -f2- | sed 's:/*$::')
+          BODY=$(jq -c --argjson code "$CODE" --arg name "$NAME" \
+            '{versionCode: $code, versionName: $name, whatsNew: .}' release/whats-new.json)
+          curl -fsS -X POST "$CLOUD/release" \
+            -H "Authorization: Bearer $RELEASE_SECRET" -H "Content-Type: application/json" -d "$BODY"
+          echo
 
       - name: Refresh the website
         if: env.NETLIFY_HOOK != '' && !inputs.dry_run

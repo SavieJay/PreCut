@@ -70,6 +70,7 @@ export function depsFromEnv(
       id.trim()
     ).filter((id) => id !== ""),
     rtdnSecret: rtdnSecretFrom(env),
+    releaseSecret: releaseSecretFrom(env),
     installTokenSecret: utf8(secret),
     maxUploadBytes: MAX_UPLOAD_BYTES,
     minApiVersion: MIN_API_VERSION,
@@ -168,6 +169,18 @@ function rtdnSecretFrom(
   if (secret === "") return null;
   if (secret.length < 24) {
     throw new ConfigError("RTDN_SECRET must be at least 24 characters");
+  }
+  return secret;
+}
+
+/** The publish workflow's secret for POST /release; without one, /release refuses all. */
+function releaseSecretFrom(
+  env: Record<string, string | undefined>,
+): string | null {
+  const secret = env.RELEASE_SECRET ?? "";
+  if (secret === "") return null;
+  if (secret.length < 32) {
+    throw new ConfigError("RELEASE_SECRET must be at least 32 characters");
   }
   return secret;
 }

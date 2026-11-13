@@ -16,6 +16,7 @@ import type {
   EditUsageRecord,
   Plan,
   QuotaStore,
+  Release,
   Reservation,
 } from "../_shared/quota.ts";
 import { FakeTranscriber, type Transcript } from "../_shared/transcriber.ts";
@@ -28,6 +29,7 @@ export const INSTALL = "3f6c1d2e-8a4b-4c5d-9e0f-1a2b3c4d5e6f";
 export const SECRET = utf8("a-test-secret-that-is-long-enough-1234");
 export const NOW = new Date("2026-10-22T10:00:00Z");
 export const RTDN_SECRET = "a-push-endpoint-secret";
+export const RELEASE_SECRET = "the-publish-workflow-secret";
 
 export class MemoryQuota implements QuotaStore {
   readonly installs = new Map<string, { used: number; reserved: number }>();
@@ -164,6 +166,19 @@ export class MemoryQuota implements QuotaStore {
 
   appConfig(_platform: string): Promise<AppConfig> {
     this.check();
+    return Promise.resolve(this.config);
+  }
+
+  publishRelease(_platform: string, release: Release): Promise<AppConfig> {
+    this.check();
+    if (this.config.latestVersionCode <= release.versionCode) {
+      this.config = {
+        ...this.config,
+        latestVersionCode: release.versionCode,
+        latestVersionName: release.versionName,
+        whatsNew: release.whatsNew,
+      };
+    }
     return Promise.resolve(this.config);
   }
 
@@ -384,6 +399,7 @@ export function testDeps(): TestDeps {
     translator: new FakeTranslator(),
     proProducts: ["precut_pro"],
     rtdnSecret: RTDN_SECRET,
+    releaseSecret: RELEASE_SECRET,
     installTokenSecret: SECRET,
     maxUploadBytes: 1024,
     minApiVersion: 1,

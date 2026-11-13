@@ -2,7 +2,12 @@ import { type EditAgent, EditAgentError } from "./edit_agent.ts";
 import { type Bytes, hex, isUuid, sha256 } from "./encoding.ts";
 import { signInstallToken, verifyInstallToken } from "./install_token.ts";
 import { IntegrityUnavailable, type IntegrityVerifier } from "./integrity.ts";
-import type { EditRefusal, QuotaStore, ReservationRefusal } from "./quota.ts";
+import type {
+  EditRefusal,
+  QuotaStore,
+  Release,
+  ReservationRefusal,
+} from "./quota.ts";
 import {
   BillingUnavailable,
   type PlayBilling,
@@ -49,6 +54,8 @@ export interface Deps {
   proProducts: readonly string[];
   /** The secret in the Real-time developer notifications push URL; null switches /rtdn off. */
   rtdnSecret: string | null;
+  /** The publish workflow's secret for POST /release; null switches /release off. */
+  releaseSecret: string | null;
   installTokenSecret: Bytes;
   maxUploadBytes: number;
   minApiVersion: number;
@@ -156,6 +163,10 @@ function route(request: Request, deps: Deps): Promise<Response> {
   // Google's Pub/Sub sends no API version.
   if (`${request.method} ${routePath(request)}` === "POST /rtdn") {
     return rtdn(request, deps);
+  }
+  // The publish workflow announces a release; it isn't an app.
+  if (`${request.method} ${routePath(request)}` === "POST /release") {
+    return publishRelease(request, deps);
   }
   // Shared templates open from the website too, which sends no API version.
   const opened = routePath(request).match(/^\/templates\/([A-Za-z0-9]{8})$/);
@@ -474,6 +485,61 @@ async function appConfig(request: Request, deps: Deps): Promise<Response> {
   const response = json(200, config);
   response.headers.set("cache-control", "public, max-age=300");
   return response;
+}
+
+/**
+ * The publish workflow (.github/workflows/publish-apk.yml) announces each release it publishes,
+ * with `Authorization: Bearer <RELEASE_SECRET>` and `{versionCode, versionName, whatsNew}`: older
+ * apps then show the update banner, and the new one its "What's new". Only ever raises the latest
+ * version, and never the minimum (forcing an update stays a person's choice). `applied` is false
+ * when a newer release is already announced.
+ */
+async function publishRelease(request: Request, deps: Deps): Promise<Response> {
+  const given = (request.headers.get("authorization") ?? "").replace(
+    /^Bearer /,
+    "",
+  );
+  if (!deps.releaseSecret || !(await sameSecret(given, deps.releaseSecret))) {
+    deps.log({ event: "release", outcome: "forbidden" });
+    return errorResponse("forbidden");
+  }
+  const release = releaseFrom(await request.json().catch(() => null));
+  if (!release) return errorResponse("bad_request");
+  const config = await deps.quota.publishRelease("android", release);
+  const applied = config.latestVersionCode === release.versionCode;
+  deps.log({
+    event: "release",
+    versionCode: release.versionCode,
+    outcome: applied ? "ok" : "older",
+  });
+  return json(200, { applied, config });
+}
+
+/** Holds to the table's checks: a name of 1 to 32 characters, and up to 8 short "What's new" lines. */
+function releaseFrom(body: unknown): Release | null {
+  if (typeof body !== "object" || body === null) return null;
+  const { versionCode, versionName, whatsNew } = body as Record<
+    string,
+    unknown
+  >;
+  if (
+    !Number.isInteger(versionCode) || (versionCode as number) < 1 ||
+    (versionCode as number) > 2_100_000_000
+  ) return null;
+  if (
+    typeof versionName !== "string" || versionName.trim().length < 1 ||
+    versionName.trim().length > 32
+  ) return null;
+  if (!Array.isArray(whatsNew) || whatsNew.length > 8) return null;
+  const lines = whatsNew.map((line) =>
+    typeof line === "string" ? line.trim() : ""
+  );
+  if (lines.some((line) => line.length < 1 || line.length > 120)) return null;
+  return {
+    versionCode: versionCode as number,
+    versionName: versionName.trim(),
+    whatsNew: lines,
+  };
 }
 
 /** The path after the function's name: "/functions/v1/cloud/status" (local) and "/cloud/status" (deployed) are "/status". */

@@ -92,6 +92,13 @@ export interface AppConfig {
   updatedAt: string | null;
 }
 
+/** A release the publish workflow announces (POST /release). */
+export interface Release {
+  versionCode: number;
+  versionName: string;
+  whatsNew: string[];
+}
+
 export interface QuotaStore {
   /** Adds the install (or touches it again). */
   register(installId: string): Promise<CloudStatus>;
@@ -116,6 +123,11 @@ export interface QuotaStore {
   releaseEdit(runId: string): Promise<void>;
   /** The update rules for [platform] (zeros when there are none). */
   appConfig(platform: string): Promise<AppConfig>;
+  /**
+   * Makes [release] the newest version for [platform], unless a newer one is already set; never
+   * changes the minimum. Answers the update rules as they now are.
+   */
+  publishRelease(platform: string, release: Release): Promise<AppConfig>;
   /**
    * Saves Google's record of a purchase (keyed by [tokenHash]) and, with [installId], links it to
    * that install. Refused for an unregistered install.
@@ -200,6 +212,14 @@ export class PostgresQuotaStore implements QuotaStore {
   }
   async appConfig(platform: string): Promise<AppConfig> {
     return await this.call("cloud_app_config", { p_platform: platform });
+  }
+  async publishRelease(platform: string, release: Release): Promise<AppConfig> {
+    return await this.call("cloud_publish_release", {
+      p_platform: platform,
+      p_code: release.versionCode,
+      p_name: release.versionName,
+      p_whats_new: release.whatsNew,
+    });
   }
   async savePurchase(
     installId: string | null,

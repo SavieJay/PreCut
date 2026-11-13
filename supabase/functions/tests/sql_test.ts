@@ -438,6 +438,44 @@ sqlTest(
   },
 );
 
+sqlTest(
+  "publish release: raises the latest and What's new, never lowers it or touches the minimum; the service only",
+  async (db) => {
+    const publish = (code: number, name: string, lines: string[]) =>
+      call(db, "public.cloud_publish_release($1, $2, $3, $4)", [
+        "android",
+        code,
+        name,
+        JSON.stringify(lines),
+      ]);
+    await db.exec(
+      "update public.app_config set min_supported_version_code = 40 where platform = 'android'",
+    );
+    const first = await publish(71, "1.1.0", ["New look"]);
+    assertEquals(first.latestVersionCode, 71);
+    assertEquals(first.latestVersionName, "1.1.0");
+    assertEquals(first.whatsNew, ["New look"]);
+    assertEquals(first.minSupportedVersionCode, 40);
+    // Re-running the same release refreshes its lines.
+    assertEquals((await publish(71, "1.1.0", ["New look", "Fixes"])).whatsNew, [
+      "New look",
+      "Fixes",
+    ]);
+    // An older run finishing late changes nothing.
+    const late = await publish(70, "1.0.9", ["Old"]);
+    assertEquals(late.latestVersionCode, 71);
+    assertEquals(late.whatsNew, ["New look", "Fixes"]);
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`reset role; set role ${role};`);
+      await assertRejects(
+        () => publish(99, "9.9.9", []),
+        Error,
+        "permission denied",
+      );
+    }
+  },
+);
+
 const TOKEN_HASH = "a".repeat(64);
 const YEAR_LATER = "2027-10-22T10:00:00Z";
 
