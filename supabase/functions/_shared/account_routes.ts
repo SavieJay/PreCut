@@ -1,5 +1,6 @@
 import type { ProjectSave, User } from "./accounts.ts";
 import { isUuid } from "./encoding.ts";
+import { refreshPaystack } from "./paystack_routes.ts";
 import {
   authenticate,
   type Deps,
@@ -60,7 +61,7 @@ export function accountRoute(
   return null;
 }
 
-async function signedIn(
+export async function signedIn(
   request: Request,
   deps: Deps,
   run: (user: User) => Promise<Response>,
@@ -252,9 +253,12 @@ async function download(
 }
 
 async function account(user: User, deps: Deps): Promise<Response> {
+  await refreshPaystack(user.id, deps);
+  const plan = await deps.accounts.plan(user.id, deps.paystack?.mode ?? "live");
   return json(200, {
     email: user.email,
     ...(await deps.accounts.account(user.id)),
+    plan,
   });
 }
 
@@ -298,6 +302,10 @@ export async function cleanup(request: Request, deps: Deps): Promise<Response> {
   if (!deps.releaseSecret || !(await sameSecret(given, deps.releaseSecret))) {
     deps.log({ event: "cleanup", outcome: "forbidden" });
     return errorResponse("forbidden");
+  }
+  // Paystack renewals and cancellations, for accounts whose apps haven't asked lately.
+  for (const user of await deps.accounts.paystackDue()) {
+    await refreshPaystack(user, deps);
   }
   const dropped = await deps.accounts.cleanup();
   await deps.media.remove(dropped.map((d) => `${d.userId}/${d.sha256}`));

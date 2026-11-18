@@ -495,6 +495,7 @@ sqlTest(
       expiresAt: "2027-10-22T10:00:00+00:00",
       autoRenewing: true,
       trial: false,
+      source: "play",
     });
     await savePurchase(db, B, "active", YEAR_LATER);
     assertEquals((await status(db, A)).pro.pro, true);

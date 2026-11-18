@@ -1,4 +1,6 @@
 import { accountRoute, cleanup } from "./account_routes.ts";
+import type { PaystackSetup } from "./paystack.ts";
+import { paystackRoute, refreshPaystack } from "./paystack_routes.ts";
 import type {
   AccountStore,
   MediaStorage,
@@ -68,6 +70,8 @@ export interface Deps {
   accounts: AccountStore;
   media: MediaStorage;
   userAdmin: UserAdmin;
+  /** Paystack for the website APK (Phase 31); null when its keys aren't set. */
+  paystack: PaystackSetup | null;
   installTokenSecret: Bytes;
   maxUploadBytes: number;
   minApiVersion: number;
@@ -209,7 +213,7 @@ function route(request: Request, deps: Deps): Promise<Response> {
     routePath(request),
     request,
     deps,
-  );
+  ) ?? paystackRoute(request.method, routePath(request), request, deps);
   if (account) return account;
   switch (`${request.method} ${routePath(request)}`) {
     case "POST /register":
@@ -608,6 +612,11 @@ async function register(request: Request, deps: Deps): Promise<Response> {
 async function status(request: Request, deps: Deps): Promise<Response> {
   const install = await authenticate(request, deps);
   if (install instanceof Response) return install;
+  // A Paystack renewal or cancellation shows here too (Phase 31).
+  if (deps.paystack) {
+    const user = await deps.accounts.installUser(install.installId);
+    if (user) await refreshPaystack(user, deps);
+  }
   const status = await deps.quota.status(install.installId);
   if (!status) return errorResponse("not_registered");
   return json(200, { status, ...install.renewal });

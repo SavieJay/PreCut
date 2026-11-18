@@ -15,9 +15,11 @@ const VIDEO = "a".repeat(64);
 const SONG = "b".repeat(64);
 const COVER = "c".repeat(64);
 
-async function users(db: PGlite) {
+/** Ana and Ben, free accounts (no trial; the trial has its own tests). */
+async function users(db: PGlite, trialDays = 0) {
   await db.exec(
-    `insert into auth.users (id, email) values ('${ANA}', 'ana@example.com'), ('${BEN}', 'ben@example.com')`,
+    `insert into auth.users (id, email) values ('${ANA}', 'ana@example.com'), ('${BEN}', 'ben@example.com');
+     update public.cloud_config set trial_days = ${trialDays};`,
   );
 }
 
@@ -291,7 +293,8 @@ sqlTest(
   "storage: a user uploads only granted files, into their own folder",
   async (db) => {
     await users(db);
-    await grant(db, ANA, VIDEO, 10);
+    // Granted now: the upload policy compares with the real clock.
+    await grant(db, ANA, VIDEO, 10, new Date().toISOString());
     await db.exec(
       `reset role; set role authenticated; select set_config('request.jwt.claim.sub', '${ANA}', false);`,
     );

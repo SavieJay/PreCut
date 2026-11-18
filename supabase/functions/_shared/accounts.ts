@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Plan } from "./quota.ts";
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
 
 /**
@@ -117,6 +118,21 @@ export interface Account {
   projects: number;
 }
 
+/** An account's Paystack subscription as saved (Phase 31). */
+export interface PaystackRow {
+  mode: "test" | "live";
+  plan: "monthly" | "yearly" | null;
+  customer_code: string | null;
+  subscription_code: string | null;
+  email_token: string | null;
+  status: string | null;
+  paid_until: string | null;
+  pending_reference: string | null;
+  checked_at: string;
+}
+
+export type PaystackFields = Omit<PaystackRow, "checked_at">;
+
 export interface AccountStore {
   changes(
     user: string,
@@ -145,6 +161,15 @@ export interface AccountStore {
   files(user: string): Promise<string[]>;
   /** The daily clean-up; answers the files whose stored objects must go. */
   cleanup(): Promise<{ userId: string; sha256: string }[]>;
+  /** The account's plan: its best of Google Play, Paystack ([mode]) and the trial (Phase 31). */
+  plan(user: string, mode: string): Promise<Plan>;
+  paystack(user: string): Promise<PaystackRow | null>;
+  /** Saves Paystack's answer; null fields keep their value, except the pending reference. */
+  savePaystack(user: string, fields: PaystackFields): Promise<void>;
+  /** Accounts whose Paystack subscription is due a check. */
+  paystackDue(): Promise<string[]>;
+  /** The account [installId] is signed in to, or null. */
+  installUser(installId: string): Promise<string | null>;
 }
 
 export class PostgresAccountStore implements AccountStore {
@@ -217,6 +242,38 @@ export class PostgresAccountStore implements AccountStore {
   }
   cleanup() {
     return this.call<{ userId: string; sha256: string }[]>("cloud_cleanup", {});
+  }
+  plan(user: string, mode: string) {
+    return this.call<Plan>("cloud_account_plan", {
+      p_user: user,
+      p_mode: mode,
+    });
+  }
+  paystack(user: string) {
+    return this.call<PaystackRow | null>("cloud_paystack_get", {
+      p_user: user,
+    });
+  }
+  async savePaystack(user: string, f: PaystackFields) {
+    await this.call("cloud_paystack_save", {
+      p_user: user,
+      p_mode: f.mode,
+      p_plan: f.plan,
+      p_customer: f.customer_code,
+      p_subscription: f.subscription_code,
+      p_email_token: f.email_token,
+      p_status: f.status,
+      p_paid_until: f.paid_until,
+      p_pending_reference: f.pending_reference,
+    });
+  }
+  paystackDue() {
+    return this.call<string[]>("cloud_paystack_due", {});
+  }
+  installUser(installId: string) {
+    return this.call<string | null>("cloud_install_user", {
+      p_install: installId,
+    });
   }
 
   private async call<T>(

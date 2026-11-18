@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { HttpPaystack, type PaystackSetup } from "./paystack.ts";
 import {
   JwksUserVerifier,
   PostgresAccountStore,
@@ -70,6 +71,7 @@ export function depsFromEnv(
     accounts: new PostgresAccountStore(client),
     media: new SupabaseMediaStorage(client, url),
     userAdmin: new SupabaseUserAdmin(client),
+    paystack: paystackFrom(env, fetchFn),
     integrity: integrityFrom(env, local, fetchFn),
     transcriber: transcriberFrom(env, local, fetchFn),
     editAgent: editAgentFrom(env, local, fetchFn),
@@ -180,6 +182,38 @@ function rtdnSecretFrom(
     throw new ConfigError("RTDN_SECRET must be at least 24 characters");
   }
   return secret;
+}
+
+/**
+ * Paystack (Phase 31): the secret key, its mode and PreCut's two plan codes; null without a key.
+ * The mode must match the key, so a test key can never pass for live.
+ */
+function paystackFrom(
+  env: Record<string, string | undefined>,
+  fetchFn: typeof fetch,
+): PaystackSetup | null {
+  const key = env.PAYSTACK_SECRET_KEY ?? "";
+  if (key === "") return null;
+  const mode = env.PAYSTACK_MODE === "live" ? "live" : "test";
+  if (!key.startsWith(mode === "live" ? "sk_live_" : "sk_test_")) {
+    throw new ConfigError(
+      `PAYSTACK_SECRET_KEY isn't a ${mode} key (PAYSTACK_MODE)`,
+    );
+  }
+  const monthly = env.PAYSTACK_PLAN_MONTHLY ?? "";
+  const yearly = env.PAYSTACK_PLAN_YEARLY ?? "";
+  if (!monthly.startsWith("PLN_") || !yearly.startsWith("PLN_")) {
+    throw new ConfigError(
+      "PAYSTACK_PLAN_MONTHLY and PAYSTACK_PLAN_YEARLY must be Paystack plan codes",
+    );
+  }
+  return {
+    api: new HttpPaystack(key, fetchFn),
+    mode,
+    plans: { monthly, yearly },
+    callbackUrl: env.PAYSTACK_CALLBACK_URL ||
+      "https://precut.netlify.app/pro/paid",
+  };
 }
 
 /** The publish workflow's secret for POST /release; without one, /release refuses all. */

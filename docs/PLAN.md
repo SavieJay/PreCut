@@ -716,6 +716,24 @@ Goal: signing in is required at first launch (Google one tap, or a 6-digit email
 
 **Acceptance:** a new install can't reach Home without signing in; projects made on one phone open complete on another after signing in with the same account; edits made offline sync when the network returns; deleting the account removes its projects and media from the cloud.
 
+### Phase 31 — 14-day Pro trial, then subscribe (approved 2026-11-18)
+Goal: every account gets PreCut Pro free for 14 days from sign-up (no card; accounts made before launch get 14 days from launch). After that, Pro tools need a subscription: **₦4,000 a month or ₦36,000 a year**. The website APK pays with **Paystack**; the Play build keeps Google Play Billing (Play policy). The Paystack account is shared with other products and its one webhook belongs to another project, so PreCut's server checks payments with Paystack's API instead of a webhook (when the payment page returns, and every 6 hours).
+
+*31A — Server*
+- [x] Migration `20261118090000_trial_paystack`: `trial_days` and `trial_since` in `cloud_config`; `cloud_paystack` (one subscription per account); an account's plan is its best of Play, Paystack and the trial, and installs signed in to it get the same answer (`cloud_pro`), so older apps see the trial as Pro
+- [x] Routes: `POST /paystack/checkout` (a Paystack payment page for the monthly or yearly plan), `POST /paystack/confirm` (checks the payment with Paystack), `POST /paystack/cancel`; refreshed from Paystack on `/status` and `/account` when 6 hours old or past its renewal date
+- [x] Paystack plans (test and live) created through the API; keys and plan codes as function secrets; Deno and SQL tests
+
+*31B — App*
+- [ ] Two flavours: `web` (Paystack, the website APK and CI) and `play` (Google Play Billing; no Paystack code)
+- [ ] Trial shown in Settings and on the paywall ("9 days left"), a notice 2 days before it ends; after it, Pro tools open the paywall (no free tastes); the cloud AI allowances stay
+- [ ] Paywall (web): Subscribe opens Paystack's page in the browser; coming back confirms the payment; Settings → Account shows the plan, renewal date and Cancel
+
+*31C — Policies and website*
+- [ ] Privacy policy and Data safety: Paystack processes payments (PreCut never sees card details); website: the trial and the naira prices, and the page Paystack returns to
+
+**Acceptance:** a new account has Pro for 14 days, then Pro tools open the paywall; paying with a Paystack test card switches Pro on within seconds of coming back to the app, on every phone of the account; cancelling keeps Pro until the paid period ends.
+
 ## 4. Manual test matrix (use at the end of phases 3–12)
 - Portrait and landscape videos mixed in one project
 - Very short (< 1 s) and long (> 10 min) clips
@@ -956,3 +974,4 @@ Claude Code: append significant technical decisions or deviations from this plan
 - **2026-11-12 — Phase 29, the Afterglow restyle:** the user's "Redesign 2026" canvas page becomes Phase 29, approved with three choices: (1) lime means AI only, so the effects track gets its own colour instead of the design's lime; (2) the app icon changes to RD-A01 (logo on the new base with a pink halo), with a new Play icon and feature graphic; (3) the restyle comes before the Play store screenshots, so the listing shows the final look. The NEW frames for features the app doesn't have wait for their own plans after the Play launch. Glass is new in the app (the design called it existing): blur needs Android 12's RenderEffect, so Android 8–11 get the solid fallback the tokens board defines.
 - **2026-11-13 — Phase 30, accounts and cloud projects:** the user wants sign-in to be a core part of the app, with every project saved to the cloud. Chosen: (1) sign-in required at first launch, projects already on a phone join the account; (2) Google one tap or a 6-digit email code, no passwords; (3) every project with all its media syncs, limited per account (2 GB free, 50 GB Pro, server settings). This reverses "cloud project sync" being out of scope. Kept from Phase 20B: no Supabase SDK in the app (Auth is called over REST with the public publishable key); the function checks the user's token against the project's JWKS (ES256). Media goes straight from the phone to Storage with resumable uploads, after the function grants each file against the quota. Requires the Supabase Pro plan (file size and storage limits).
 - **2026-11-18 — Accounts live:** on Supabase's free plan (50 MB a file, 100 MB per account, 300 MB Pro; larger files stay on the phone) with Gmail sending the 6-digit codes (no domain for Resend). Google sign-in has the web client and Android clients for the upload and debug keys (a Play app-signing client is still needed once on Play). Checked on the owner's phone, then published as build 77; the website switched over (PreWeb #11, `accounts.live`).
+- **2026-11-18 — Phase 31, trial and Paystack:** the user chose (1) 14 days of Pro for every account, no card, then a subscription; (2) Paystack for the website APK, Google Play Billing for the Play build (separate flavours, so the Play build has no other payment system). Prices ₦4,000 a month, ₦36,000 a year. No Paystack webhook: the account's single webhook URL serves the owner's other products, so the server verifies transactions and polls subscriptions through the API. Changed from Phase 26: after the trial, Pro tools have no free tastes; the cloud AI allowances stay.

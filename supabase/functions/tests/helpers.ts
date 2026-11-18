@@ -12,6 +12,8 @@ import type {
   DeleteResult,
   GrantResult,
   MediaStorage,
+  PaystackFields,
+  PaystackRow,
   ProjectChanges,
   ProjectSave,
   SaveResult,
@@ -23,6 +25,7 @@ import type {
   IntegrityResult,
   IntegrityVerifier,
 } from "../_shared/integrity.ts";
+import { FakePaystack, type PaystackSetup } from "../_shared/paystack.ts";
 import type {
   AppConfig,
   CloudStatus,
@@ -401,6 +404,7 @@ export interface TestDeps extends Deps {
   accounts: ScriptedAccounts;
   media: FakeMediaStorage;
   userAdmin: FakeUserAdmin;
+  paystack: PaystackSetup & { api: FakePaystack };
   logs: Record<string, unknown>[];
   now: { value: Date };
 }
@@ -417,6 +421,8 @@ export class FakeUsers implements UserVerifier {
 
 export const ANA = "11111111-1111-4111-8111-111111111111";
 export const ANA_TOKEN = "ana-access-token";
+export const PLAN_MONTHLY = "PLN_monthly";
+export const PLAN_YEARLY = "PLN_yearly";
 
 /**
  * Answers each account call with what a test set in [replies] (the SQL itself is tested in
@@ -479,6 +485,39 @@ export class ScriptedAccounts implements AccountStore {
   cleanup(): Promise<{ userId: string; sha256: string }[]> {
     return this.reply("cleanup", []);
   }
+  /** Phase 31: a saved Paystack row per account, and the plan the store answers. */
+  paystackRows = new Map<string, PaystackRow>();
+  planReply: Plan = { pro: false, state: null };
+  installUsers = new Map<string, string>();
+  plan(user: string, mode: string): Promise<Plan> {
+    this.calls.push({ name: "plan", args: [user, mode] });
+    return Promise.resolve(this.planReply);
+  }
+  paystack(user: string): Promise<PaystackRow | null> {
+    return Promise.resolve(this.paystackRows.get(user) ?? null);
+  }
+  savePaystack(user: string, f: PaystackFields): Promise<void> {
+    const old = this.paystackRows.get(user);
+    this.paystackRows.set(user, {
+      mode: f.mode,
+      plan: f.plan ?? old?.plan ?? null,
+      customer_code: f.customer_code ?? old?.customer_code ?? null,
+      subscription_code: f.subscription_code ?? old?.subscription_code ?? null,
+      email_token: f.email_token ?? old?.email_token ?? null,
+      status: f.status ?? old?.status ?? null,
+      paid_until: f.paid_until ?? old?.paid_until ?? null,
+      pending_reference: f.pending_reference,
+      checked_at: this.now().toISOString(),
+    });
+    return Promise.resolve();
+  }
+  paystackDue(): Promise<string[]> {
+    return Promise.resolve([...this.paystackRows.keys()]);
+  }
+  installUser(installId: string): Promise<string | null> {
+    return Promise.resolve(this.installUsers.get(installId) ?? null);
+  }
+  now: () => Date = () => new Date();
 }
 
 export class FakeMediaStorage implements MediaStorage {
@@ -521,6 +560,12 @@ export function testDeps(): TestDeps {
     accounts: new ScriptedAccounts(),
     media: new FakeMediaStorage(),
     userAdmin: new FakeUserAdmin(),
+    paystack: {
+      api: new FakePaystack(),
+      mode: "test",
+      plans: { monthly: PLAN_MONTHLY, yearly: PLAN_YEARLY },
+      callbackUrl: "https://precut.netlify.app/pro/paid",
+    },
     installTokenSecret: SECRET,
     maxUploadBytes: 1024,
     minApiVersion: 1,
