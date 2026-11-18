@@ -19,7 +19,26 @@ data class ProPlan(
     val expiresAtMs: Long? = null,
     val autoRenewing: Boolean = false,
     val trial: Boolean = false,
+    /** Where it comes from (Phase 31); null from servers before it. */
+    val source: PlanSource? = null,
 )
+
+/** A plan's source: Google Play, Paystack (the website APK) or the account's free trial. */
+enum class PlanSource { PLAY, PAYSTACK, TRIAL }
+
+/** Whole days left of a running free trial (rounded up), or null when it isn't one. */
+fun trialDaysLeft(plan: ProPlan?, nowMs: Long): Int? {
+    if (plan == null || !plan.pro || plan.source != PlanSource.TRIAL) return null
+    val end = plan.expiresAtMs ?: return null
+    if (end <= nowMs) return null
+    return ((end - nowMs + DAY_MS - 1) / DAY_MS).toInt()
+}
+
+/** The trial ends within [TRIAL_NOTICE_DAYS]: Projects says so. */
+fun trialEndingSoon(plan: ProPlan?, nowMs: Long): Boolean = trialDaysLeft(plan, nowMs)?.let { it <= TRIAL_NOTICE_DAYS } ?: false
+
+const val TRIAL_NOTICE_DAYS = 2
+private const val DAY_MS = 24L * 60 * 60 * 1_000
 
 /** How long a Pro answer may be trusted offline past its end (a renewal may not have reached the phone). */
 const val OFFLINE_GRACE_MS = 3L * 24 * 60 * 60 * 1_000

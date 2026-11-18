@@ -2,6 +2,8 @@ package com.savie.precut.auth
 
 import com.savie.precut.ai.cloud.API_VERSION
 import com.savie.precut.ai.cloud.CloudConfig
+import com.savie.precut.ai.cloud.PlanDto
+import com.savie.precut.model.pro.ProPlan
 import com.savie.precut.ai.cloud.await
 import com.savie.precut.ai.cloud.cloudJson
 import com.savie.precut.di.IoDispatcher
@@ -49,7 +51,11 @@ data class CloudAccount(
     val storageLimit: Long = 0,
     val maxFileBytes: Long = 0,
     val projects: Int = 0,
-)
+    /** The account's plan: its best of Google Play, Paystack and the trial (Phase 31). */
+    val plan: PlanDto? = null,
+) {
+    val proPlan: ProPlan? get() = plan?.toModel()
+}
 
 /**
  * The cloud function's account routes (docs/CLOUD_API.md, Phase 30), each with the signed-in

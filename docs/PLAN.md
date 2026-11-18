@@ -725,9 +725,9 @@ Goal: every account gets PreCut Pro free for 14 days from sign-up (no card; acco
 - [x] Paystack plans (test and live) created through the API; keys and plan codes as function secrets; Deno and SQL tests
 
 *31B — App*
-- [ ] Two flavours: `web` (Paystack, the website APK and CI) and `play` (Google Play Billing; no Paystack code)
-- [ ] Trial shown in Settings and on the paywall ("9 days left"), a notice 2 days before it ends; after it, Pro tools open the paywall (no free tastes); the cloud AI allowances stay
-- [ ] Paywall (web): Subscribe opens Paystack's page in the browser; coming back confirms the payment; Settings → Account shows the plan, renewal date and Cancel
+- [x] Website and Play builds: changed from two flavours to a build switch, `-Pstore=play` (BuildConfig `WEB_PAYMENTS` false), so every existing task name, CI and the dex check stay as they are; R8 drops the Paystack path from Play builds
+- [x] Trial shown in Settings ("9 days left"), a notice on Projects in its last 2 days; after it, Pro tools open the paywall (no free tastes while signed in); the cloud AI allowances stay. Pro comes from the account's plan while signed in
+- [x] Paywall (website build): the plan cards show ₦4,000 / ₦36,000, Subscribe opens Paystack's page in the browser, coming back confirms the payment ("Check my payment" too); Settings → PreCut Pro shows the plan, renewal date and Cancel
 
 *31C — Policies and website*
 - [ ] Privacy policy and Data safety: Paystack processes payments (PreCut never sees card details); website: the trial and the naira prices, and the page Paystack returns to

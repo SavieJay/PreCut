@@ -28,9 +28,12 @@ sealed interface ProAccess {
     data object Locked : ProAccess
 }
 
-/** [feature]'s access for a Pro or free user who has used it [usedThisMonth] times this month. */
-fun proAccess(feature: ProFeature, isPro: Boolean, usedThisMonth: Int): ProAccess = when {
+/**
+ * [feature]'s access for a Pro or free user who has used it [usedThisMonth] times this month.
+ * With accounts (Phase 31) there are no [tastes]: the 14-day trial is the taste, then Pro is locked.
+ */
+fun proAccess(feature: ProFeature, isPro: Boolean, usedThisMonth: Int, tastes: Boolean = true): ProAccess = when {
     isPro -> ProAccess.Unlocked
-    usedThisMonth < feature.freeUsesPerMonth -> ProAccess.Taste(feature.freeUsesPerMonth - usedThisMonth)
+    tastes && usedThisMonth < feature.freeUsesPerMonth -> ProAccess.Taste(feature.freeUsesPerMonth - usedThisMonth)
     else -> ProAccess.Locked
 }

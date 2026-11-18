@@ -5,6 +5,10 @@ import android.util.Log
 import androidx.core.content.edit
 import com.android.billingclient.api.Purchase
 import com.savie.precut.ai.cloud.CloudClient
+import com.savie.precut.auth.AccountRepository
+import com.savie.precut.model.account.AuthFailure
+import com.savie.precut.model.account.AuthResult
+import com.savie.precut.model.account.AuthState
 import com.savie.precut.di.ApplicationScope
 import com.savie.precut.model.ai.AiFailure
 import com.savie.precut.model.ai.AiResult
@@ -39,6 +43,7 @@ class EntitlementRepository @Inject constructor(
     @ApplicationContext context: Context,
     private val cloud: CloudClient,
     private val billing: PlayBillingGateway,
+    private val accounts: AccountRepository,
     private val clock: Clock,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
@@ -75,8 +80,29 @@ class EntitlementRepository @Inject constructor(
         }
     }
 
-    /** Asks the server again (Settings, the paywall, app start). */
-    suspend fun refresh(): AiFailure? = when (val result = cloud.status(forPro = true)) {
+    /**
+     * With accounts (Phase 31) Pro is the account's: no free tastes of Pro tools, and the plan is
+     * the account's (trial, Paystack or Google Play) whatever this install did.
+     */
+    val tastesAllowed: Boolean get() = accounts.state.value !is AuthState.SignedIn
+
+    /** Asks the server again (Settings, the paywall, app start): the account's plan when signed in. */
+    suspend fun refresh(): AiFailure? {
+        if (accounts.state.value is AuthState.SignedIn) {
+            when (val result = accounts.account()) {
+                is AuthResult.Ok -> result.value.proPlan?.let { plan ->
+                    keepPlan(plan)
+                    // The install's quotas come with its status (registered installs only).
+                    (cloud.status(forPro = true) as? AiResult.Ok)?.value?.let { keep(it.copy(plan = plan)) }
+                    return null
+                }
+                is AuthResult.Failed -> return if (result.failure == AuthFailure.Offline) AiFailure.Offline else AiFailure.Busy
+            }
+        }
+        return refreshInstall()
+    }
+
+    private suspend fun refreshInstall(): AiFailure? = when (val result = cloud.status(forPro = true)) {
         is AiResult.Ok -> {
             result.value?.let(::keep)
             null
@@ -107,6 +133,16 @@ class EntitlementRepository @Inject constructor(
             }
         }
         return failure
+    }
+
+    /** A plan heard without a status (the account's, Phase 31). */
+    private fun keepPlan(plan: ProPlan) {
+        val now = clock.millis()
+        prefs.edit {
+            putString(KEY_PLAN, json.encodeToString(ProPlan.serializer(), plan))
+            putLong(KEY_CHECKED, now)
+        }
+        _known.value = KnownPlan(plan, now, _known.value.status)
     }
 
     private fun keep(status: CloudStatus) {

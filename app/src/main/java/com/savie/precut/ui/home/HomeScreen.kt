@@ -106,6 +106,7 @@ fun HomeScreen(
         banner = {
             LocalUpdates.current?.let { HomeUpdateBanner(it.checker, it.play) }
             SyncNoticeBanner()
+            TrialNoticeBanner()
         },
         actions = object : ProjectActions {
             override fun onOpen(projectId: String) = onOpenEditor(projectId)

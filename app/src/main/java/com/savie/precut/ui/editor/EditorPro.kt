@@ -15,7 +15,8 @@ class EditorPro(
     private val entitlements: EntitlementRepository,
     private val tastes: ProTastes,
 ) {
-    fun access(feature: ProFeature): ProAccess = proAccess(feature, entitlements.isPro.value, tastes.used(feature))
+    fun access(feature: ProFeature): ProAccess =
+        proAccess(feature, entitlements.isPro.value, tastes.used(feature), entitlements.tastesAllowed)
 
     /** Runs [action] when [feature] may be used now; otherwise opens the paywall for it. */
     fun gate(feature: ProFeature, action: () -> Unit) {

@@ -1,5 +1,10 @@
 package com.savie.precut.ui.settings
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.savie.precut.model.pro.PlanSource
+import com.savie.precut.model.pro.trialDaysLeft
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.text.format.DateUtils
@@ -33,15 +38,22 @@ import com.savie.precut.ui.theme.Accent
 internal fun ProSection(onGetPro: () -> Unit, viewModel: ProSectionViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.onShown() }
-    SettingsGroup(stringResource(R.string.pro_settings_header)) { ProRows(state, onGetPro, viewModel::onRestore) }
+    var confirmCancel by remember { mutableStateOf(false) }
+    SettingsGroup(stringResource(R.string.pro_settings_header)) { ProRows(state, onGetPro, viewModel::onRestore, onCancel = { confirmCancel = true }) }
+    if (confirmCancel) CancelProDialog(onCancel = { confirmCancel = false; viewModel.onCancel() }, onDismiss = { confirmCancel = false })
 }
 
 @Composable
-private fun ProRows(state: ProSectionState, onGetPro: () -> Unit, onRestore: () -> Unit) {
+private fun ProRows(state: ProSectionState, onGetPro: () -> Unit, onRestore: () -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
     val plan = state.known.plan
     val day = plan?.expiresAtMs?.let { DateUtils.formatDateTime(context, it, DAY_FLAGS or DateUtils.FORMAT_SHOW_YEAR) }
-    if (state.isPro) {
+    val trialLeft = trialDaysLeft(plan, state.nowMs)
+    if (state.isPro && trialLeft != null) {
+        // The account's free trial (Phase 31).
+        SettingRow(R.drawable.ic_diamond, stringResource(R.string.pro_trial_name), pluralStringResource(R.plurals.pro_trial_days_left, trialLeft, trialLeft))
+        SettingRow(R.drawable.ic_diamond, stringResource(R.string.pro_get), stringResource(R.string.pro_get_summary), chevron = true, onClick = onGetPro)
+    } else if (state.isPro) {
         val name = stringResource(if (plan?.basePlanId == ProCatalog.MONTHLY) R.string.pro_plan_monthly else R.string.pro_plan_yearly)
         val detail = when {
             day == null -> null
@@ -51,7 +63,15 @@ private fun ProRows(state: ProSectionState, onGetPro: () -> Unit, onRestore: () 
         }
         SettingRow(R.drawable.ic_diamond, name, detail)
     } else {
-        SettingRow(R.drawable.ic_diamond, stringResource(R.string.pro_get), stringResource(R.string.pro_get_summary), chevron = true, onClick = onGetPro)
+        val summary = if (plan?.source == PlanSource.TRIAL) stringResource(R.string.pro_trial_over) else stringResource(R.string.pro_get_summary)
+        SettingRow(R.drawable.ic_diamond, stringResource(R.string.pro_get), summary, chevron = true, onClick = onGetPro)
+    }
+    if (plan?.source == PlanSource.PAYSTACK && plan.autoRenewing && state.isPro) {
+        SettingRow(
+            R.drawable.ic_block, stringResource(R.string.pro_cancel),
+            if (state.cancelFailed) stringResource(R.string.pro_cancel_failed) else null,
+            onClick = onCancel,
+        )
     }
     planNotice(plan)?.let { notice ->
         Text(stringResource(noticeText(notice)), style = MaterialTheme.typography.bodySmall, color = Accent, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
@@ -66,7 +86,8 @@ private fun ProRows(state: ProSectionState, onGetPro: () -> Unit, onRestore: () 
             pluralStringResource(R.plurals.pro_usage_runs, status.editRunsLeft, status.editRunsLeft, status.editRunsPerMonth),
         )
     }
-    if (plan?.state != null) {
+    // Google Play's subscription page, for a Play purchase only.
+    if (plan?.state != null && (plan.source == null || plan.source == PlanSource.PLAY)) {
         SettingRow(R.drawable.ic_open_in_new, stringResource(R.string.pro_manage), null, chevron = true) {
             val url = "https://play.google.com/store/account/subscriptions?sku=${ProCatalog.PRODUCT_ID}&package=${context.packageName}"
             try {
@@ -77,7 +98,7 @@ private fun ProRows(state: ProSectionState, onGetPro: () -> Unit, onRestore: () 
         }
     }
     SettingRow(
-        R.drawable.ic_refresh, stringResource(R.string.pro_restore),
+        R.drawable.ic_refresh, stringResource(if (state.web) R.string.pro_web_check else R.string.pro_restore),
         when {
             state.restoring -> stringResource(R.string.pro_restoring)
             state.failure != null -> aiFailureMessage(requireNotNull(state.failure))

@@ -6,6 +6,7 @@ import com.savie.precut.model.ai.Transcript
 import com.savie.precut.model.ai.TranscriptWord
 import com.savie.precut.model.ai.edit.EditStepReply
 import com.savie.precut.model.pro.PlanState
+import com.savie.precut.model.pro.PlanSource
 import com.savie.precut.model.pro.ProPlan
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -40,13 +41,15 @@ internal data class StatusDto(
 
 /** The server's plan for an install (docs/CLOUD_API.md, Phase 25). */
 @Serializable
-internal data class PlanDto(
+data class PlanDto(
     val pro: Boolean,
     val state: String? = null,
     val basePlanId: String? = null,
     val expiresAt: String? = null,
     val autoRenewing: Boolean = false,
     val trial: Boolean = false,
+    /** play, paystack or trial (Phase 31). */
+    val source: String? = null,
 ) {
     fun toModel() = ProPlan(
         pro = pro,
@@ -55,6 +58,7 @@ internal data class PlanDto(
         expiresAtMs = expiresAt?.let(::epochMs),
         autoRenewing = autoRenewing,
         trial = trial,
+        source = source?.let { name -> PlanSource.entries.firstOrNull { it.name.equals(name, ignoreCase = true) } },
     )
 }
 

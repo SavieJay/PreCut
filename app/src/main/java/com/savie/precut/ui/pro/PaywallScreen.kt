@@ -1,5 +1,10 @@
 package com.savie.precut.ui.pro
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -70,6 +75,21 @@ fun PaywallScreen(onClose: () -> Unit, viewModel: PaywallViewModel = hiltViewMod
     val activity = LocalActivity.current
     // Pro confirmed by the server: done.
     LaunchedEffect(state.isPro) { if (state.isPro) onClose() }
+    // Website APK (Phase 31): Paystack's page in the browser; back in PreCut, the payment is checked.
+    val context = LocalContext.current
+    LaunchedEffect(state.openUrl) {
+        val url = state.openUrl ?: return@LaunchedEffect
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+        } catch (_: ActivityNotFoundException) {
+            // No browser: nothing to open it with.
+        }
+        viewModel.onUrlOpened()
+    }
+    LifecycleResumeEffect(Unit) {
+        viewModel.onResumed()
+        onPauseOrDispose { }
+    }
     Column(Modifier.fillMaxSize().afterglowBackground().systemBarsPadding()) {
         PreCutIconButton(R.drawable.ic_close, stringResource(R.string.action_close), onClose, Modifier.padding(start = 4.dp))
         Column(
@@ -89,20 +109,25 @@ fun PaywallScreen(onClose: () -> Unit, viewModel: PaywallViewModel = hiltViewMod
         Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             state.failure?.let { Text(aiFailureMessage(it), style = MaterialTheme.typography.bodySmall, color = ErrorRed, textAlign = TextAlign.Center) }
             if (state.playFailed) Text(stringResource(R.string.pro_play_failed), style = MaterialTheme.typography.bodySmall, color = ErrorRed, textAlign = TextAlign.Center)
+            if (state.notPaid) Text(stringResource(R.string.pro_web_not_paid), style = MaterialTheme.typography.bodySmall, color = ErrorRed, textAlign = TextAlign.Center)
             if (state.working) {
                 PreCutSpinner()
             } else {
                 val trial = state.offers?.let { if (state.selected == ProCatalog.YEARLY) it.yearly else it.monthly }?.freeTrialDays ?: 0
                 FilledButton(
-                    if (trial > 0) stringResource(R.string.pro_start_trial, trial) else stringResource(R.string.pro_continue),
+                    when {
+                        state.web -> stringResource(R.string.pro_web_pay)
+                        trial > 0 -> stringResource(R.string.pro_start_trial, trial)
+                        else -> stringResource(R.string.pro_continue)
+                    },
                     { activity?.let(viewModel::onContinue) },
                     Modifier.fillMaxWidth(),
                     large = true,
                     enabled = state.offers?.isEmpty == false,
                 )
             }
-            AccentTextButton(stringResource(R.string.pro_restore), viewModel::onRestore, color = TextSecondary, enabled = !state.working)
-            Text(stringResource(R.string.pro_fine_print), style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp), color = TextMuted, textAlign = TextAlign.Center)
+            AccentTextButton(stringResource(if (state.web) R.string.pro_web_check else R.string.pro_restore), viewModel::onRestore, color = TextSecondary, enabled = !state.working)
+            Text(stringResource(if (state.web) R.string.pro_web_fine_print else R.string.pro_fine_print), style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp), color = TextMuted, textAlign = TextAlign.Center)
         }
     }
 }

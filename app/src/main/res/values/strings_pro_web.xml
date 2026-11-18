@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PreCut Pro trial and Paystack (Phase 31). -->
+<resources>
+    <string name="pro_web_pay">Subscribe with Paystack</string>
+    <string name="pro_web_check">Check my payment</string>
+    <string name="pro_web_not_paid">The payment wasn\'t completed. Try again, or tap Check my payment if you did pay.</string>
+    <string name="pro_web_fine_print">Paid in naira through Paystack, which may add its fee at checkout. Renews each month or year; cancel any time in Settings → PreCut Pro.</string>
+
+    <string name="pro_trial_name">PreCut Pro free trial</string>
+    <plurals name="pro_trial_days_left">
+        <item quantity="one">%1$d day left, then subscribe to keep Pro</item>
+        <item quantity="other">%1$d days left, then subscribe to keep Pro</item>
+    </plurals>
+    <plurals name="pro_trial_ending_banner">
+        <item quantity="one">Your Pro trial ends in %1$d day. Subscribe in Settings → PreCut Pro to keep AI edit, shorts and the other Pro tools.</item>
+        <item quantity="other">Your Pro trial ends in %1$d days. Subscribe in Settings → PreCut Pro to keep AI edit, shorts and the other Pro tools.</item>
+    </plurals>
+    <string name="pro_trial_over">Your free trial has ended</string>
+
+    <string name="pro_cancel">Cancel subscription</string>
+    <string name="pro_cancel_title">Cancel PreCut Pro?</string>
+    <string name="pro_cancel_body">Pro stays on until the end of the period you\'ve paid for, then stops. Nothing is charged after that.</string>
+    <string name="pro_cancel_confirm">Cancel subscription</string>
+    <string name="pro_cancel_failed">Couldn\'t cancel. Check your connection and try again.</string>
+</resources>

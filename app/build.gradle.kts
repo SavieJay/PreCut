@@ -46,6 +46,9 @@ android {
         // sign-in stays off and the app works as before (docs/ACCOUNTS.md).
         buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"${cloud?.getProperty("supabasePublishableKey").orEmpty()}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${cloud?.getProperty("googleWebClientId").orEmpty()}\"")
+        // Phase 31: the website APK sells Pro through Paystack; Play builds (`-Pstore=play`) use
+        // Google Play Billing only, and R8 removes the Paystack path.
+        buildConfigField("boolean", "WEB_PAYMENTS", (project.findProperty("store") != "play").toString())
         // Template links (Phase 28): the website's host, for links and Android App Links.
         val webHost = cloud?.getProperty("webHost")?.takeIf { it.isNotBlank() } ?: "precut.netlify.app"
         buildConfigField("String", "WEB_HOST", "\"$webHost\"")

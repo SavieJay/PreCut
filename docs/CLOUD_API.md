@@ -76,6 +76,8 @@ These routes need `X-PreCut-Api` and the signed-in user's Supabase Auth access t
 
 **`POST /account/link`** — also with `X-Install-Token`: signs this install in to the account (out of any other), so Pro follows the account. `{"linked": true, "status": Status}` (and maybe `installToken`).
 
+**`POST /paystack/checkout`** (Phase 31) — body `{"plan": "monthly"|"yearly"}`: a Paystack payment page for the account's email, `{"url", "reference"}`. **`POST /paystack/confirm`** — `{"reference"}` after the browser: Paystack's record decides (success, PreCut's plan, this account); `{"paid": bool, "plan": Plan}`. **`POST /paystack/cancel`** — stops renewing; Pro lasts the paid period; `not_found` without a subscription. No webhook: `/status`, `/account` and the daily clean-up read the subscription again when 6 hours old or past its period. `billing_unavailable` while Paystack is down. Secrets: `PAYSTACK_SECRET_KEY`, `PAYSTACK_MODE` (test|live, must match the key and `cloud_config.paystack_mode`), `PAYSTACK_PLAN_MONTHLY`, `PAYSTACK_PLAN_YEARLY`, optional `PAYSTACK_CALLBACK_URL`. `GET /account` also returns the account's `plan`: its best of Google Play, Paystack and the 14-day trial (`source`: play|paystack|trial).
+
 **`POST /cleanup`** — the daily clean-up (`.github/workflows/cloud-cleanup.yml`); no `X-PreCut-Api`, `Authorization: Bearer <RELEASE_SECRET>`. Drops grants never uploaded within a day, files no project has used for 30 days, and deletions older than 90 days; removes those files from Storage. `{"removed": int}`.
 
 ## Errors
