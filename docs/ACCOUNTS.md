@@ -17,6 +17,12 @@ Files over 50 MB stay on the phone that has them; their projects still sync. Lat
    global limit wins). The bucket itself is created by the migration.
 
 ## 2. Email codes
+**Live since 18 November 2026: Gmail.** No domain was available, so Supabase sends the codes through
+the owner's Gmail with an app password (smtp.gmail.com:465, sender name "PreCut", about 500 emails a
+day, 100 an hour in Supabase's rate limit). The code email and its 10-minute, 6-digit settings were
+set through the Management API (the values live in the gitignored `supabase/.env.secrets`). With a
+domain later, switch to a sender like the one below.
+
 Supabase's own mailer sends only a couple of emails an hour, for testing.
 1. A sender for your domain, for example [Resend](https://resend.com) (free tier: 3,000 emails a
    month): add and verify the domain, create an API key.
